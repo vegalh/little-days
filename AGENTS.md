@@ -83,7 +83,7 @@ Use semantic HTML: `<header>`, `<main>`, `<section>` with headings, `<form>` for
 
 - Do one piece at a time, as I ask for it. Don't build the whole app in one go.
 
-- Work on a branch, never directly on `main`.
+- Commit directly to `main`. No branches unless I ask for one.
 - Make small commits, each with a clear message saying what changed.
 - After a change, open `index.html` in a browser (or a local static server) and check it works, including at phone width. Say what you checked.
 - If something is broken or you skipped a step, say so plainly.
