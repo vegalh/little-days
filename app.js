@@ -160,17 +160,15 @@ function buildDays(place, daily, holidays) {
       ...forecast,
       weather: weatherFor(forecast),
       season: seasonFor(date, place.latitude),
-      holidays: holidaysOn(date, holidays),
+      holidays: holidaysOn(date, holidays, place.country_code),
     };
   });
 }
 
-function holidaysOn(date, holidays) {
+// Public holidays from Nager.Date plus celebrations observed in this country.
+function holidaysOn(date, holidays, countryCode) {
   const names = holidays.filter((h) => h.date === date).map((h) => h.name);
-  for (const c of LOCAL_CELEBRATIONS) {
-    if (date.slice(5) === c.date) names.push(c.name);
-  }
-  return [...new Set(names)];
+  return [...new Set([...names, ...celebrationsOn(date, countryCode)])];
 }
 
 form.addEventListener("submit", (event) => {
