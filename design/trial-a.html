@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Little Days — Trial A: Storybook</title>
+<style>
+/* TOKENS:START */
+:root {
+  --bg: #FBF6EC;
+  --surface: #FFFDF8;
+  --tint: #F1F3E8;
+  --ink: #22352C;
+  --ink-soft: #5E6B63;
+  --line: #ECE3D3;
+  --accent: #2F5A46;
+  --accent-ink: #FFFFFF;
+  --sun: #E9A93B;
+  --sky: #7FA7C9;
+  --leaf: #6E9A62;
+  --holiday: #D9692B;
+  --font-head: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius: 14px;
+}
+/* TOKENS:END */
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 var(--font-body);
+}
+h1, h2, h3 { font-family: var(--font-head); line-height: 1.15; margin: 0; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+.trial-note {
+  background: var(--ink); color: var(--bg);
+  font-size: 14px; text-align: center; padding: 6px 16px;
+}
+
+/* Header */
+.site-header .wrap { display: flex; justify-content: space-between; align-items: center; padding-block: 16px; }
+.logo { font-family: var(--font-head); font-size: 22px; font-weight: 700; color: var(--accent); text-decoration: none; }
+.site-header nav a { color: var(--ink); text-decoration: none; font-weight: 600; font-size: 15px; }
+
+/* Hero + controls */
+.hero { padding-block: 24px 32px; }
+.hero h1 { font-size: clamp(34px, 6vw, 56px); color: var(--accent); max-width: 12ch; }
+.hero p { color: var(--ink-soft); margin: 12px 0 24px; max-width: 40ch; }
+.controls {
+  display: grid; gap: 16px;
+  grid-template-columns: 2fr 1fr auto;
+  align-items: end;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+.field label, .field legend { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; padding: 0; }
+.field fieldset { border: 0; margin: 0; padding: 0; }
+.city-row { display: flex; gap: 8px; }
+input[type=text], select {
+  width: 100%; min-height: 44px; padding: 0 12px;
+  font: inherit; color: var(--ink);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+}
+.segmented { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.segmented label { margin: 0; }
+.segmented input { position: absolute; opacity: 0; }
+.segmented span { display: block; min-width: 52px; min-height: 42px; line-height: 42px; text-align: center; font-weight: 600; cursor: pointer; }
+.segmented input:checked + span { background: var(--accent); color: var(--accent-ink); }
+
+button, .btn {
+  min-height: 44px; padding: 0 18px;
+  font: inherit; font-weight: 600;
+  border-radius: 10px; border: 1px solid var(--accent);
+  background: var(--accent); color: var(--accent-ink);
+  cursor: pointer;
+}
+.btn-secondary { background: transparent; color: var(--accent); }
+.btn-added { background: transparent; color: var(--leaf); border-color: var(--leaf); cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Sections */
+section { padding-block: 32px; }
+.section-head { margin-bottom: 16px; }
+.section-head h2 { font-size: 30px; }
+.section-head p { margin: 4px 0 0; color: var(--ink-soft); }
+
+/* Week strip */
+.week {
+  list-style: none; margin: 0; padding: 4px 2px 12px;
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(132px, 1fr);
+  gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory;
+}
+.day {
+  scroll-snap-align: start;
+  width: 100%; height: 100%; min-height: 0; padding: 14px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  font-weight: 400; text-align: center;
+}
+.day[aria-pressed=true] { border: 2px solid var(--accent); background: #FFF8EC; }
+.day-name { font-family: var(--font-head); font-weight: 700; font-size: 18px; }
+.day-date { font-size: 13px; color: var(--ink-soft); }
+.day-icon { font-size: 34px; line-height: 1.2; margin-top: 4px; }
+.temps { font-variant-numeric: tabular-nums; font-size: 18px; font-weight: 700; }
+.temps .lo { color: var(--ink-soft); font-weight: 400; }
+.cond, .rain { font-size: 13px; color: var(--ink-soft); }
+.day-pick { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); width: 100%; font-size: 13px; }
+.day-pick .emoji { font-size: 22px; display: block; }
+
+.tag {
+  display: inline-block; padding: 2px 10px; border-radius: 999px;
+  font-size: 13px; font-weight: 600;
+  background: color-mix(in srgb, var(--c, var(--accent)) 15%, transparent);
+  color: var(--c, var(--accent));
+}
+.tag-holiday { --c: var(--holiday); }
+.tag-soft { --c: var(--ink-soft); }
+
+/* Recommendations */
+.ideas { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.idea {
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 16px;
+}
+.idea-art {
+  height: 120px; border-radius: 10px;
+  display: grid; place-items: center; font-size: 56px;
+  background: var(--tint);
+}
+.idea h3 { font-size: 21px; }
+.meta { font-size: 14px; color: var(--ink-soft); margin: 0; }
+.idea p { margin: 0; }
+.idea .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.idea button { margin-top: auto; }
+.idea-link { background: none; border: 0; padding: 0; min-height: 0; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.idea-link:hover h3 { text-decoration: underline; }
+
+.helpers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.helper { background: var(--tint); border-radius: var(--radius); padding: 16px 20px; }
+.helper h3 { font-size: 19px; margin-bottom: 8px; }
+.helper ul { margin: 0; padding-left: 20px; }
+.helper p { margin: 0; }
+
+/* My week */
+.plan { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.plan > li { display: grid; grid-template-columns: 90px 1fr; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--line); align-items: center; }
+.plan > li:first-child { border-top: 0; }
+.plan-day { font-weight: 700; font-size: 14px; }
+.plan-day small { display: block; font-weight: 400; color: var(--ink-soft); }
+.plan-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.plan-items li { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.plan-empty { color: var(--ink-soft); }
+.link-btn { background: none; border: 0; color: var(--accent); min-height: 44px; padding: 0 4px; text-decoration: underline; }
+
+/* Details (dialog preview) */
+.details { max-width: 520px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+.details h3 { font-size: 26px; margin: 12px 0 4px; }
+.details h4 { margin: 16px 0 6px; font-size: 15px; }
+.details ul, .details ol { margin: 0; padding-left: 20px; }
+.details .box { background: var(--tint); border-radius: 10px; padding: 12px 16px; margin-top: 12px; }
+.details .actions { display: flex; gap: 8px; margin-top: 20px; }
+.details .actions button:first-child { flex: 1; }
+
+/* States */
+.states { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.states h3 { font-family: var(--font-body); font-size: 13px; text-transform: none; color: var(--ink-soft); margin-bottom: 6px; }
+.status {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 16px;
+}
+.status p { margin: 0; }
+.status.loading p { color: var(--ink-soft); }
+.status.error { border-left: 4px solid var(--accent); }
+.status.error button { margin-top: 12px; }
+.field-msg { font-size: 14px; margin: 6px 0 0; }
+input[aria-invalid=true] { border-color: var(--accent); }
+
+footer { padding-block: 32px; color: var(--ink-soft); font-size: 14px; text-align: center; }
+
+@media (max-width: 720px) {
+  .controls { grid-template-columns: 1fr; }
+  .helpers { grid-template-columns: 1fr; }
+  .week { grid-auto-columns: 128px; }
+  .plan > li { grid-template-columns: 1fr; gap: 4px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<p class="trial-note">Trial A — Storybook. Static sample: real Boston forecast for Oct 30 – Nov 5, 2026. Nothing is fetched.</p>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="#">🌱 Little Days</a>
+    <nav><a href="#my-week">My week</a></nav>
+  </div>
+</header>
+
+<main>
+  <div class="hero wrap">
+    <h1>Every day holds a little adventure.</h1>
+    <p>Weather-based activity ideas for curious little learners, ages 1–6.</p>
+
+    <form class="controls" role="search">
+      <div class="field">
+        <label for="city">City</label>
+        <div class="city-row">
+          <input id="city" type="text" value="Boston" autocomplete="address-level2">
+          <button type="submit">Search</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="age">Child's age</label>
+        <select id="age">
+          <option>1 year old</option><option>2 years old</option>
+          <option selected>3 years old</option><option>4 years old</option>
+          <option>5 years old</option><option>6 years old</option>
+        </select>
+      </div>
+      <div class="field">
+        <fieldset>
+          <legend>Temperature</legend>
+          <div class="segmented">
+            <label><input type="radio" name="unit" checked><span>°F</span></label>
+            <label><input type="radio" name="unit"><span>°C</span></label>
+          </div>
+        </fieldset>
+      </div>
+    </form>
+  </div>
+
+  <section class="wrap" aria-labelledby="week-h">
+    <div class="section-head">
+      <h2 id="week-h">This week</h2>
+      <p>Boston, Massachusetts, United States · Fri Oct 30 – Thu Nov 5</p>
+    </div>
+    <ol class="week">
+      <li><button class="day" aria-pressed="false">
+        <span class="day-name">Fri</span><span class="day-date">Oct 30</span>
+        <span class="day-icon" aria-hidden="true">☁️</span>
+        <span class="temps">72° <span class="lo">48°</span></span>
+        <span class="cond">Overcast</span><span class="rain">Rain 4%</span>
+        <span class="day-pick"><span class="emoji" aria-hidden="true">🚶</span>Neighborhood walk</span>
+      </button></li>
+      <li><button class="day" aria-pressed="true">
+        <span class="day-name">Sat</span><span class="day-date">Oct 31</span>
+        <span class="day-icon" aria-hidden="true">🌤️</span>
+        <span class="temps">53° <span class="lo">36°</span></span>
+        <span class="cond">Mainly clear</span><span class="rain">Rain 0%</span>
+        <span class="tag tag-holiday">🎃 Halloween</span>
+        <span class="day-pick"><span class="emoji" aria-hidden="true">🎃</span>Pumpkin sensory play</span>
+      </button></li>
+      <li><button class="day" aria-pressed="false">
+        <span class="day-name">Sun</span><span class="day-date">Nov 1</span>
+        <span class="day-icon" aria-hidden="true">☀️</span>
+        <span class="temps">59° <span class="lo">31°</span></span>
+        <span class="cond">Clear</span><span class="rain">Rain 0%</span>
+        <span class="day-pick"><span class="emoji" aria-hidden="true">🍂</span>Nature color hunt</span>
+      </button></li>
+      <li><button class="day" aria-pressed="false">
+        <span class="day-name">Mon</span><span class="day-date">Nov 2</span>
+        <span class="day-icon" aria-hidden="true">☁️</span>
+        <span class="temps">66° <span class="lo">49°</span></span>
+        <span class="cond">Overcast</span><span class="rain">Rain 0%</span>
+        <span class="day-pick"><span class="emoji" aria-hidden="true">🍁</span>Leaf sorting</span>
+      </button></li>
+      <li><button class="day" aria-pressed="false">
+        <span class="day-name">Tue</span><span class="day-date">Nov 3</span>
+        <span class="day-icon" aria-hidden="true">☁️</span>
+        <span class="temps">64° <span class="lo">51°</span></span>
+        <span class="cond">Overcast</span><span class="rain">Rain 6%</span>
+        <span class="day-pick"><span class="emoji" aria-hidden="true">🖍️</span>Chalk shapes</span>
+      </button></li>
+      <li><button class="day" aria-pressed="false">
+        <span class="day-name">Wed</span><span class="day-date">Nov 4</span>
+        <span class="day-icon" aria-hidden="true">☁️</span>
+        <span class="temps">58° <span class="lo">53°</span></span>
+        <span class="cond">Overcast</span><span class="rain">Rain 7%</span>
+        <span class="day-pick"><span class="emoji" aria-hidden="true">🪨</span>Stick &amp; stone patterns</span>
+      </button></li>
+      <li><button class="day" aria-pressed="false">
+        <span class="day-name">Thu</span><span class="day-date">Nov 5</span>
+        <span class="day-icon" aria-hidden="true">☁️</span>
+        <span class="temps">69° <span class="lo">54°</span></span>
+        <span class="cond">Overcast</span><span class="rain">Rain 33%</span>
+        <span class="day-pick"><span class="emoji" aria-hidden="true">🫧</span>Bubble play</span>
+      </button></li>
+    </ol>
+  </section>
+
+  <section class="wrap" aria-labelledby="ideas-h">
+    <div class="section-head">
+      <h2 id="ideas-h">Ideas for Saturday, Oct 31</h2>
+      <p>For a 3-year-old · 53° and mainly clear · <span class="tag tag-holiday">🎃 Halloween</span></p>
+    </div>
+    <div class="ideas">
+      <article class="idea">
+        <div class="idea-art" aria-hidden="true">🎃</div>
+        <button class="idea-link"><h3>Pumpkin sensory play</h3></button>
+        <p class="meta">Indoor · 15–20 min · Ages 1–4</p>
+        <p>Scoop out a small pumpkin together and explore the seeds, pulp and smell.</p>
+        <div class="tags"><span class="tag tag-soft">Sensory</span><span class="tag tag-soft">Fine motor</span></div>
+        <button class="btn-added" disabled>Added ✓</button>
+      </article>
+      <article class="idea">
+        <div class="idea-art" aria-hidden="true">🍂</div>
+        <button class="idea-link"><h3>Nature color hunt</h3></button>
+        <p class="meta">Outdoor · 20–30 min · Ages 2–5</p>
+        <p>Collect leaves, rocks or flowers in different colors and talk about what you notice.</p>
+        <div class="tags"><span class="tag tag-soft">Language</span><span class="tag tag-soft">Observation</span></div>
+        <button>Add to my week</button>
+      </article>
+      <article class="idea">
+        <div class="idea-art" aria-hidden="true">🔍</div>
+        <button class="idea-link"><h3>Leaf under a lens</h3></button>
+        <p class="meta">Outdoor · 15–20 min · Ages 3–6</p>
+        <p>Use a magnifying glass to look closely at leaves, bark and seeds.</p>
+        <div class="tags"><span class="tag tag-soft">Curiosity</span><span class="tag tag-soft">Early science</span></div>
+        <button>Add to my week</button>
+      </article>
+    </div>
+    <div class="helpers">
+      <div class="helper">
+        <h3>🧥 What to wear</h3>
+        <ul>
+          <li>Light jacket or sweater, in layers</li>
+          <li>Warm hat for the morning (low of 36°)</li>
+          <li>Comfortable shoes</li>
+        </ul>
+      </div>
+      <div class="helper">
+        <h3>💡 Why these ideas</h3>
+        <p>It's Halloween, so a pumpkin activity comes first. The day is clear and mild at 53°, a good chance for a short walk outside in a jacket.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap" id="my-week" aria-labelledby="plan-h">
+    <div class="section-head"><h2 id="plan-h">My week</h2></div>
+    <ul class="plan">
+      <li><span class="plan-day">Fri <small>Oct 30</small></span><span class="plan-empty">Nothing planned</span></li>
+      <li><span class="plan-day">Sat <small>Oct 31</small></span>
+        <ul class="plan-items"><li>🎃 Pumpkin sensory play <button class="link-btn">Remove</button></li></ul></li>
+      <li><span class="plan-day">Sun <small>Nov 1</small></span>
+        <ul class="plan-items"><li>🍂 Nature color hunt <button class="link-btn">Remove</button></li></ul></li>
+      <li><span class="plan-day">Mon <small>Nov 2</small></span><span class="plan-empty">Nothing planned</span></li>
+      <li><span class="plan-day">Tue <small>Nov 3</small></span><span class="plan-empty">Nothing planned</span></li>
+      <li><span class="plan-day">Wed <small>Nov 4</small></span><span class="plan-empty">Nothing planned</span></li>
+      <li><span class="plan-day">Thu <small>Nov 5</small></span>
+        <ul class="plan-items"><li>🫧 Bubble play <button class="link-btn">Remove</button></li></ul></li>
+    </ul>
+  </section>
+
+  <section class="wrap" aria-labelledby="details-h">
+    <div class="section-head">
+      <h2 id="details-h">Activity details</h2>
+      <p>Preview of the dialog that opens when an activity title is clicked.</p>
+    </div>
+    <div class="details">
+      <div class="idea-art" aria-hidden="true">🍂</div>
+      <h3>Nature color hunt</h3>
+      <p class="meta">Outdoor · 20–30 min · Ages 2–5</p>
+      <div class="box">
+        <h4>What you'll need</h4>
+        <ul><li>A small basket or bag</li><li>Shoes and clothes for the weather</li></ul>
+      </div>
+      <h4>Steps</h4>
+      <ol>
+        <li>Pick three colors to look for together.</li>
+        <li>Walk slowly and collect one thing of each color.</li>
+        <li>At home, line them up and compare shapes and textures.</li>
+      </ol>
+      <h4>What your child practices</h4>
+      <ul><li>Observation</li><li>Color words and language</li><li>Sorting and matching</li></ul>
+      <div class="actions"><button>Add to my week</button><button class="btn-secondary">Close</button></div>
+    </div>
+  </section>
+
+  <section class="wrap" aria-labelledby="states-h">
+    <div class="section-head">
+      <h2 id="states-h">States</h2>
+      <p>How each state from PRD.md section 8 looks in this direction.</p>
+    </div>
+    <div class="states">
+      <div><h3>Empty — first visit</h3>
+        <div class="status"><p>Enter your city to see this week's weather and activity ideas.</p></div></div>
+      <div><h3>Empty — city not found</h3>
+        <div class="status"><p>We couldn't find "Bostn". Check the spelling, or add the state or country, like "Portland, Maine".</p></div></div>
+      <div><h3>Loading</h3>
+        <div class="status loading"><p>Getting the weather for Boston…</p></div>
+        <p style="margin-top:8px"><button disabled style="opacity:.5;cursor:not-allowed">Searching…</button></p></div>
+      <div><h3>Error</h3>
+        <div class="status error"><p>We couldn't load the weather right now. Check your internet connection and try again.</p>
+          <button class="btn-secondary">Try again</button></div></div>
+      <div><h3>Invalid input</h3>
+        <label for="city-bad" style="font-size:14px;font-weight:600">City</label>
+        <input id="city-bad" type="text" value="" aria-invalid="true" aria-describedby="city-bad-msg">
+        <p class="field-msg" id="city-bad-msg">⚠︎ Type a city name first.</p></div>
+    </div>
+  </section>
+</main>
+
+<footer>Weather by Open-Meteo · Holidays by Nager.Date</footer>
+</body>
+</html>

@@ -2,7 +2,7 @@
 
 ## 1. Summary
 
-Little Days is a one-page web tool that helps parents of children ages 1–6 plan simple activities for the coming week. The parent enters a city and picks their child's age. The page shows a seven-day forecast and, for each day, two or three activities that suit the weather, any holiday that day, and the child's age, plus what the child should wear. The parent can add activities to a weekly plan that stays saved in the browser.
+Little Days is a one-page web tool that helps parents of children ages 1–6 plan simple activities for the coming week. The parent enters a city and picks their child's age. The page shows a seven-day calendar with the weather, any holiday, and one featured activity for each day. Choosing a day shows three activities that suit that day's weather, holiday, and the child's age, what the child should wear, and a short explanation of why these activities were picked. The parent can add activities to a weekly plan that stays saved in the browser.
 
 ## 2. Problem
 
@@ -35,13 +35,15 @@ They want answers fast ("what can we do Saturday?"), not a lot of reading. Most 
 
 1. As a parent, I type my city so the forecast is for where I live.
 2. As a parent, I pick my child's age so the activities fit what my child can do.
-3. As a parent, I see the next seven days with the high, low, chance of rain, and an icon for the conditions.
-4. As a parent, I see two or three activity ideas for each day.
-5. As a parent, I see when a day is a holiday or celebration, with an activity that goes with it.
-6. As a parent, I see what my child should wear and what to bring for each day.
-7. As a parent, I open an activity to see instructions, materials, how long it takes, and what it helps my child develop.
-8. As a parent, I add an activity to a day in my weekly plan, and remove it if I change my mind.
-9. As a parent, I come back later and my city, child's age, and plan are still there.
+3. As a parent, I see the next seven days with the high, low, chance of rain, and an icon for the conditions, and one featured activity on each day.
+4. As a parent, I choose a day and see three activity ideas for it.
+5. As a parent, I see holidays and celebrations right on the calendar days, with an activity that goes with them.
+6. As a parent, I see what my child should wear and what to bring for the chosen day.
+7. As a parent, I read a short reason why these activities were picked, so I can trust the suggestions.
+8. As a parent, I switch between °F and °C.
+9. As a parent, I open an activity to see instructions, materials, how long it takes, and what it helps my child develop.
+10. As a parent, I add an activity to a day in my weekly plan, and remove it if I change my mind.
+11. As a parent, I come back later and my city, child's age, temperature unit, and plan are still there.
 
 ## 7. Functional requirements
 
@@ -50,9 +52,11 @@ They want answers fast ("what can we do Saturday?"), not a lot of reading. Most 
 | Input | Control | Behavior |
 |---|---|---|
 | City | Text field + search button (Enter also submits) | Geocodes the city, then fetches the forecast and holidays. If several places match, use the first result and show its name, state/region, and country so the parent can tell. Adding the state works ("Portland, Maine"). |
-| Child's age | Selector with 1, 2, 3, 4, 5, 6 | Changes only the activity suggestions. Does not refetch weather. |
+| Child's age | Selector with 1, 2, 3, 4, 5, 6 | Changes only the activity suggestions, the featured activities, and the explanation. Does not refetch weather. |
+| Temperature | °F / °C switch (two radio buttons) | Changes how every temperature is shown. Does not refetch weather (see 7.2). |
+| Day | Each day card in the seven-day calendar is a button | Selects that day. Only one day is selected at a time. |
 
-Defaults on first visit: no city (show a short prompt to enter one), age 3.
+Defaults on first visit: no city (show a short prompt to enter one), age 3, °F. After a search, today is selected.
 
 ### 7.2 Data sources
 
@@ -66,7 +70,7 @@ All three are free and need no key.
 
 Plus a small local list of celebrations not in Nager.Date (for example Halloween, Valentine's Day, Mother's Day, Father's Day, first day of each season).
 
-Temperatures are shown in °F for US locations and °C everywhere else. Open-Meteo returns °C unless the request adds `&temperature_unit=fahrenheit`, so add it when `country_code` is `US`.
+The forecast is always requested in °C (Open-Meteo's default) and kept in °C in the code. The °F / °C switch only changes the display: °F = °C × 9/5 + 32, rounded to a whole number. All rules (7.4, 7.6) use °C, so they work the same whichever unit is shown.
 
 How each API behaves (checked against real responses on 2026-10-30):
 
@@ -102,18 +106,20 @@ Each day gets one category, used by both activities and clothing:
 
 Check them in the order listed; the first one that matches wins.
 
-### 7.5 Activity recommendations
+### 7.5 Calendar and activity recommendations
 
 - Activities live in a local data file written by hand. Each activity has: `id`, `title`, `minAge`, `maxAge`, `setting` (`indoor` / `outdoor` / `either`), `weather` (list of categories it suits), optional `holiday` (name it goes with), `time` (minutes), `materials`, `steps`, and `benefits`.
 - For each day, show activities where the child's age is between `minAge` and `maxAge` and the day's category is in `weather`.
 - Stormy and Snowy-when-Cold days show indoor activities only.
 - If the day is a holiday with a matching activity, that activity comes first.
-- Show 2–3 per day. Try not to repeat the same activity on two days in the same week.
+- Matching activities are ranked: holiday match first, then activities whose `setting` best fits the day (outdoor on Nice days, indoor on Rainy, Stormy, Snowy, Cold, and Hot days), then by `id` so the order is stable.
+- **Calendar (each day card):** shows the top-ranked activity as the day's featured activity, by emoji and short title. Try not to feature the same activity on two days in the same week.
+- **Selected day:** shows the top three ranked activities for that day, starting with the featured one. If fewer than three match, show the ones that do.
 - The starting list should have at least 30 activities, with enough for every category at every age.
 
 ### 7.6 Clothing and preparation
 
-Each day shows a short clothing line and an optional "bring" line, from rules like:
+The selected day shows a "What to wear" panel: a short list of clothing and an optional "bring" list, from rules like the ones below. It's always shown for the selected day and on phones it comes before the activities (DESIGN.md section 5).
 
 | Condition | Wear | Bring |
 |---|---|---|
@@ -126,32 +132,44 @@ Each day shows a short clothing line and an optional "bring" line, from rules li
 | Snowy | Add snow pants and waterproof boots | Spare mittens |
 | Stormy | Plan to stay indoors | — |
 
-### 7.7 Activity details
+### 7.7 Why these activities?
 
-Clicking an activity opens its details: title, age range, time, materials, numbered steps, and developmental benefits. The details view has an "Add to plan" button for that day.
+The selected day shows a short "Why these activities?" panel: one or two sentences built from templates, using the same facts that picked the activities. Nothing is made up and nothing comes from an AI.
 
-### 7.8 Weekly plan
+The sentence pieces, joined in this order, using only the ones that apply:
+
+1. Holiday: "It's {holiday}, so a {holiday} activity comes first."
+2. Weather: one phrase per category, with the high in the selected unit. For example Nice: "It's {condition lowercase} and {high}°, a good day to play outside."; Rainy: "Rain is likely ({rain}%), so these are indoor ideas."; Cold: "It's cold ({high}°), so most of these stay indoors."
+3. Age: "Each one suits a {age}-year-old."
+
+Example: "It's Halloween, so a Halloween activity comes first. It's mainly clear and 53°, a good day to play outside. Each one suits a 3-year-old."
+
+### 7.8 Activity details
+
+Clicking an activity opens its details: title, age range, time, materials, numbered steps, and developmental benefits. The details view has an "Add to my week" button for the selected day.
+
+### 7.9 Weekly plan
 
 - Shows the same seven days, each listing the activities the parent added.
 - Each item can be removed.
-- The plan, city, and age are saved in `localStorage` and loaded when the page opens.
+- The plan, city, age, and temperature unit are saved in `localStorage` and loaded when the page opens.
 - Plan entries are stored by date. Entries for dates before today are dropped when the page loads.
 
 ## 8. Page states
 
 Every message below appears in one place: a **status area** at the top of the "This week" section, right under its heading. The status area has `role="status"` and `aria-live="polite"` so screen readers announce changes. Only one message shows at a time. The exception is the invalid-input message, which sits under the city field (8.4).
 
-The "My plan" section is never hidden or cleared by any of these states. A saved plan stays visible even when the weather can't load.
+The "My week" section is never hidden or cleared by any of these states. A saved plan stays visible even when the weather can't load.
 
 ### 8.1 Empty
 
 **First visit (no city saved).**
-- The city field is empty and gets focus. The age selector shows 3.
+- The city field is empty and gets focus. The age selector shows 3 and the switch shows °F.
 - The status area says: "Enter your city to see this week's weather and activity ideas."
-- No day cards.
-- "My plan" says: "Your plan is empty. Pick activities from the days above to add them here."
+- No calendar, no "Ideas for {day}" section.
+- "My week" says: "Your week is empty. Pick activities from the days above to add them here."
 
-**Returning visit (city saved).** The page doesn't sit empty. It fills in the saved city and age and starts a search right away, going straight to Loading (8.2).
+**Returning visit (city saved).** The page doesn't sit empty. It fills in the saved city, age, and unit and starts a search right away, going straight to Loading (8.2).
 
 **Search finds no city.** The geocoder answered, but with no `results`.
 - The status area says: "We couldn't find "{what they typed}". Check the spelling, or add the state or country, like "Portland, Maine"."
@@ -159,9 +177,9 @@ The "My plan" section is never hidden or cleared by any of these states. A saved
 - The city field keeps the text and gets focus so the parent can fix it.
 - The saved city is **not** replaced.
 
-**A day has no matching activity.** In that day's card, in place of the activity list: "No ideas for this day yet."
+**A day has no matching activity.** That day's card shows "No idea yet" where the featured activity would be. When that day is selected, the ideas area says: "No ideas for this day yet." The "What to wear" and "Why these activities?" panels still show.
 
-**Empty plan day.** Within "My plan", a day with nothing added says "Nothing planned".
+**Empty plan day.** Within "My week", a day with nothing added says "Nothing planned".
 
 ### 8.2 Loading
 
@@ -170,10 +188,10 @@ Starts when a valid search is submitted. One request chain runs: geocode first, 
 - The search button is disabled and its text changes to "Searching…". This stops double submits.
 - The status area says: "Getting the weather for {city}…"
 - Day cards from an earlier search are removed.
-- The city field and age selector stay usable.
+- The city field, age selector, and unit switch stay usable.
 - When everything finishes, the button goes back to "Search" and the page moves to In use, Empty, or Error.
 
-Changing the child's age never triggers Loading. It makes no request and only re-renders the activities.
+Changing the child's age, the unit, or the selected day never triggers Loading. None of them makes a request. They only re-render.
 
 ### 8.3 Error
 
@@ -209,22 +227,28 @@ When input is refused:
 - The message appears directly under the city field in `--ink`, not red. The field gets `aria-invalid="true"` and `aria-describedby` pointing to the message, and keeps focus.
 - The message and `aria-invalid` clear as soon as the parent types.
 
-The age selector can't be invalid, because it only offers 1–6. Activity "Add to plan" buttons can't be invalid either. An activity that's already in the plan for that day shows "Added ✓" and is disabled, so it can't be added twice.
+The age selector and unit switch can't be invalid, because they only offer fixed choices. Activity "Add to my week" buttons can't be invalid either. An activity that's already in the plan for that day shows "Added ✓" and is disabled, so it can't be added twice.
 
 ### 8.5 In use
 
 The data has loaded and the page shows what it worked out from it.
 
-- The status area is empty. Above the cards is one line naming the place and dates, for example "Boston, Massachusetts, United States · Fri Oct 30 – Thu Nov 5". It confirms the geocoder picked the right city.
-- **Seven day cards**, one per entry in `daily.time`. Each shows:
+- The status area is empty. Above the calendar is one line naming the place and dates, for example "Boston, Massachusetts, United States · Fri Oct 30 – Thu Nov 5". It confirms the geocoder picked the right city.
+- **Seven-day calendar**, one day card per entry in `daily.time`. Each shows:
   - Day and date, a weather icon, and a text label from `weather_code` (for example "Partly cloudy")
-  - High and low in °F or °C, and "Rain {n}%"
-  - Holiday tag(s), if that date matches a public holiday or local celebration
-  - **Worked out:** the weather category (7.4), the "Wear" and "Bring" lines (7.6), and 2–3 ranked activities (7.5) for the child's age
-- Changing the age re-ranks the activities in every card right away, with no request.
-- Clicking an activity opens its details (7.7). "Add to plan" saves it and updates "My plan" right away.
-- **My plan** lists the seven forecast days with their added activities and a "Remove" button for each.
-- The city and age are saved to `localStorage` only after a successful search.
+  - High and low in the selected unit, and "Rain {n}%"
+  - Holiday or celebration tag(s), if that date matches one
+  - **Worked out:** the day's featured activity (7.5) for the child's age
+- One day is selected (today, after a search). Selecting another day updates the section below right away.
+- **Ideas for {weekday, month day}**, for the selected day. Everything here is worked out:
+  - Three ranked activity cards (7.5), each with an "Add to my week" button
+  - "What to wear" (7.6)
+  - "Why these activities?" (7.7)
+- Changing the age updates the featured activities, the three ideas, and the explanation right away, with no request.
+- Changing the unit updates every temperature on the page right away, with no request.
+- Clicking an activity title opens its details (7.8). "Add to my week" saves it and updates "My week" right away.
+- **My week** lists the seven forecast days with their added activities and a "Remove" button for each.
+- The city is saved to `localStorage` only after a successful search. Age and unit are saved whenever they change.
 
 ## 9. Technical constraints
 
@@ -237,20 +261,22 @@ The data has loaded and the page shows what it worked out from it.
 ## 10. Acceptance criteria
 
 - [ ] Entering "Boston" shows seven days of Boston weather with highs, lows, rain chance, and conditions.
-- [ ] Changing the age from 2 to 5 changes the activity list without a new weather request.
+- [ ] Today is selected after a search, and clicking another day shows that day's three ideas, clothing, and explanation.
+- [ ] Changing the age from 2 to 5 changes the featured and recommended activities without a new weather request.
+- [ ] Switching °F to °C changes every temperature without a new weather request.
+- [ ] The "Why these activities?" text names the holiday (if any), the weather, and the child's age, and matches what is shown.
 - [ ] A rainy day shows only activities marked for rain, and clothing that includes rain gear.
-- [ ] A day that is a public holiday or a listed celebration shows the holiday's name and a related activity first, when one exists.
+- [ ] A day that is a public holiday or a listed celebration shows the holiday's name on its calendar card, and a related activity is featured, when one exists.
 - [ ] Each activity's details show materials, steps, time, and benefits.
 - [ ] Added activities appear in the weekly plan and are still there after a refresh.
 - [ ] A city that doesn't exist shows the not-found message, not a broken page.
 - [ ] With an empty city field, or one letter, pressing Search sends no request (check the Network tab) and shows the message under the field.
 - [ ] While a search runs, the button says "Searching…" and is disabled.
-- [ ] With DevTools set to Offline, a search shows the weather error and a Try again button, and the saved plan is still visible.
+- [ ] With DevTools set to Offline, a search shows the weather error and a Try again button, and the saved week is still visible.
 - [ ] With `date.nager.at` blocked, the forecast and activities still show, with the holidays note.
 - [ ] The page is usable at 375px wide.
 
 ## 11. Open questions
 
-- Should the parent be able to pick °F or °C instead of it following the country?
 - When a city name matches several places (Portland, OR vs. Portland, ME), is "first result plus showing the full name" enough, or does the parent need to choose?
 - Should there be a way to see more than three ideas for a day?

@@ -2,120 +2,151 @@
 
 Read this before writing any CSS or markup.
 
+**Chosen direction: Storybook** ([design/trial-a.html](design/trial-a.html)), with the softer card corners of Paper planner ([design/trial-b.html](design/trial-b.html)). Both trials and the original mockup ([design/mockup.png](design/mockup.png)) are kept for reference. Where they disagree with this file, this file wins.
+
 ## 1. Feeling
 
-Calm, warm, and easy to use one-handed. Picture a parent holding a toddler and glancing at a phone. It should feel like a tidy paper planner on the kitchen counter, not a kids' app and not a weather dashboard.
+Like a well-made picture book on the kitchen counter: warm, calm, and a little playful, inspired by nature. It is for the parent, not the child, so it's grown-up and elegant, never cartoonish.
 
-- **Warm, not cute.** No cartoon mascots, bubble fonts, or rainbow colors. The parent is the user, not the child.
-- **Quiet, not empty.** Soft colors and plenty of space, but every day card should be packed with useful information.
-- **Glanceable.** Each day should answer "what's the weather, what do we wear, what can we do" in about three seconds.
+- **Warm, not cute.** Cream paper, forest green, autumn accents. No bubble fonts, mascots, or rainbow colors.
+- **Glanceable.** Each day answers "what's the weather, what do we wear, what can we do" in about three seconds.
+- **Made for phones.** Most parents will use it one-handed. The phone layout is designed on its own (section 5), not just the desktop layout squeezed down.
 
 ## 2. Color
 
-Define these as CSS custom properties on `:root`. Use the tokens everywhere; don't write hex values in component styles.
+Defined as CSS custom properties on `:root`. Component styles use the tokens, never raw hex values.
 
-| Token | Light | Use |
+| Token | Value | Use |
 |---|---|---|
-| `--bg` | `#FBF7F1` (warm paper) | Page background |
-| `--surface` | `#FFFFFF` | Cards |
-| `--ink` | `#2E2A26` | Main text |
-| `--ink-soft` | `#6B635B` | Secondary text, labels |
-| `--line` | `#E8E0D5` | Borders, dividers |
-| `--accent` | `#D9784A` (terracotta) | Buttons, selected states, links |
+| `--bg` | `#FBF6EC` | Page background (warm cream) |
+| `--surface` | `#FFFDF8` | Cards |
+| `--tint` | `#F1F3E8` | Soft green panels: art tiles, "What to wear", "Why these activities?" |
+| `--ink` | `#22352C` | Main text (deep green-black) |
+| `--ink-soft` | `#5E6B63` | Secondary text, labels |
+| `--line` | `#ECE3D3` | Borders, dividers |
+| `--accent` | `#2F5A46` | Forest green: buttons, selected day, headings, focus ring |
 | `--accent-ink` | `#FFFFFF` | Text on accent |
-| `--sky` | `#7FA7C9` | Rain, cool weather |
-| `--sun` | `#E8B04B` | Sunny, hot weather |
-| `--leaf` | `#7FA37A` | Nice weather, "added to plan" |
-| `--holiday` | `#B86B8F` | Holiday tags |
+| `--selected` | `#FFF8EC` | Background of the selected day |
+| `--sun` | `#E9A93B` | Sunny/hot weather details |
+| `--sky` | `#7FA7C9` | Rain/cool weather details |
+| `--leaf` | `#6E9A62` | "Added ✓" |
+| `--holiday` | `#D9692B` | Holiday and celebration tags (pumpkin orange) |
 
-Weather and holiday colors are used only for small tags and icons, never for large areas of background. Body text on `--bg` and `--surface` must meet WCAG AA contrast (4.5:1).
+Weather, leaf, and holiday colors are only for small tags and text, never large backgrounds. Body text must meet WCAG AA contrast (4.5:1) on `--bg`, `--surface`, and `--tint`.
 
-Dark mode: optional for version 1. If added, use `@media (prefers-color-scheme: dark)` and redefine the same tokens.
+Dark mode is not part of version 1.
 
 ## 3. Type
 
-- System fonts only. Nothing is loaded from a CDN, including Google Fonts: `font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;`. Apple devices get a rounded, friendly face. Others get their clean system font.
-- Base size 16px. Line height 1.5.
-- Scale: page title 28px / 700, section heading 20px / 700, day name 18px / 700, body 16px / 400, small labels 14px / 600.
-- Temperatures use `font-variant-numeric: tabular-nums` so numbers line up.
-- Sentence case everywhere ("Add to plan", not "Add To Plan" or "ADD TO PLAN").
+System fonts only. Nothing is loaded from a CDN, including Google Fonts.
 
-## 4. Layout
+- **Headings** (`--font-head`): `"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif`. Elegant serif for the page title, section headings, day names, and activity titles.
+- **Body** (`--font-body`): `system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`.
+- Base size 16px, line height 1.5. Headings line height 1.15.
 
-Top to bottom, in one column:
+| Role | Desktop | Phone |
+|---|---|---|
+| Hero title | 56px / 700 | 34px |
+| Section heading (h2) | 30px / 700 | 24px |
+| Activity title (h3) | 21px / 700 | 19px |
+| Day name | 18px / 700 | 16px |
+| Body | 16px | 16px |
+| Labels, meta, tags | 13–14px / 600 | same |
 
-1. **Header** — "Little Days" and a one-line description.
-2. **Controls** — city field with search button, and the age selector, on one row on desktop, stacked on phones.
-3. **This week** — seven day cards.
-4. **My plan** — the saved weekly plan.
+- Temperatures use `font-variant-numeric: tabular-nums`.
+- Sentence case everywhere ("Add to my week"). No all-caps.
 
-Widths:
+## 4. Shape and spacing
 
-- Content max width 960px, centered.
-- Phones (< 640px): day cards stack in one column. 16px side padding.
-- Tablet and up: day cards in a grid, `repeat(auto-fill, minmax(260px, 1fr))`.
-- No horizontal scrolling at any width down to 320px.
+- **Corners** (from Paper planner): cards and panels `--radius: 20px`; inputs, buttons, and art tiles `12px`; tags fully rounded.
+- **Borders:** 1px `--line`. Shadow at most `0 1px 2px rgba(0,0,0,.04)`, on the controls card only.
+- **Spacing** uses a 4px base: 4, 8, 12, 16, 24, 32, 48.
+- Content max width 1040px, centered. Side gutter 16px on phones, 24px from 720px up.
 
-Spacing uses a 4px base: 4, 8, 12, 16, 24, 32, 48. Cards have 16px padding and 12px gaps between items.
+## 5. Layout
 
-## 5. Components
+One column of sections, in the user's order of tasks:
 
-**Day card**
-- Top row: day name and date on the left ("Sat · Nov 1"), weather icon and high/low on the right.
-- Under that: rain chance, and a holiday tag if there is one.
-- "Wear" line, then "Bring" line if any, in `--ink-soft` with a small label.
-- Activity list: 2–3 rows, each with the title and time ("15 min"). The whole row is clickable and opens the details.
-- Card: `--surface`, 1px `--line` border, 12px corner radius, no heavy shadows (at most `0 1px 2px rgba(0,0,0,0.04)`).
+1. **Header**: 🌱 Little Days logo (serif, `--accent`) and a "My week" link that jumps to the plan.
+2. **Hero + controls**: title "Every day holds a little adventure.", one line of description, then the controls card with city + Search, child's age, and the °F / °C switch.
+3. **This week**: place and dates line, status area, then the seven-day strip.
+4. **Ideas for {day}**: three activity cards for the selected day, then "What to wear" and "Why these activities?".
+5. **My week**: the saved plan.
+6. **Footer**: "Weather by Open-Meteo · Holidays by Nager.Date".
 
-**Weather icon**
-- Use emoji (☀️ ⛅ 🌧️ ❄️ ⛈️ 🌫️). No icon library.
+### Desktop (720px and up)
 
-**Tags** (holiday, weather category)
-- Small pill: 14px text, 4px × 8px padding, full radius, tinted background (the token at about 15% opacity) and text in the full color.
+- Controls on one row: city (wide), age, unit switch.
+- Seven-day strip: all seven cards in one row (`grid-auto-flow: column`, min 132px each). It scrolls sideways inside its own container only if the window is too narrow.
+- Ideas: three cards side by side (`repeat(auto-fill, minmax(260px, 1fr))`), with a 120px art tile on top.
+- "What to wear" and "Why these activities?" sit side by side, below the ideas.
+
+### Phone (under 720px): designed on its own
+
+- **Hero** is short: 34px title, description, then controls stacked. City and Search stay on one row; age and unit switch share the next row (age grows, switch keeps its size). The parent reaches the forecast after very little scrolling.
+- **Seven-day strip** becomes a sideways-swiping row of compact day cards (112px wide, `scroll-snap-type: x mandatory`). The edge of the next card peeks in so it's clear the row swipes. It doesn't wrap into a tall grid. The page itself never scrolls sideways.
+- Compact day cards show day, date, icon, high/low, rain %, and the holiday tag. They don't show the condition text or the featured activity's name, only its emoji, to keep them short.
+- **"What to wear" comes first**, directly under the strip and above the ideas. On a phone it's the thing a parent checks while getting out the door.
+- **Ideas** are stacked full-width cards in a row layout: a 72px art tile on the left, then title, meta, and a full-width "Add to my week" button underneath. The description is hidden on phones. It's in the details.
+- "Why these activities?" follows the ideas.
+- **Activity details** open as a bottom sheet: full width, top corners rounded 20px, max height 90vh, scrolls inside.
+- All touch targets are at least 44 × 44px. Spacing between cards is 12px, card padding 16px.
+
+## 6. Components
+
+**Controls card**: `--surface`, 20px radius, 16px padding, the one soft shadow. Labels above fields, 14px / 600. Inputs 44px tall on `--bg` with a `--line` border.
+
+**°F / °C switch**: two radio buttons styled as a segmented control inside a `<fieldset>` with the legend "Temperature". The selected side is `--accent` with `--accent-ink` text.
+
+**Day card** (a `<button>` with `aria-pressed`)
+- Day name (serif), date, weather emoji, high (bold) and low (`--ink-soft`), condition text, "Rain n%".
+- Holiday or celebration: a pumpkin-orange tag inside the card ("🎃 Halloween"). It's part of the card, not a separate banner.
+- Featured activity: under a hairline divider, its emoji and short title.
+- Selected: 2px `--accent` border and `--selected` background. Only one day is selected at a time.
+
+**Activity card**: `--surface`, 20px radius. Art tile (`--tint` background with the activity's emoji), serif title (a button that opens details), meta line "Indoor · 15–20 min · Ages 1–4", one-line description, up to two skill tags in `--ink-soft`, and an "Add to my week" primary button at the bottom.
+
+**What to wear** and **Why these activities?**: `--tint` panels, 20px radius. A heading with an emoji (🧥 / 💡), then a short list or two sentences. "What to wear" is never collapsed or hidden.
+
+**Tags**: pill, 13px / 600, 2px × 10px padding, background is the color at 15% (`color-mix`), text is the full color.
 
 **Buttons**
-- Primary: `--accent` background, `--accent-ink` text, 8px radius, at least 44px tall.
-- Secondary: transparent background, `--accent` text, 1px `--accent` border.
-- Visible focus ring on everything that can be focused: `outline: 2px solid var(--accent); outline-offset: 2px`.
+- Primary: `--accent` background, `--accent-ink` text, 12px radius, at least 44px tall.
+- Secondary: transparent, `--accent` text and border.
+- Added: transparent, `--leaf` text and border, "Added ✓", disabled.
+- Disabled (while searching): 50% opacity, `cursor: not-allowed`.
+- Focus ring on everything that can be focused: `outline: 2px solid var(--accent); outline-offset: 2px`.
 
-**Activity details**
-- Use the native `<dialog>` element. On phones it fills the width; on desktop, max 520px wide.
-- Order: title, age range and time as tags, materials as a list, numbered steps, benefits, then "Add to plan" (primary) and "Close" (secondary).
-- Escape and the Close button both close it.
+**Activity details**: native `<dialog>`, max 520px wide on desktop and a bottom sheet on phones. Order: art tile, title, meta, "What you'll need" in a `--tint` box, numbered steps, "What your child practices", then "Add to my week" (primary, wide) and "Close" (secondary). Escape closes it.
 
-**My plan**
-- Seven rows, one per day. Empty days say "Nothing planned" in `--ink-soft`.
-- Each planned activity shows its title and a "Remove" text button.
-- When an activity is added, the matching row in the day card shows a small ✓ in `--leaf`.
+**My week**: one `--surface` card with seven rows (day + date on the left, items on the right). Empty days say "Nothing planned" in `--ink-soft`. Each item has a "Remove" text button. On phones each row stacks day above items.
 
-**Status area** (empty, loading, error, not-found — see PRD.md section 8)
-- Sits right under the "This week" heading, full width of the content.
-- Plain text in a light card: `--surface`, 1px `--line` border, 12px radius, 16px padding. Never a red banner.
-- One sentence and, if useful, one button (for example **Try again**, styled as secondary).
-- Loading: the same card with the message in `--ink-soft`. No spinner or skeleton cards.
-- Error: the same card with a 4px left border in `--accent`.
+**Status area**: under the "This week" heading. A `--surface` card, 20px radius, 16px padding, one sentence and at most one button. Loading text is `--ink-soft`, with no spinner and no placeholder cards. Error has a 4px left border in `--accent` and a secondary "Try again" button. Never a red banner.
 
-**Field message** (invalid input)
-- Directly under the city field, 14px, `--ink`, with a ⚠︎ before the text. The field border turns `--accent`.
+**Field message** (invalid input): directly under the city row, 14px, `--ink`, starting with "⚠︎ ". The field border turns `--accent`.
 
-**Disabled button** (while searching, or "Added ✓")
-- 50% opacity, `cursor: not-allowed`. "Added ✓" uses `--leaf` text on a transparent background.
+## 7. Imagery
 
-## 6. Motion
+- **Emoji are temporary placeholders** for future illustrations. Each activity has one emoji, shown on a `--tint` tile; weather uses ☀️ 🌤️ ⛅ ☁️ 🌫️ 🌧️ ❄️ ⛈️.
+- Every emoji is `aria-hidden="true"` and always next to text that says the same thing ("Rain 33%", the activity name).
+- Art tiles have a fixed size, so emoji can later be swapped for `<img>` illustrations (local files in `images/`) without changing the layout.
+- No photos, no icon fonts, and no images from outside URLs.
 
-Almost none. A 150ms fade on dialog open and on hover color changes. Nothing bounces or slides. Respect `prefers-reduced-motion` by turning transitions off.
+## 8. Motion
 
-## 7. Accessibility
+Almost none. 150ms fades on hover color and dialog open. Smooth `scroll-snap` on the phone strip. Nothing bounces. All transitions are off under `prefers-reduced-motion`.
 
-- Use real elements: `<button>` for actions, `<label>` for every input, `<h2>`/`<h3>` for sections and days.
-- Touch targets at least 44 × 44px.
-- Don't show weather only with color or emoji; always include text (for example "Rain 70%").
-- The page must work with only a keyboard.
+## 9. Accessibility
 
-## 8. Don't
+- Semantic elements: `<header>`, `<main>`, `<section>` with headings, `<form role="search">`, `<label>` for every input, `<fieldset>`/`<legend>` for the unit switch, `<button>` for every action, `<dialog>` for details.
+- Status area: `role="status"`, `aria-live="polite"`.
+- Weather and holidays never rely on color or emoji alone.
+- Works with only a keyboard. The day strip is a list of buttons in date order.
+
+## 10. Don't
 
 - No gradients, glassmorphism, or big hero images.
 - No web fonts and nothing loaded from a CDN.
 - No CSS framework or component library.
-- No decorative animations.
+- No decorative animation.
 - No all-caps text.
