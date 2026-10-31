@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Little Days</title>
-  <meta name="description" content="Weather-based activity ideas for young children, ages 1–6.">
+  <meta name="description" content="Weather-based activity ideas for young children, ages 2–6.">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,15 +17,27 @@
   <main>
     <div class="hero wrap">
       <h1>Every day holds a little adventure.</h1>
-      <p>Weather-based activity ideas for curious little learners, ages 1–6.</p>
+      <p>Weather-based activity ideas for curious little learners, ages 2–6.</p>
 
       <form id="search-form" class="controls" role="search" novalidate>
-        <label for="city">City</label>
-        <div class="city-row">
-          <input id="city" name="city" type="text" autocomplete="address-level2" placeholder="e.g. Boston" autofocus>
-          <button id="search-button" type="submit">Search</button>
+        <div class="field field-city">
+          <label for="city">City</label>
+          <div class="city-row">
+            <input id="city" name="city" type="text" autocomplete="address-level2" placeholder="e.g. Boston" autofocus>
+            <button id="search-button" type="submit">Search</button>
+          </div>
+          <p id="city-message" class="field-message" hidden></p>
         </div>
-        <p id="city-message" class="field-message" hidden></p>
+        <div class="field">
+          <label for="age">Child's age</label>
+          <select id="age" name="age">
+            <option value="2">2 years old</option>
+            <option value="3" selected>3 years old</option>
+            <option value="4">4 years old</option>
+            <option value="5">5 years old</option>
+            <option value="6">6 years old</option>
+          </select>
+        </div>
       </form>
     </div>
 
@@ -33,14 +45,28 @@
       <div class="section-head">
         <h2 id="week-heading">This week</h2>
         <p id="place-line" hidden></p>
+        <p id="holiday-note" class="note" hidden>Public holidays couldn't be loaded, so they aren't shown.</p>
       </div>
       <div id="status" class="status" role="status" aria-live="polite"></div>
       <ol id="week" class="week" hidden></ol>
     </section>
+
+    <section id="ideas" class="wrap" aria-labelledby="ideas-heading" hidden>
+      <div class="section-head">
+        <h2 id="ideas-heading"></h2>
+        <p id="ideas-subtitle"></p>
+      </div>
+      <div id="warnings" class="warnings"></div>
+      <div id="idea-list" class="ideas"></div>
+    </section>
   </main>
 
-  <footer class="wrap">Weather by Open-Meteo</footer>
+  <footer class="wrap">
+    Weather by Open-Meteo · Holidays by Nager.Date · Activities and photos from RootMap
+  </footer>
 
+  <script src="activities.js"></script>
+  <script src="recommend.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
