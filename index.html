@@ -11,6 +11,7 @@
   <header class="site-header">
     <div class="wrap">
       <a class="logo" href="./"><span aria-hidden="true">🌱</span> Little Days</a>
+      <nav><a href="#my-week">My week</a></nav>
     </div>
   </header>
 
@@ -38,6 +39,13 @@
             <option value="6">6 years old</option>
           </select>
         </div>
+        <fieldset class="field">
+          <legend>Temperature</legend>
+          <div class="segmented">
+            <label><input type="radio" name="unit" value="F" checked><span>°F</span></label>
+            <label><input type="radio" name="unit" value="C"><span>°C</span></label>
+          </div>
+        </fieldset>
       </form>
     </div>
 
@@ -56,8 +64,19 @@
         <h2 id="ideas-heading"></h2>
         <p id="ideas-subtitle"></p>
       </div>
-      <div id="warnings" class="warnings"></div>
-      <div id="idea-list" class="ideas"></div>
+      <div class="day-layout">
+        <div id="warnings" class="warnings"></div>
+        <div id="wear" class="panel panel-wear"></div>
+        <div id="idea-list" class="ideas"></div>
+        <div id="why" class="panel panel-why"></div>
+      </div>
+    </section>
+
+    <section id="my-week" class="wrap" aria-labelledby="plan-heading">
+      <div class="section-head">
+        <h2 id="plan-heading" tabindex="-1">My week</h2>
+      </div>
+      <div id="plan"></div>
     </section>
   </main>
 
@@ -65,9 +84,22 @@
     Weather by Open-Meteo · Holidays by Nager.Date · Activities and photos from RootMap
   </footer>
 
+  <dialog id="details" aria-labelledby="details-title">
+    <div id="details-body"></div>
+    <p id="details-status" class="visually-hidden" role="status"></p>
+    <div class="details-actions">
+      <button id="details-add" type="button"></button>
+      <button id="details-close" type="button" class="button-secondary">Close</button>
+    </div>
+  </dialog>
+
+  <p id="announce" class="visually-hidden" role="status" aria-live="polite"></p>
+
   <script src="activities.js"></script>
   <script src="celebrations.js"></script>
   <script src="recommend.js"></script>
+  <script src="advice.js"></script>
+  <script src="plan.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

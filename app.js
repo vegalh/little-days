@@ -7,6 +7,7 @@ const cityInput = document.querySelector("#city");
 const cityMessage = document.querySelector("#city-message");
 const searchButton = document.querySelector("#search-button");
 const ageSelect = document.querySelector("#age");
+const unitInputs = document.querySelectorAll("input[name=unit]");
 const statusArea = document.querySelector("#status");
 const placeLine = document.querySelector("#place-line");
 const holidayNote = document.querySelector("#holiday-note");
@@ -15,7 +16,16 @@ const ideasSection = document.querySelector("#ideas");
 const ideasHeading = document.querySelector("#ideas-heading");
 const ideasSubtitle = document.querySelector("#ideas-subtitle");
 const warningsBox = document.querySelector("#warnings");
+const wearBox = document.querySelector("#wear");
 const ideaList = document.querySelector("#idea-list");
+const whyBox = document.querySelector("#why");
+const planBox = document.querySelector("#plan");
+const planHeading = document.querySelector("#plan-heading");
+const dialog = document.querySelector("#details");
+const dialogBody = document.querySelector("#details-body");
+const dialogAdd = document.querySelector("#details-add");
+const dialogStatus = document.querySelector("#details-status");
+const announcer = document.querySelector("#announce");
 
 // WMO weather codes used by Open-Meteo: [emoji, label]
 const WEATHER = {
@@ -66,9 +76,22 @@ const WARNINGS = {
   fog: () => "Fog is forecast. Stay close together near roads.",
 };
 
-// The last successful search: { place, days, holidaysLoaded }
+// localStorage can be missing or blocked; the page then works without saving.
+let storage;
+try {
+  storage = window.localStorage;
+} catch {
+  storage = { getItem: () => null, setItem: () => {} };
+}
+
+const ACTIVITY_IDS = ACTIVITIES.map((a) => a.id);
+const settings = loadSettings(storage); // { city, age, unit }
+let plan = loadPlan(storage, isoToday(), ACTIVITY_IDS);
+// The last successful search: { place, days, holidayProblem }
 let current = null;
 let selectedDay = 0;
+// The button that opened the details dialog, to return focus to it.
+let dialogOpener = null;
 
 // Returns the first matching place, or null if the geocoder found nothing.
 async function findCity(name) {
@@ -88,8 +111,8 @@ async function findCity(name) {
 // Returns the daily arrays: time, temperature_2m_max, temperature_2m_min, ...
 async function getForecast(place) {
   const url = `${FORECAST_URL}?latitude=${place.latitude}&longitude=${place.longitude}` +
-    "&daily=temperature_2m_max,temperature_2m_min,apparent_temperature_max," +
-    "precipitation_probability_max,weather_code,wind_gusts_10m_max" +
+    "&daily=temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min," +
+    "precipitation_probability_max,weather_code,wind_gusts_10m_max,uv_index_max" +
     "&timezone=auto";
   const response = await fetch(url);
   if (!response.ok) {
@@ -99,22 +122,27 @@ async function getForecast(place) {
   return data.daily;
 }
 
-// Returns a list of { date, name, ... }, or null if holidays couldn't be loaded.
-// A failure here never stops the forecast from showing.
+// Returns { holidays: [{ date, name, ... }], problem }, where problem is null,
+// "unsupported" (Nager.Date has no data for the country) or "failed".
+// A problem here never stops the forecast from showing.
 async function getHolidays(countryCode, years) {
   try {
     const lists = await Promise.all(years.map(async (year) => {
       const response = await fetch(`${HOLIDAYS_URL}/${year}/${countryCode}`);
-      // Nager.Date answers 404 for countries it doesn't cover.
+      // Nager.Date answers 204 (no content) or 404 for countries it doesn't cover.
+      if (response.status === 204 || response.status === 404) {
+        return null;
+      }
       if (!response.ok) {
         throw new Error(`Holidays failed with status ${response.status}`);
       }
       return response.json();
     }));
-    return lists.flat();
+    if (lists.includes(null)) return { holidays: [], problem: "unsupported" };
+    return { holidays: lists.flat(), problem: null };
   } catch (error) {
     console.error(error);
-    return null;
+    return { holidays: [], problem: "failed" };
   }
 }
 
@@ -130,8 +158,10 @@ async function search(city) {
       getForecast(place),
       getHolidays(place.country_code, yearsThisWeek()),
     ]);
-    current = { place, days: buildDays(place, daily, holidays || []), holidaysLoaded: holidays !== null };
+    current = { place, days: buildDays(place, daily, holidays.holidays), holidayProblem: holidays.problem };
     selectedDay = 0;
+    settings.city = city;
+    saveSettings(storage, settings);
     statusArea.className = "status";
     statusArea.innerHTML = "";
     render();
@@ -144,15 +174,19 @@ async function search(city) {
   }
 }
 
-// One object per forecast day, with what recommend.js needs.
+// One object per forecast day, with what recommend.js and advice.js need.
 function buildDays(place, daily, holidays) {
   return daily.time.map((date, i) => {
     const forecast = {
       code: daily.weather_code[i],
       feelsMax: daily.apparent_temperature_max[i],
+      feelsMin: daily.apparent_temperature_min[i],
       gusts: daily.wind_gusts_10m_max[i],
       rainChance: daily.precipitation_probability_max[i],
+      uv: daily.uv_index_max[i],
     };
+    const publicHolidays = holidays.filter((h) => h.date === date).map((h) => h.name);
+    const celebrations = celebrationsOn(date, place.country_code);
     return {
       date,
       high: daily.temperature_2m_max[i],
@@ -160,15 +194,10 @@ function buildDays(place, daily, holidays) {
       ...forecast,
       weather: weatherFor(forecast),
       season: seasonFor(date, place.latitude),
-      holidays: holidaysOn(date, holidays, place.country_code),
+      celebrations,
+      holidays: [...new Set([...publicHolidays, ...celebrations])],
     };
   });
-}
-
-// Public holidays from Nager.Date plus celebrations observed in this country.
-function holidaysOn(date, holidays, countryCode) {
-  const names = holidays.filter((h) => h.date === date).map((h) => h.name);
-  return [...new Set([...names, ...celebrationsOn(date, countryCode)])];
 }
 
 form.addEventListener("submit", (event) => {
@@ -185,10 +214,20 @@ form.addEventListener("submit", (event) => {
 
 cityInput.addEventListener("input", clearInvalid);
 
-// Changing the age or the day re-renders; neither sends a request.
+// Changing the age, unit or day re-renders; none of them sends a request.
 ageSelect.addEventListener("change", () => {
+  settings.age = Number(ageSelect.value);
+  saveSettings(storage, settings);
   if (current) render();
 });
+
+for (const input of unitInputs) {
+  input.addEventListener("change", () => {
+    settings.unit = input.value;
+    saveSettings(storage, settings);
+    if (current) render();
+  });
+}
 
 week.addEventListener("click", (event) => {
   const button = event.target.closest(".day");
@@ -198,12 +237,141 @@ week.addEventListener("click", (event) => {
   week.querySelector(`[data-index="${selectedDay}"]`).focus();
 });
 
+// Buttons inside the ideas and My week are re-drawn often, so one listener handles them.
+document.addEventListener("click", (event) => {
+  const open = event.target.closest("[data-open]");
+  const add = event.target.closest("[data-add]");
+  const remove = event.target.closest("[data-remove]");
+  if (open) openDetails(open.dataset.open, open.dataset.date, open);
+  if (add) addActivity(add.dataset.add, add.dataset.date);
+  if (remove) removeActivity(remove.dataset.remove, remove.dataset.date);
+});
+
 // A photo that fails to load becomes a plain tile instead of a broken image.
 document.addEventListener("error", (event) => {
   if (event.target.tagName !== "IMG") return;
   event.target.closest(".art").classList.add("art-missing");
   event.target.remove();
 }, true);
+
+// --- My week ---
+
+function addActivity(id, date) {
+  plan = addToPlan(plan, date, id);
+  savePlan(storage, plan);
+  if (current) render();
+  else renderPlan();
+  announce(`Added ${activityById(id).rootmap.title} to ${formatDay(date)}.`);
+  // The card was re-drawn, so put focus back on the same activity's title.
+  document.querySelector(`#idea-list [data-open="${id}"][data-date="${date}"]`)?.focus();
+}
+
+function removeActivity(id, date) {
+  plan = removeFromPlan(plan, date, id);
+  savePlan(storage, plan);
+  if (current) render();
+  else renderPlan();
+  announce(`Removed ${activityById(id).rootmap.title} from ${formatDay(date)}.`);
+  planHeading.focus();
+}
+
+function announce(text) {
+  announcer.textContent = "";
+  setTimeout(() => { announcer.textContent = text; }, 50);
+}
+
+// Forecast days plus any saved dates from today on.
+function planDates() {
+  const dates = new Set(Object.keys(plan));
+  if (current) current.days.forEach((d) => dates.add(d.date));
+  return [...dates].filter((d) => d >= isoToday()).sort();
+}
+
+function renderPlan() {
+  const dates = planDates();
+  if (!dates.length) {
+    planBox.innerHTML = `<p class="status">Your week is empty. Pick activities from the days above to add them here.</p>`;
+    return;
+  }
+  planBox.innerHTML = `<ul class="plan">${dates.map((date) => {
+    const ids = plan[date] || [];
+    const items = ids.map((id) => {
+      const title = escapeHtml(activityById(id).rootmap.title);
+      return `
+        <li>
+          <button type="button" class="link-button" data-open="${id}" data-date="${date}">${title}</button>
+          <button type="button" class="link-button remove-button" data-remove="${id}" data-date="${date}"
+            aria-label="Remove ${title} from ${formatDay(date)}">Remove</button>
+        </li>`;
+    }).join("");
+    return `
+      <li>
+        <h3 class="plan-day">${formatDay(date)}</h3>
+        ${ids.length ? `<ul class="plan-items">${items}</ul>` : `<p class="plan-empty">Nothing planned</p>`}
+      </li>`;
+  }).join("")}</ul>`;
+}
+
+// --- Activity details ---
+
+function openDetails(id, date, opener) {
+  const details = activityDetails(activityById(id));
+  dialogOpener = { id, date, element: opener };
+  dialogBody.innerHTML = `
+    ${photoHtml(activityById(id), "(max-width: 719px) 100vw, 520px")}
+    <h2 id="details-title" tabindex="-1">${escapeHtml(details.title)}</h2>
+    <p class="meta">Ages ${escapeHtml(details.ages.replace(" years", ""))} · ${details.duration}</p>
+    <p>${escapeHtml(details.description)}</p>
+    <div class="details-box">
+      <h3>What you'll need</h3>
+      ${details.materials.length
+        ? `<ul>${details.materials.map((m) => `<li>${escapeHtml(m)}</li>`).join("")}</ul>`
+        : `<p>Nothing to prepare.</p>`}
+    </div>
+    <h3>Steps</h3>
+    <ol>${details.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ol>
+    <h3>What your child practices</h3>
+    <ul>${details.practices.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ul>
+    ${details.safety ? `<h3>Safety</h3><p>${escapeHtml(details.safety)}</p>` : ""}
+    <p class="source-note">From the RootMap activity collection.</p>`;
+  dialogAdd.dataset.id = id;
+  dialogAdd.dataset.date = date;
+  dialogStatus.textContent = "";
+  updateDialogAdd();
+  dialog.showModal();
+  document.querySelector("#details-title").focus();
+}
+
+function updateDialogAdd() {
+  const { id, date } = dialogAdd.dataset;
+  const added = isPlanned(plan, date, id);
+  dialogAdd.disabled = added;
+  dialogAdd.textContent = added ? "Added ✓" : `Add to ${formatDay(date)}`;
+  dialogAdd.classList.toggle("button-added", added);
+}
+
+dialogAdd.addEventListener("click", () => {
+  const { id, date } = dialogAdd.dataset;
+  plan = addToPlan(plan, date, id);
+  savePlan(storage, plan);
+  if (current) render();
+  else renderPlan();
+  updateDialogAdd();
+  dialogStatus.textContent = `Added to ${formatDay(date)}.`;
+  document.querySelector("#details-close").focus();
+});
+
+document.querySelector("#details-close").addEventListener("click", () => dialog.close());
+
+// Escape closes the dialog too (built into <dialog>). Either way, focus goes back
+// to the button that opened it, or the same button after a re-render.
+dialog.addEventListener("close", () => {
+  if (!dialogOpener) return;
+  const { id, date, element } = dialogOpener;
+  const target = element.isConnected ? element : document.querySelector(`[data-open="${id}"][data-date="${date}"]`);
+  (target || planHeading).focus();
+  dialogOpener = null;
+});
 
 // --- Page states (PRD.md section 8) ---
 
@@ -216,11 +384,13 @@ function showStatus(className, text) {
 }
 
 function clearWeek() {
+  current = null;
   week.hidden = true;
   week.innerHTML = "";
   placeLine.hidden = true;
   holidayNote.hidden = true;
   ideasSection.hidden = true;
+  renderPlan();
 }
 
 function showEmpty() {
@@ -266,22 +436,26 @@ function clearInvalid() {
 // --- In use ---
 
 function render() {
-  const age = Number(ageSelect.value);
-  const plan = planWeek(current.days, ACTIVITIES, age);
-  renderWeek(plan);
-  renderIdeas(current.days[selectedDay], plan[selectedDay], age);
+  const age = settings.age;
+  const weekPlan = planWeek(current.days, ACTIVITIES, age);
+  renderWeek(weekPlan);
+  renderIdeas(current.days[selectedDay], weekPlan[selectedDay], age);
+  renderPlan();
 }
 
-function renderWeek(plan) {
+function renderWeek(weekPlan) {
   const { place, days } = current;
   const name = [place.name, place.admin1, place.country].filter(Boolean).join(", ");
   placeLine.textContent = `${name} · ${formatDay(days[0].date)} – ${formatDay(days[days.length - 1].date)}`;
   placeLine.hidden = false;
-  holidayNote.hidden = current.holidaysLoaded;
+  holidayNote.textContent = current.holidayProblem === "unsupported"
+    ? "Nager.Date doesn't list public holidays for this country, so none are shown."
+    : "Public holidays couldn't be loaded, so they aren't shown.";
+  holidayNote.hidden = !current.holidayProblem;
 
   week.innerHTML = days.map((day, i) => {
     const [icon, label] = WEATHER[day.code] || ["🌡️", "Unknown"];
-    const featured = plan[i][0];
+    const featured = weekPlan[i][0];
     const date = toDate(day.date);
     return `
       <li>
@@ -321,28 +495,48 @@ function renderIdeas(day, ideas, age) {
     <p class="warnings-footnote">These ideas use the daily forecast for the whole area. Check the weather before you go out, and come inside if it changes.</p>`;
   warningsBox.classList.toggle("has-warnings", lines.length > 0);
 
+  const wear = whatToWear(day);
+  wearBox.innerHTML = `
+    <h3><span aria-hidden="true">🧥</span> What to wear</h3>
+    ${wear.wear.length ? `<ul>${wear.wear.map((w) => `<li>${w}</li>`).join("")}</ul>` : ""}
+    ${wear.bring.length ? `<p class="panel-label">Bring</p><ul>${wear.bring.map((b) => `<li>${b}</li>`).join("")}</ul>` : ""}
+    ${wear.notes.map((n) => `<p>${n}</p>`).join("")}
+    <p class="panel-footnote">These tips are for comfort. They don't make outdoor play safe in bad weather.</p>`;
+
   ideaList.innerHTML = ideas.length
-    ? ideas.map(ideaHtml).join("")
+    ? ideas.map((idea) => ideaHtml(idea, day.date)).join("")
     : `<p class="status">No ideas for this day yet.</p>`;
+
+  const why = explainDay(day, label, ideas, age, settings.unit);
+  whyBox.innerHTML = `
+    <h3><span aria-hidden="true">💡</span> Why these activities?</h3>
+    <p>${why.map(escapeHtml).join(" ")}</p>`;
+  whyBox.hidden = why.length === 0;
+
   ideasSection.hidden = false;
 }
 
-function ideaHtml({ activity, outside, holiday }) {
+function ideaHtml({ activity, outside, holiday }, date) {
   const original = activity.rootmap;
   const meta = activity.littleDays;
   const where = meta.place === "outdoor" ? "Outdoor"
     : meta.place === "indoor" || !outside ? "Indoor"
     : "Outdoor or indoor";
+  const added = isPlanned(plan, date, activity.id);
+  const title = escapeHtml(original.title);
   return `
     <article class="idea">
       ${photoHtml(activity, "(max-width: 719px) 96px, 320px")}
       <div class="idea-body">
-        <h3>${escapeHtml(original.title)}</h3>
+        <h3><button type="button" class="idea-title" data-open="${activity.id}" data-date="${date}">${title}</button></h3>
         <p class="meta">${where} · ${original.minutes} min · Ages ${meta.minAge}–${meta.maxAge}</p>
         ${holiday ? `<p><span class="tag tag-holiday">${escapeHtml(meta.holidays[0])}-inspired idea</span></p>` : ""}
         <p class="idea-description">${escapeHtml(original.description)}</p>
         <ul class="tags">${original.domains.slice(0, 3).map((d) => `<li class="tag tag-soft">${escapeHtml(d)}</li>`).join("")}</ul>
         ${original.safety ? `<p class="safety"><strong>Safety:</strong> ${escapeHtml(original.safety)}</p>` : ""}
+        ${added
+          ? `<button type="button" class="button-added" disabled>Added ✓</button>`
+          : `<button type="button" data-add="${activity.id}" data-date="${date}" aria-label="Add ${title} to my week">Add to my week</button>`}
       </div>
     </article>`;
 }
@@ -363,6 +557,18 @@ function photoHtml(activity, sizes) {
 
 // --- Helpers ---
 
+function activityById(id) {
+  return ACTIVITIES.find((a) => a.id === id);
+}
+
+function temp(celsius) {
+  return formatTemp(celsius, settings.unit);
+}
+
+function wind(kmh) {
+  return formatWind(kmh, settings.unit);
+}
+
 // "2026-10-30" alone is read as UTC midnight, which is the day before in the US.
 // Adding a time makes it local midnight.
 function toDate(isoDate) {
@@ -373,13 +579,10 @@ function formatDay(isoDate) {
   return toDate(isoDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
-// The forecast is in °C and km/h; the page shows °F and mph until the unit switch is built.
-function temp(celsius) {
-  return `${Math.round(celsius * 9 / 5 + 32)}°`;
-}
-
-function wind(kmh) {
-  return `${Math.round(kmh * 0.621)} mph`;
+// Today's date in the visitor's time zone, as YYYY-MM-DD.
+function isoToday() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 // The years this week's dates fall in (two in the last days of December).
@@ -394,4 +597,15 @@ function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-showEmpty();
+// --- Start ---
+
+ageSelect.value = String(settings.age);
+for (const input of unitInputs) input.checked = input.value === settings.unit;
+savePlan(storage, plan); // keep the cleaned-up plan
+renderPlan();
+if (settings.city) {
+  cityInput.value = settings.city;
+  search(settings.city);
+} else {
+  showEmpty();
+}
