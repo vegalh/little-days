@@ -30,9 +30,10 @@ Defined as CSS custom properties on `:root`. Component styles use the tokens, ne
 | `--sun` | `#E9A93B` | Sunny/hot weather details |
 | `--sky` | `#7FA7C9` | Rain/cool weather details |
 | `--leaf` | `#6E9A62` | "Added ✓" |
-| `--holiday` | `#D9692B` | Holiday and celebration tags (pumpkin orange) |
+| `--holiday` | `#96421A` | Holiday and celebration tags, holiday-inspired label (deep pumpkin; darkened from `#D9692B` to pass AA on its tint) |
+| `--warning` | `#7A4F00` | Weather warning icons, "Indoor day" tag |
 
-Weather, leaf, and holiday colors are only for small tags and text, never large backgrounds. Body text must meet WCAG AA contrast (4.5:1) on `--bg`, `--surface`, and `--tint`.
+Weather, leaf, holiday, and warning colors are only for small tags and text, never large backgrounds. Body text must meet WCAG AA contrast (4.5:1) on `--bg`, `--surface`, and `--tint`.
 
 Dark mode is not part of version 1.
 
@@ -85,9 +86,9 @@ One column of sections, in the user's order of tasks:
 
 - **Hero** is short: 34px title, description, then controls stacked. City and Search stay on one row; age and unit switch share the next row (age grows, switch keeps its size). The parent reaches the forecast after very little scrolling.
 - **Seven-day strip** becomes a sideways-swiping row of compact day cards (112px wide, `scroll-snap-type: x mandatory`). The edge of the next card peeks in so it's clear the row swipes. It doesn't wrap into a tall grid. The page itself never scrolls sideways.
-- Compact day cards show day, date, icon, high/low, rain %, and the holiday tag. They don't show the condition text or the featured activity's name, only its emoji, to keep them short.
+- Compact day cards show day, date, icon, high/low, rain %, the holiday and "Indoor day" tags, and the featured activity's photo. They don't show the condition text or the featured activity's name, to keep them short.
 - **"What to wear" comes first**, directly under the strip and above the ideas. On a phone it's the thing a parent checks while getting out the door.
-- **Ideas** are stacked full-width cards in a row layout: a 72px art tile on the left, then title, meta, and a full-width "Add to my week" button underneath. The description is hidden on phones. It's in the details.
+- **Ideas** are stacked full-width cards in a row layout: a 96px photo on the left, then title, meta, description, tags and safety note. (Once the details dialog exists, the description can move there on phones.)
 - "Why these activities?" follows the ideas.
 - **Activity details** open as a bottom sheet: full width, top corners rounded 20px, max height 90vh, scrolls inside.
 - All touch targets are at least 44 × 44px. Spacing between cards is 12px, card padding 16px.
@@ -100,11 +101,14 @@ One column of sections, in the user's order of tasks:
 
 **Day card** (a `<button>` with `aria-pressed`)
 - Day name (serif), date, weather emoji, high (bold) and low (`--ink-soft`), condition text, "Rain n%".
-- Holiday or celebration: a pumpkin-orange tag inside the card ("🎃 Halloween"). It's part of the card, not a separate banner.
-- Featured activity: under a hairline divider, its emoji and short title.
+- Holiday or celebration: a pumpkin tag inside the card ("Halloween"). It's part of the card, not a separate banner.
+- Hazard day: an "Indoor day" tag in `--warning`.
+- Featured activity: its photo (4:3 tile) and title at the bottom of the card, title clamped to two lines so photos line up across the week.
 - Selected: 2px `--accent` border and `--selected` background. Only one day is selected at a time.
 
-**Activity card**: `--surface`, 20px radius. Art tile (`--tint` background with the activity's emoji), serif title (a button that opens details), meta line "Indoor · 15–20 min · Ages 1–4", one-line description, up to two skill tags in `--ink-soft`, and an "Add to my week" primary button at the bottom.
+**Activity card**: `--surface`, 20px radius. Photo (4:3 tile), serif title (later a button that opens details), meta line "Indoor · 15 min · Ages 2–3", the holiday-inspired label when it applies ("Halloween-inspired idea", holiday tag style), the RootMap description, up to three domain tags in `--ink-soft`, the RootMap safety note in 14px `--ink-soft` with "Safety:" in bold, and later an "Add to my week" primary button at the bottom.
+
+**Weather warnings**: a `--tint` panel, 20px radius, directly above the three ideas. One line per warning, each starting with "⚠︎" in `--warning`, then the forecast reminder in 14px `--ink-soft`. On a clear day only the reminder shows. Warnings are plain and calm, never red or alarming.
 
 **What to wear** and **Why these activities?**: `--tint` panels, 20px radius. A heading with an emoji (🧥 / 💡), then a short list or two sentences. "What to wear" is never collapsed or hidden.
 
@@ -127,10 +131,12 @@ One column of sections, in the user's order of tasks:
 
 ## 7. Imagery
 
-- **Emoji are temporary placeholders** for future illustrations. Each activity has one emoji, shown on a `--tint` tile; weather uses ☀️ 🌤️ ⛅ ☁️ 🌫️ 🌧️ ❄️ ⛈️.
-- Every emoji is `aria-hidden="true"` and always next to text that says the same thing ("Rain 33%", the activity name).
-- Art tiles have a fixed size, so emoji can later be swapped for `<img>` illustrations (local files in `images/`) without changing the layout.
-- No photos, no icon fonts, and no images from outside URLs.
+- **Activity photos** are the original RootMap photos, copied into `images/activities/` as WebP, 480 and 960 pixels wide. They're real photos of children doing the activity, which suits the warm, grown-up feel better than illustrations.
+- Shown in a fixed 4:3 frame (`aspect-ratio: 4 / 3; object-fit: cover`) with 12px corners, so photos of different shapes line up.
+- Every `<img>` has `srcset` (480w, 960w), `sizes`, `width`/`height` (no layout shift), `loading="lazy"` and `decoding="async"`. `alt=""`, because the title right next to it says what it shows.
+- **Missing photo:** a plain `--tint` tile with the title's first letter in the serif face at 50% opacity. Never a broken-image icon.
+- **Weather** still uses emoji (☀️ 🌤️ ⛅ ☁️ 🌫️ 🌧️ ❄️ ⛈️), `aria-hidden="true"`, always next to text that says the same thing.
+- No icon fonts and no images from outside URLs.
 
 ## 8. Motion
 

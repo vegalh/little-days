@@ -28,10 +28,14 @@ That means:
 ## Project structure
 
 ```
-index.html      the page
-style.css       all styles
-app.js          fetching, combining data, rendering, localStorage
-activities.js   the hand-written activity list and local celebrations
+index.html         the page
+style.css          all styles
+app.js             fetching, combining data, rendering (uses the two files below)
+recommend.js       weather conditions, seasons, and activity picking; no page code, so tests can run it
+activities.js      the 37 RootMap activities and local celebrations (generated once, see below)
+images/activities/ WebP copies of the RootMap activity photos
+tests/             Node tests for recommend.js: node --test tests/recommend.test.js
+design/            mockup and trial pages (reference only)
 ```
 
 Don't add files beyond these without asking. The one exception is `api/`, described below.
@@ -67,7 +71,10 @@ If a future feature ever needs an API key:
 
 ## Data and storage
 
-- Activities and local celebrations live in `activities.js` as plain arrays of objects, in the shape PRD.md section 7.5 describes.
+- Activities and local celebrations live in `activities.js`, in the shape PRD.md section 7.5 describes.
+- Every activity comes from RootMap. Don't write new activities or change anything inside an entry's `rootmap` part: it is the original text, copied from RootMap at the commit named at the top of the file. Little Days additions go only in `littleDays`.
+- Never present a Little Days judgement (place, weather, season, holiday tag) as if it were RootMap's. Holiday tags are shown as "holiday-inspired".
+- Never change the RootMapMVP repository.
 - Save the city, child's age, and weekly plan in `localStorage` only. No cookies, no backend, no database.
 - Wrap `localStorage` reads and writes in `try/catch` so the page still works if storage is blocked.
 
@@ -85,6 +92,8 @@ Use semantic HTML: `<header>`, `<main>`, `<section>` with headings, `<form>` for
 
 - Commit directly to `main`. No branches unless I ask for one.
 - Make small commits, each with a clear message saying what changed.
+- After a change to `recommend.js` or `activities.js`, run `node --test tests/recommend.test.js`.
 - After a change, open `index.html` in a browser (or a local static server) and check it works, including at phone width. Say what you checked.
+- The page must never say outdoor play is "safe". Weather advice stays conservative (PRD.md 7.4).
 - If something is broken or you skipped a step, say so plainly.
 - Don't commit, push, open a pull request, or deploy unless I ask.
