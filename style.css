@@ -1,0 +1,260 @@
+:root {
+  --bg: #FBF6EC;
+  --surface: #FFFDF8;
+  --tint: #F1F3E8;
+  --ink: #22352C;
+  --ink-soft: #5E6B63;
+  --line: #ECE3D3;
+  --accent: #2F5A46;
+  --accent-ink: #FFFFFF;
+  --sky: #7FA7C9;
+  --font-head: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius: 20px;
+  --radius-small: 12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 var(--font-body);
+}
+
+h1, h2, h3 {
+  margin: 0;
+  font-family: var(--font-head);
+  line-height: 1.15;
+}
+
+.wrap {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Read by screen readers, not shown. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Header */
+
+.site-header .wrap { padding-block: 16px; }
+
+.logo {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* Hero and search */
+
+.hero { padding-block: 24px 32px; }
+
+.hero h1 {
+  max-width: 12ch;
+  font-size: 56px;
+  color: var(--accent);
+}
+
+.hero > p {
+  max-width: 40ch;
+  margin: 12px 0 24px;
+  color: var(--ink-soft);
+}
+
+.controls {
+  max-width: 560px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
+}
+
+.controls label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.city-row {
+  display: flex;
+  gap: 8px;
+}
+
+input[type=text] {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+}
+
+input[aria-invalid=true] { border-color: var(--accent); }
+
+.field-message {
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+
+button {
+  min-height: 44px;
+  padding: 0 18px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-small);
+  cursor: pointer;
+  transition: opacity 150ms;
+}
+
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.button-secondary {
+  color: var(--accent);
+  background: transparent;
+}
+
+/* Sections */
+
+section { padding-block: 32px; }
+
+.section-head { margin-bottom: 16px; }
+.section-head h2 { font-size: 30px; }
+
+.section-head p {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+}
+
+/* Status area */
+
+.status {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.status:empty { display: none; }
+.status p { margin: 0; }
+.status.loading p { color: var(--ink-soft); }
+.status.error { border-left: 4px solid var(--accent); }
+.status.error button { margin-top: 12px; }
+
+/* Seven-day strip */
+
+.week {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(132px, 1fr);
+  gap: 10px;
+  margin: 0;
+  padding: 4px 2px 12px;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+
+.day {
+  position: relative; /* keeps .visually-hidden inside the scrolling strip */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  height: 100%;
+  padding: 14px 10px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  scroll-snap-align: start;
+}
+
+.day-name {
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.day-date,
+.day-condition,
+.day-rain {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.day-icon {
+  margin-top: 4px;
+  font-size: 34px;
+  line-height: 1.2;
+}
+
+.day-temps {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.day-low {
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+footer {
+  padding-block: 32px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+/* Phone */
+
+@media (max-width: 719px) {
+  .wrap { padding: 0 16px; }
+  .hero { padding-block: 8px 24px; }
+  .hero h1 { font-size: 34px; }
+  .hero > p { margin: 8px 0 16px; }
+  section { padding-block: 24px; }
+  .section-head h2 { font-size: 24px; }
+
+  /* Swipeable row; the next card peeks in at the edge. */
+  .week {
+    grid-auto-columns: 112px;
+    margin-right: -16px;
+    padding-right: 16px;
+  }
+  .day { padding: 12px 8px; }
+  .day-name { font-size: 16px; }
+  .day-condition { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
