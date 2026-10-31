@@ -1,4 +1,4 @@
-// Run with: node --test tests/recommend.test.js
+// Run with: node --test
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
