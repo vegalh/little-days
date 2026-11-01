@@ -69,7 +69,7 @@ System fonts only. Nothing is loaded from a CDN, including Google Fonts.
 One column of sections, in the user's order of tasks:
 
 1. **Header**: 🌱 Little Days logo (serif, `--accent`) and a "My week" link that jumps to the plan.
-2. **Hero + controls**: title "Every day holds a little adventure.", one line of description, then the controls card with city + Search, child's age, and the °F / °C switch.
+2. **Hero + controls**: title "Every day holds a little adventure.", one line of description, then the controls card with city + Search and the °F / °C switch.
 3. **This week**: place and dates line, status area, then the seven-day strip.
 4. **Ideas for {day}**: three activity cards for the selected day, then "What to wear" and "Why these activities?".
 5. **My week**: the saved plan.
@@ -77,14 +77,14 @@ One column of sections, in the user's order of tasks:
 
 ### Desktop (720px and up)
 
-- Controls on one row: city (wide), age, unit switch.
+- Controls on one row: city (wide), unit switch.
 - Seven-day strip: all seven cards in one row (`grid-auto-flow: column`, min 132px each). It scrolls sideways inside its own container only if the window is too narrow.
 - Ideas: three cards side by side (`repeat(auto-fill, minmax(260px, 1fr))`), with a 120px art tile on top.
 - "What to wear" and "Why these activities?" sit side by side, below the ideas.
 
 ### Phone (under 720px): designed on its own
 
-- **Hero** is short: 34px title, description, then controls stacked. City and Search stay on one row; age and unit switch share the next row (age grows, switch keeps its size). The parent reaches the forecast after very little scrolling.
+- **Hero** is short: 34px title, description, then controls stacked. City and Search stay on one row; the unit switch sits on the next row. The parent reaches the forecast after very little scrolling.
 - **Seven-day strip** becomes a sideways-swiping row of compact day cards (112px wide, `scroll-snap-type: x mandatory`). The edge of the next card peeks in so it's clear the row swipes. It doesn't wrap into a tall grid. The page itself never scrolls sideways.
 - Compact day cards show day, date, icon, high/low, rain %, the holiday and "Indoor day" tags, and the featured activity's photo. They don't show the condition text or the featured activity's name, to keep them short.
 - **"What to wear" comes first**, directly under the strip and above the ideas. On a phone it's the thing a parent checks while getting out the door.

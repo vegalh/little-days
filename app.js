@@ -6,7 +6,6 @@ const form = document.querySelector("#search-form");
 const cityInput = document.querySelector("#city");
 const cityMessage = document.querySelector("#city-message");
 const searchButton = document.querySelector("#search-button");
-const ageSelect = document.querySelector("#age");
 const unitInputs = document.querySelectorAll("input[name=unit]");
 const statusArea = document.querySelector("#status");
 const placeLine = document.querySelector("#place-line");
@@ -85,7 +84,7 @@ try {
 }
 
 const ACTIVITY_IDS = ACTIVITIES.map((a) => a.id);
-const settings = loadSettings(storage); // { city, age, unit }
+const settings = loadSettings(storage); // { city, unit }
 let plan = loadPlan(storage, isoToday(), ACTIVITY_IDS);
 // The last successful search: { place, days, holidayProblem }
 let current = null;
@@ -214,13 +213,7 @@ form.addEventListener("submit", (event) => {
 
 cityInput.addEventListener("input", clearInvalid);
 
-// Changing the age, unit or day re-renders; none of them sends a request.
-ageSelect.addEventListener("change", () => {
-  settings.age = Number(ageSelect.value);
-  saveSettings(storage, settings);
-  if (current) render();
-});
-
+// Changing the unit or day re-renders; neither sends a request.
 for (const input of unitInputs) {
   input.addEventListener("change", () => {
     settings.unit = input.value;
@@ -436,10 +429,9 @@ function clearInvalid() {
 // --- In use ---
 
 function render() {
-  const age = settings.age;
-  const weekPlan = planWeek(current.days, ACTIVITIES, age);
+  const weekPlan = planWeek(current.days, ACTIVITIES);
   renderWeek(weekPlan);
-  renderIdeas(current.days[selectedDay], weekPlan[selectedDay], age);
+  renderIdeas(current.days[selectedDay], weekPlan[selectedDay]);
   renderPlan();
 }
 
@@ -482,10 +474,10 @@ function renderWeek(weekPlan) {
   week.hidden = false;
 }
 
-function renderIdeas(day, ideas, age) {
+function renderIdeas(day, ideas) {
   const [, label] = WEATHER[day.code] || ["", "Unknown"];
   ideasHeading.textContent = `Ideas for ${toDate(day.date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}`;
-  ideasSubtitle.textContent = [`For a ${age}-year-old`, `${temp(day.high)} and ${label.toLowerCase()}`, ...day.holidays].join(" · ");
+  ideasSubtitle.textContent = [`${temp(day.high)} and ${label.toLowerCase()}`, ...day.holidays].join(" · ");
 
   const { hazards, cautions, notes } = day.weather;
   const lines = [...hazards, ...cautions, ...notes].map((key) => WARNINGS[key](day));
@@ -507,7 +499,7 @@ function renderIdeas(day, ideas, age) {
     ? ideas.map((idea) => ideaHtml(idea, day.date)).join("")
     : `<p class="status">No ideas for this day yet.</p>`;
 
-  const why = explainDay(day, label, ideas, age, settings.unit);
+  const why = explainDay(day, label, ideas, settings.unit);
   whyBox.innerHTML = `
     <h3><span aria-hidden="true">💡</span> Why these activities?</h3>
     <p>${why.map(escapeHtml).join(" ")}</p>`;
@@ -599,7 +591,6 @@ function escapeHtml(text) {
 
 // --- Start ---
 
-ageSelect.value = String(settings.age);
 for (const input of unitInputs) input.checked = input.value === settings.unit;
 savePlan(storage, plan); // keep the cleaned-up plan
 renderPlan();

@@ -2,11 +2,11 @@
 
 ## 1. Summary
 
-Little Days is a one-page web tool that helps parents of young children plan simple activities for the coming week. Version 1 covers ages 2–6, because every activity comes from the RootMap collection and it has nothing for children under 2. The parent enters a city and picks their child's age. The page shows a seven-day calendar with the weather, any holiday, and one featured activity for each day. Choosing a day shows three activities that suit that day's weather, holiday, and the child's age, what the child should wear, and a short explanation of why these activities were picked. The parent can add activities to a weekly plan that stays saved in the browser.
+Little Days is a one-page web tool that helps parents of young children plan simple activities for the coming week. Version 1 covers ages 2–6, because every activity comes from the RootMap collection and it has nothing for children under 2. The parent enters a city. The page shows a seven-day calendar with the weather, any holiday, and one featured activity for each day. Choosing a day shows three activities that suit that day's weather, season and holiday, what the child should wear, and a short explanation of why these activities were picked. The parent can add activities to a weekly plan that stays saved in the browser.
 
 ## 2. Problem
 
-Parents want to spend good time with their young children but don't have time to plan. Generic activity lists ignore the things that actually decide what works on a given day: whether it will rain, how cold it is, whether a holiday is coming, and what a child of that age can do.
+Parents want to spend good time with their young children but don't have time to plan. Generic activity lists ignore the things that actually decide what works on a given day: whether it will rain, how cold it is, and whether a holiday is coming.
 
 ## 3. Users
 
@@ -17,7 +17,7 @@ They want answers fast ("what can we do Saturday?"), not a lot of reading. Most 
 ## 4. Goals
 
 - A parent can go from opening the page to a planned week in under two minutes.
-- Every suggestion fits the child's age, and outdoor suggestions only appear when the forecast allows them, with a clear warning when conditions call for care.
+- Outdoor suggestions only appear when the forecast allows them, with a clear warning when conditions call for care.
 - Clothing advice is concrete ("rain boots and a light jacket"), not just a temperature.
 - The weekly plan is still there after a refresh.
 
@@ -36,7 +36,7 @@ They want answers fast ("what can we do Saturday?"), not a lot of reading. Most 
 ## 6. User stories
 
 1. As a parent, I type my city so the forecast is for where I live.
-2. As a parent, I pick my child's age so the activities fit what my child can do.
+2. As a parent, I see each activity's recommended ages, so I can skip ideas that don't suit my child.
 3. As a parent, I see the next seven days with the high, low, chance of rain, and an icon for the conditions, and one featured activity on each day.
 4. As a parent, I see a clear warning when the weather calls for care, and indoor ideas when it isn't a day for outdoor play.
 5. As a parent, I choose a day and see three activity ideas for it.
@@ -46,7 +46,7 @@ They want answers fast ("what can we do Saturday?"), not a lot of reading. Most 
 9. As a parent, I switch between °F and °C.
 10. As a parent, I open an activity to see instructions, materials, how long it takes, and what it helps my child develop.
 11. As a parent, I add an activity to a day in my weekly plan, and remove it if I change my mind.
-12. As a parent, I come back later and my city, child's age, temperature unit, and plan are still there.
+12. As a parent, I come back later and my city, temperature unit, and plan are still there.
 
 ## 7. Functional requirements
 
@@ -55,11 +55,10 @@ They want answers fast ("what can we do Saturday?"), not a lot of reading. Most 
 | Input | Control | Behavior |
 |---|---|---|
 | City | Text field + search button (Enter also submits) | Geocodes the city, then fetches the forecast and holidays. If several places match, use the first result and show its name, state/region, and country so the parent can tell. Adding the state works ("Portland, Maine"). |
-| Child's age | Selector with 2, 3, 4, 5, 6 | Changes the featured activities and the three ideas. Does not refetch weather. |
 | Temperature | °F / °C switch (two radio buttons) | Changes how every temperature (and wind speed: mph or km/h) is shown. Does not refetch weather (see 7.2). Saved in `localStorage`. |
 | Day | Each day card in the seven-day calendar is a button | Selects that day. Only one day is selected at a time. |
 
-Defaults on first visit: no city (show a short prompt to enter one), age 3, °F. After a search, today is selected.
+Defaults on first visit: no city (show a short prompt to enter one), °F. After a search, today is selected.
 
 ### 7.2 Data sources
 
@@ -146,7 +145,7 @@ Why these thresholds: the feels-like high (`apparent_temperature_max`) includes 
   id: "bark-rubbing",          // original RootMap ID
   rootmap: { ... },            // the original record, copied unchanged
   littleDays: {                // added for Little Days
-    minAge: 2, maxAge: 6,      // read from rootmap.age ("2–6 years")
+    minAge: 2, maxAge: 6,      // read from rootmap.age ("2–6 years"), shown on cards
     place: "outdoor",          // "indoor", "outdoor", or "either"
     weather: ["cold"],         // cautions it still suits outdoors (7.4)
     seasons: null,             // null = any season, or e.g. ["autumn"]
@@ -164,13 +163,12 @@ The page shows from `rootmap`: `title`, `minutes`, `description`, the first thre
 - `seasons`: only when the activity needs something seasonal. Fallen leaves → autumn; fresh leaves or small flowers → spring to autumn. The season comes from the date, and is swapped for cities south of the equator (latitude < 0).
 - `holidays`: two approved **holiday-inspired** tags: `washing-pumpkin` → Halloween and `mashing-potatoes` → Thanksgiving. The original activities weren't written for these holidays; the page labels them "Halloween-inspired idea" and leaves the RootMap description unchanged. Other autumn activities are tagged by season only.
 
-**Recommendation order** (code: `pickIdeas` and `planWeek` in `recommend.js`). The first three steps decide what *may* be shown; the last two only change the order. A holiday can never bring back an activity that steps 1–3 removed.
+**Recommendation order** (code: `pickIdeas` and `planWeek` in `recommend.js`). The first two steps decide what *may* be shown; the last two only change the order. A holiday can never bring back an activity that steps 1–2 removed. There is no age filter: all 37 activities suit ages 2–6 or part of it, and each card shows its recommended ages so the parent can judge.
 
-1. **Age:** the child's age is between `minAge` and `maxAge`.
-2. **Safety and weather:** indoor activities are always allowed. "Either" activities are always allowed, done indoors when the weather doesn't suit them. Outdoor activities are allowed only when the day has no hazard and every caution is in the activity's `weather`.
-3. **Season:** if `seasons` is set, it includes the day's season.
-4. **Holiday:** an activity whose holiday tag appears in one of the day's holiday names (for example "Thanksgiving" in "Thanksgiving Day") comes first.
-5. **Variety:** activities shown less often earlier in the week come first. Being a day's featured activity counts more than being one of its three ideas, so the featured activity changes every day.
+1. **Safety and weather:** indoor activities are always allowed. "Either" activities are always allowed, done indoors when the weather doesn't suit them. Outdoor activities are allowed only when the day has no hazard and every caution is in the activity's `weather`.
+2. **Season:** if `seasons` is set, it includes the day's season.
+3. **Holiday:** an activity whose holiday tag appears in one of the day's holiday names (for example "Thanksgiving" in "Thanksgiving Day") comes first.
+4. **Variety:** activities shown less often earlier in the week come first. Being a day's featured activity counts more than being one of its three ideas, so the featured activity changes every day.
 
 **Indoor and outdoor balance** for the three ideas:
 - Clear day: two outdoor ideas (outdoor or "either") lead, then one indoor.
@@ -217,11 +215,10 @@ Sentences, in this order, using only the ones that apply:
    - Caution: "With {cautions} in the forecast, {indoor titles} come first" + if there is an outdoor idea: ", and {title} can work outside if you dress for it." Otherwise ".". Caution words: rain → "rain", snow → "light snow", cold → "cold air", hot → "heat", wind → "gusty wind".
    - Hazard: "With {hazard} in the forecast, outdoor play isn't a good idea today, so all three ideas are indoors." Hazard words: storm → "thunderstorms", heavyRain → "heavy rain", freezingRain → "freezing rain", heavySnow → "heavy snow", extremeHeat → "extreme heat", extremeCold → "extreme cold", dangerousWind → "strong wind".
 3. **Season** (an idea has `seasons` set and isn't the holiday idea): "{title} is a seasonal pick for {season}."
-4. **Age**: "All three suit a {age}-year-old." (or "Both suit…" / "It suits…" when fewer ideas match).
 
 The weather sentence leaves out the holiday idea, since sentence 1 already named it.
 
-Example (Boston, Oct 31, age 3): "If your family celebrates Halloween, Washing a Pumpkin is a Halloween-inspired idea for today. It's clear and 54°, so Rolling in the Leaves and Tossing Leaves with a Stick get you outside. Rolling in the Leaves is a seasonal pick for autumn. All three suit a 3-year-old."
+Example (Boston, Oct 31): "If your family celebrates Halloween, Washing a Pumpkin is a Halloween-inspired idea for today. It's clear and 54°, so Rolling in the Leaves and Tossing Leaves with a Stick get you outside. Rolling in the Leaves is a seasonal pick for autumn."
 
 ### 7.8 Activity details
 
@@ -250,7 +247,7 @@ Clicking an activity's title (in the ideas or in My week) opens its details in a
 - Before any search (or if the weather fails), My week still lists saved dates from today on.
 - Saved in `localStorage` under `littleDays.plan.v1` as `{ "YYYY-MM-DD": ["activity-id", ...] }`, using RootMap IDs and ISO dates only. No names, accounts or personal information.
 - When the page loads, dates before today and IDs that aren't in `activities.js` are dropped.
-- Settings are saved under `littleDays.settings.v1`: `{ city, age, unit }`.
+- Settings are saved under `littleDays.settings.v1`: `{ city, unit }`.
 - Code: `plan.js` (pure functions; storage is passed in so tests can use a fake).
 
 ## 8. Page states
@@ -262,12 +259,12 @@ The "My week" section is never hidden or cleared by any of these states. A saved
 ### 8.1 Empty
 
 **First visit (no city saved).**
-- The city field is empty and gets focus. The age selector shows 3 and the switch shows °F.
+- The city field is empty and gets focus. The switch shows °F.
 - The status area says: "Enter your city to see this week's weather and activity ideas."
 - No calendar, no "Ideas for {day}" section.
 - "My week" says: "Your week is empty. Pick activities from the days above to add them here." (or lists saved dates, 7.9)
 
-**Returning visit (city saved).** The page doesn't sit empty. It fills in the saved city, age, and unit and starts a search right away, going straight to Loading (8.2).
+**Returning visit (city saved).** The page doesn't sit empty. It fills in the saved city and unit and starts a search right away, going straight to Loading (8.2).
 
 **Search finds no city.** The geocoder answered, but with no `results`.
 - The status area says: "We couldn't find "{what they typed}". Check the spelling, or add the state or country, like "Portland, Maine"."
@@ -286,10 +283,10 @@ Starts when a valid search is submitted. One request chain runs: geocode first, 
 - The search button is disabled and its text changes to "Searching…". This stops double submits.
 - The status area says: "Getting the weather for {city}…"
 - Day cards from an earlier search are removed.
-- The city field, age selector, and unit switch stay usable.
+- The city field and unit switch stay usable.
 - When everything finishes, the button goes back to "Search" and the page moves to In use, Empty, or Error.
 
-Changing the child's age, the unit, or the selected day never triggers Loading. None of them makes a request. They only re-render.
+Changing the unit or the selected day never triggers Loading. Neither makes a request. They only re-render.
 
 ### 8.3 Error
 
@@ -325,7 +322,7 @@ When input is refused:
 - The message appears directly under the city field in `--ink`, not red. The field gets `aria-invalid="true"` and `aria-describedby` pointing to the message, and keeps focus.
 - The message and `aria-invalid` clear as soon as the parent types.
 
-The age selector and unit switch can't be invalid, because they only offer fixed choices. Activity "Add to my week" buttons can't be invalid either. An activity that's already in the plan for that day shows "Added ✓" and is disabled, so it can't be added twice.
+The unit switch can't be invalid, because it only offers fixed choices. Activity "Add to my week" buttons can't be invalid either. An activity that's already in the plan for that day shows "Added ✓" and is disabled, so it can't be added twice.
 
 ### 8.5 In use
 
@@ -337,18 +334,17 @@ The data has loaded and the page shows what it worked out from it.
   - High and low in the selected unit, and "Rain {n}%"
   - Holiday or celebration tag(s), if that date matches one
   - "Indoor day" tag on a hazard day (7.4)
-  - **Worked out:** the day's featured activity (7.5) for the child's age, with its photo and title
+  - **Worked out:** the day's featured activity (7.5), with its photo and title
 - One day is selected (today, after a search). Selecting another day updates the section below right away.
 - **Ideas for {weekday, month day}**, for the selected day. Everything here is worked out:
   - Weather warnings for that day and the forecast reminder (7.4)
   - Three ranked activity cards (7.5): photo, title, "Indoor/Outdoor · {minutes} min · Ages {min}–{max}", the holiday-inspired label when it applies, description, up to three domain tags, safety note, and an "Add to my week" button 
   - "What to wear" (7.6); on phones it comes before the ideas
   - "Why these activities?" (7.7)
-- Changing the age updates the featured activities, the three ideas, and the explanation right away, with no request.
 - Changing the unit updates every temperature on the page right away, with no request.
 - Clicking an activity title opens its details (7.8). "Add to my week" saves it and updates "My week" right away.
 - **My week** lists the seven forecast days with their added activities and a "Remove" button for each.
-- The city is saved to `localStorage` only after a successful search. Age and unit are saved whenever they change (7.9).
+- The city is saved to `localStorage` only after a successful search. The unit is saved whenever it changes (7.9).
 
 ## 9. Technical constraints
 
@@ -362,13 +358,12 @@ The data has loaded and the page shows what it worked out from it.
 
 - [ ] Entering "Boston" shows seven days of Boston weather with highs, lows, rain chance, and conditions.
 - [ ] Today is selected after a search, and clicking another day shows that day's three ideas, clothing, and explanation.
-- [ ] Changing the age from 2 to 5 changes the featured and recommended activities without a new weather request.
 - [ ] Switching °F to °C changes every temperature without a new weather request.
-- [ ] The "Why these activities?" text names the holiday (if any), the weather, and the child's age, and matches what is shown.
+- [ ] The "Why these activities?" text names the holiday (if any) and the weather, and matches what is shown.
 - [ ] A day with a hazard (thunderstorm, heavy rain or snow, freezing rain, extreme heat or cold, dangerous wind) shows "Indoor day", its warning, and no outdoor ideas.
 - [ ] A mild rain, light snow, cold, hot or windy day shows its warning, indoor ideas first, and at most one outdoor idea marked as suiting that condition.
 - [ ] A rainy day's clothing includes rain gear.
-- [ ] On Halloween a 2- or 3-year-old in an autumn city sees "Washing a Pumpkin" featured with "Halloween-inspired idea"; a 4-year-old doesn't, and neither does a city where it's spring.
+- [ ] On Halloween an autumn city sees "Washing a Pumpkin" featured with "Halloween-inspired idea"; a city where it's spring doesn't.
 - [ ] No activity is featured twice in the same week.
 - [ ] Every activity shows its RootMap photo; a missing photo shows a plain tile, not a broken image.
 - [ ] `node --test` passes.

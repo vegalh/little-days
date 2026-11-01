@@ -86,18 +86,18 @@ test("wear: missing values are left out, never guessed", () => {
 
 // --- Why these activities? ---
 
-function explain(values, { date = "2026-10-15", age = 3, holidays = [], celebrations = [], label = "Clear", unit = "F", high = 12 } = {}) {
+function explain(values, { date = "2026-10-15", holidays = [], celebrations = [], label = "Clear", unit = "F", high = 12 } = {}) {
   const d = { ...day(values), high, season: seasonFor(date, 42), holidays: [...holidays, ...celebrations], celebrations };
-  const ideas = pickIdeas(d, ACTIVITIES, age, {});
-  return { ideas, text: explainDay(d, label, ideas, age, unit).join(" ") };
+  const ideas = pickIdeas(d, ACTIVITIES, {});
+  return { ideas, text: explainDay(d, label, ideas, unit).join(" ") };
 }
 
-test("explain: clear day names the outdoor and indoor ideas, temperature and age", () => {
+test("explain: clear day names the outdoor and indoor ideas and the temperature", () => {
   const { ideas, text } = explain({}, { high: 12 });
   assert.match(text, /^It's clear and 54°, so /);
   assert.ok(text.includes(ideas[0].activity.rootmap.title));
   assert.ok(text.includes("as an indoor option"));
-  assert.ok(text.endsWith("All three suit a 3-year-old."));
+  assert.ok(!text.includes("year-old"));
 });
 
 test("explain: uses the chosen unit", () => {
@@ -124,7 +124,7 @@ test("explain: public holiday vs celebration wording", () => {
 });
 
 test("explain: mentions the season for seasonal picks", () => {
-  const { text } = explain({}, { date: "2026-10-15", age: 2 });
+  const { text } = explain({}, { date: "2026-10-15" });
   assert.match(text, /is a seasonal pick for autumn\./);
 });
 

@@ -108,8 +108,8 @@ function listWords(words) {
 }
 
 // day: { high, weather, holidays, celebrations, season }, conditionLabel: "Clear",
-// ideas: from pickIdeas(), age: number, unit: "F" or "C". Returns a list of sentences.
-function explainDay(day, conditionLabel, ideas, age, unit) {
+// ideas: from pickIdeas(), unit: "F" or "C". Returns a list of sentences.
+function explainDay(day, conditionLabel, ideas, unit) {
   if (!ideas.length) return [];
   const sentences = [];
   const title = (idea) => idea.activity.rootmap.title;
@@ -151,9 +151,6 @@ function explainDay(day, conditionLabel, ideas, age, unit) {
 
   const seasonal = ideas.find((i) => i !== holidayIdea && i.activity.littleDays.seasons);
   if (seasonal) sentences.push(`${title(seasonal)} is a seasonal pick for ${day.season}.`);
-
-  const who = ideas.length === 3 ? "All three suit" : ideas.length === 2 ? "Both suit" : "It suits";
-  sentences.push(`${who} a ${age}-year-old.`);
   return sentences;
 }
 

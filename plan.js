@@ -61,12 +61,11 @@ function savePlan(storage, plan) {
   writeJson(storage, PLAN_KEY, plan);
 }
 
-// Returns { city, age, unit } with defaults for anything missing or invalid.
+// Returns { city, unit } with defaults for anything missing or invalid.
 function loadSettings(storage) {
   const saved = readJson(storage, SETTINGS_KEY) || {};
   return {
     city: typeof saved.city === "string" ? saved.city : "",
-    age: [2, 3, 4, 5, 6].includes(saved.age) ? saved.age : 3,
     unit: saved.unit === "C" ? "C" : "F",
   };
 }

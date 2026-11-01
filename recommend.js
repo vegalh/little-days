@@ -69,10 +69,9 @@ function canGoOutside(activity, weather) {
     weather.cautions.every((c) => activity.littleDays.weather.includes(c));
 }
 
-// Steps 1–3: age, safety and weather, season. These only remove activities.
-function canDo(activity, age, weather, season) {
+// Steps 1–2: safety and weather, season. These only remove activities.
+function canDo(activity, weather, season) {
   const meta = activity.littleDays;
-  if (age < meta.minAge || age > meta.maxAge) return false;
   if (meta.seasons && !meta.seasons.includes(season)) return false;
   if (meta.place === "outdoor") return canGoOutside(activity, weather);
   return true; // indoor, or "either", which can always be done inside
@@ -85,9 +84,9 @@ function matchesHoliday(activity, holidayNames) {
 
 // day: { weather, season, holidays: [names] }. shown: { id: times shown earlier this week }
 // Returns up to three { activity, outside, holiday }.
-function pickIdeas(day, activities, age, shown) {
+function pickIdeas(day, activities, shown) {
   const candidates = activities
-    .filter((a) => canDo(a, age, day.weather, day.season))
+    .filter((a) => canDo(a, day.weather, day.season))
     .map((a, index) => ({
       activity: a,
       index,
@@ -95,7 +94,7 @@ function pickIdeas(day, activities, age, shown) {
       outside: a.littleDays.place !== "indoor" && canGoOutside(a, day.weather),
     }));
 
-  // Steps 4–5: holiday first, then whatever has been shown least this week.
+  // Steps 3–4: holiday first, then whatever has been shown least this week.
   candidates.sort((x, y) =>
     (y.holiday - x.holiday) ||
     ((shown[x.activity.id] || 0) - (shown[y.activity.id] || 0)) ||
@@ -134,10 +133,10 @@ function pickIdeas(day, activities, age, shown) {
 
 // days: [{ weather, season, holidays }] in date order. Returns three ideas per day;
 // the first one is the day's featured activity.
-function planWeek(days, activities, age) {
+function planWeek(days, activities) {
   const shown = {};
   return days.map((day) => {
-    const ideas = pickIdeas(day, activities, age, shown);
+    const ideas = pickIdeas(day, activities, shown);
     // Being featured counts more, so the featured activity changes every day.
     ideas.forEach((idea, i) => {
       shown[idea.activity.id] = (shown[idea.activity.id] || 0) + (i === 0 ? 3 : 1);

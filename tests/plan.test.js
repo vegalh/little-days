@@ -93,15 +93,15 @@ test("storage: corrupt or missing data gives an empty plan", () => {
 test("storage: blocked storage doesn't break anything", () => {
   assert.deepEqual(loadPlan(blockedStorage, TODAY, IDS), {});
   assert.doesNotThrow(() => savePlan(blockedStorage, { "2026-10-31": ["duck-walk"] }));
-  assert.deepEqual(loadSettings(blockedStorage), { city: "", age: 3, unit: "F" });
-  assert.doesNotThrow(() => saveSettings(blockedStorage, { city: "Boston", age: 4, unit: "C" }));
+  assert.deepEqual(loadSettings(blockedStorage), { city: "", unit: "F" });
+  assert.doesNotThrow(() => saveSettings(blockedStorage, { city: "Boston", unit: "C" }));
 });
 
 test("settings: saved and loaded, with defaults for bad values", () => {
   const storage = fakeStorage();
-  assert.deepEqual(loadSettings(storage), { city: "", age: 3, unit: "F" });
-  saveSettings(storage, { city: "Boston", age: 5, unit: "C" });
-  assert.deepEqual(loadSettings(storage), { city: "Boston", age: 5, unit: "C" });
-  storage.data[SETTINGS_KEY] = JSON.stringify({ city: 42, age: 1, unit: "K" });
-  assert.deepEqual(loadSettings(storage), { city: "", age: 3, unit: "F" });
+  assert.deepEqual(loadSettings(storage), { city: "", unit: "F" });
+  saveSettings(storage, { city: "Boston", unit: "C" });
+  assert.deepEqual(loadSettings(storage), { city: "Boston", unit: "C" });
+  storage.data[SETTINGS_KEY] = JSON.stringify({ city: 42, unit: "K" });
+  assert.deepEqual(loadSettings(storage), { city: "", unit: "F" });
 });

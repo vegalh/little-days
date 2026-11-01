@@ -84,7 +84,7 @@ If a future feature ever needs an API key:
 - To refresh activities or photos from RootMap, run `python3 tools/import-rootmap.py` (needs Node and Pillow). It keeps the hand-reviewed `littleDays` fields (place, weather, seasons, holidays) from the current activities.js and records the RootMap commit in the file header. Don't hand-edit `rootmap` parts or the generated photos.
 - Public holidays come only from Nager.Date. Other celebrations go in `celebrations.js` with the countries where they're widely observed. Don't show a celebration everywhere, and word its ideas as optional ("If your family celebrates…").
 - My week stores only activity IDs and ISO dates. Don't store names, accounts, or anything personal.
-- Save the city, child's age, and weekly plan in `localStorage` only. No cookies, no backend, no database.
+- Save the city, temperature unit, and weekly plan in `localStorage` only. No cookies, no backend, no database.
 - Wrap `localStorage` reads and writes in `try/catch` so the page still works if storage is blocked.
 
 ## States
