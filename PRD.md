@@ -54,7 +54,7 @@ They want answers fast ("what can we do Saturday?"), not a lot of reading. Most 
 
 | Input | Control | Behavior |
 |---|---|---|
-| City | Text field + search button (Enter also submits) | Geocodes the city, then fetches the forecast and holidays. If several places match, use the first result and show its name, state/region, and country so the parent can tell. Adding the state works ("Portland, Maine"). |
+| City | Text field with suggestions + search button (Enter also submits) | After the parent pauses typing (2+ letters, 300 ms), up to five matching places appear in the browser's native list (`<datalist>`) as "name, state/region, country", for example "Portland, Maine, United States" and "Portland, Oregon, United States". Picking one and searching uses that exact place. A typed name that wasn't picked is geocoded, and the first result is used and named above the calendar so the parent can tell. Adding the state works ("Portland, Maine"). Then the forecast and holidays are fetched. |
 | Temperature | °F / °C switch (two radio buttons) | Changes how every temperature (and wind speed: mph or km/h) is shown. Does not refetch weather (see 7.2). Saved in `localStorage`. |
 | Day | Each day card in the seven-day calendar is a button | Selects that day. Only one day is selected at a time. |
 
@@ -66,7 +66,7 @@ All three APIs are free and need no key.
 
 | Source | Endpoint | Fields used |
 |---|---|---|
-| Open-Meteo Geocoding | `https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1` | `results[0]`: `latitude`, `longitude`, `name`, `admin1`, `country`, `country_code` |
+| Open-Meteo Geocoding | `https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1` (search) and `&count=5` (suggestions while typing; it matches the start of a name, so "Por" finds Portland) | `results[0]` (or each result): `latitude`, `longitude`, `name`, `admin1`, `country`, `country_code` |
 | Open-Meteo Forecast | `https://api.open-meteo.com/v1/forecast?latitude=..&longitude=..&daily=temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_probability_max,weather_code,wind_gusts_10m_max,uv_index_max&timezone=auto` | `daily.time`, `daily.temperature_2m_max`, `daily.temperature_2m_min`, `daily.apparent_temperature_max` (feels-like high, °C), `daily.apparent_temperature_min` (feels-like low, °C), `daily.uv_index_max`, `daily.precipitation_probability_max` (%), `daily.weather_code` (WMO code), `daily.wind_gusts_10m_max` (km/h) |
 | Nager.Date | `https://date.nager.at/api/v3/PublicHolidays/{year}/{countryCode}` | `date`, `name` (English name, shown and used for matching) |
 
@@ -297,6 +297,8 @@ A request has failed when `fetch` throws (offline, DNS, CORS) **or** `response.o
 - Under it is a **Try again** button that repeats the last search with the same city.
 - No day cards. The search button is enabled again.
 - The saved city is not replaced.
+
+**City suggestions fail.** No list appears and nothing is shown to the parent; the details go to `console.error`. Search still works and shows its own states.
 
 **Holidays fail** (offline after the forecast loaded, or a non-ok answer other than 204/404). An unsupported country (204/404) isn't a failure: it shows its own note (7.2) and no error.
 - This doesn't block the page. The forecast, clothing, and activities show normally (In use).

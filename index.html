@@ -24,7 +24,8 @@
         <div class="field field-city">
           <label for="city">City</label>
           <div class="city-row">
-            <input id="city" name="city" type="text" autocomplete="address-level2" placeholder="e.g. Boston" autofocus>
+            <input id="city" name="city" type="text" list="city-options" autocomplete="off" placeholder="e.g. Boston" autofocus>
+            <datalist id="city-options"></datalist>
             <button id="search-button" type="submit">Search</button>
           </div>
           <p id="city-message" class="field-message" hidden></p>

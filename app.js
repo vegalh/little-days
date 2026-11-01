@@ -4,6 +4,7 @@ const HOLIDAYS_URL = "https://date.nager.at/api/v3/PublicHolidays";
 
 const form = document.querySelector("#search-form");
 const cityInput = document.querySelector("#city");
+const cityOptions = document.querySelector("#city-options");
 const cityMessage = document.querySelector("#city-message");
 const searchButton = document.querySelector("#search-button");
 const unitInputs = document.querySelectorAll("input[name=unit]");
@@ -91,6 +92,9 @@ let current = null;
 let selectedDay = 0;
 // The button that opened the details dialog, to return focus to it.
 let dialogOpener = null;
+// Places offered while typing, by label: { "Portland, Maine, United States": place }
+let suggestions = {};
+let suggestTimer = null;
 
 // Returns the first matching place, or null if the geocoder found nothing.
 async function findCity(name) {
@@ -105,6 +109,29 @@ async function findCity(name) {
     return null;
   }
   return data.results[0];
+}
+
+// Fills the city list with up to five matching places.
+async function suggestCities(text) {
+  try {
+    const response = await fetch(`${GEOCODE_URL}?name=${encodeURIComponent(text)}&count=5`);
+    if (!response.ok) {
+      throw new Error(`City suggestions failed with status ${response.status}`);
+    }
+    const data = await response.json();
+    // The parent kept typing, so this answer is out of date.
+    if (cityInput.value.trim() !== text) return;
+    suggestions = {};
+    for (const place of data.results || []) suggestions[placeName(place)] = place;
+    cityOptions.innerHTML = Object.keys(suggestions).map((name) => `<option value="${escapeHtml(name)}">`).join("");
+  } catch (error) {
+    // Suggestions are optional: Search still works and shows its own error.
+    console.error(error);
+  }
+}
+
+function placeName(place) {
+  return [place.name, place.admin1, place.country].filter(Boolean).join(", ");
 }
 
 // Returns the daily arrays: time, temperature_2m_max, temperature_2m_min, ...
@@ -148,7 +175,8 @@ async function getHolidays(countryCode, years) {
 async function search(city) {
   showLoading(city);
   try {
-    const place = await findCity(city);
+    // A picked suggestion is used as is; anything typed is looked up.
+    const place = suggestions[city] || await findCity(city);
     if (!place) {
       showNotFound(city);
       return;
@@ -211,7 +239,14 @@ form.addEventListener("submit", (event) => {
   }
 });
 
-cityInput.addEventListener("input", clearInvalid);
+cityInput.addEventListener("input", () => {
+  clearInvalid();
+  clearTimeout(suggestTimer);
+  const text = cityInput.value.trim();
+  if (text.length < 2 || suggestions[text]) return;
+  // Wait for a pause in typing so every keystroke doesn't send a request.
+  suggestTimer = setTimeout(() => suggestCities(text), 300);
+});
 
 // Changing the unit or day re-renders; neither sends a request.
 for (const input of unitInputs) {
@@ -437,8 +472,7 @@ function render() {
 
 function renderWeek(weekPlan) {
   const { place, days } = current;
-  const name = [place.name, place.admin1, place.country].filter(Boolean).join(", ");
-  placeLine.textContent = `${name} · ${formatDay(days[0].date)} – ${formatDay(days[days.length - 1].date)}`;
+  placeLine.textContent = `${placeName(place)} · ${formatDay(days[0].date)} – ${formatDay(days[days.length - 1].date)}`;
   placeLine.hidden = false;
   holidayNote.textContent = current.holidayProblem === "unsupported"
     ? "Nager.Date doesn't list public holidays for this country, so none are shown."
