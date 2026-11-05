@@ -219,7 +219,7 @@ A native `<dialog>`, `--bg` background, sections separated by 24px. Order:
 3. **Weather**: the selected day's emoji, condition, high/low, rain %, and the weather note.
 4. **Before you set off**: access line, age note, and the link "Check hours and details on Google Maps ↗" (opens in a new tab).
 5. **Little Days ideas**: one `--tint` panel, 20px radius, labelled "Little Days ideas", with short h3 sections: Why explore this place? · What children might notice · Before you go · During the visit · After the visit · Practical life · At home afterwards (activity titles as buttons that open activity details). Lists are short, one sentence per item, no bullets heavier than a small `--leaf-ink` dot. On a revisit the panel starts with "A new perspective for visit {n}".
-6. **Status**: a three-part toggle (buttons with `aria-pressed`): "Want to explore" · "Explored" · "Revisit". "Explored" also records today's visit, and the button shows "Explored today ✓" afterwards.
+6. **Your visits**: two toggles (buttons with `aria-pressed`), "Want to explore" and "Visit again", and "Remove from My Places" as a text button. Under them the journal, newest first: date in bold, the observation, "Next time: …", each entry with a 3px `--tint` left rule. Then a `--surface` box "Record a visit" (date, "What did you notice? (optional)", "An idea for next time (optional)", the hint about children's names) with the primary button "Mark as explored". No scores, badges or streaks.
 7. **Add to my week**: a `--surface` box: date (required), time (optional), theme (optional), notes (optional, a 3-row textarea), and "Add to my week" (primary, wide). After adding: "Added to {Sat, Nov 7} ✓" in `--leaf-ink`.
 
 Opening moves focus to the dialog title; Escape and Close close it, and focus returns to what opened it.
@@ -238,7 +238,7 @@ A major section, as prominent as Explore.
 
 - **Heading** "My Places", and directly under it the **Google Maps text attribution** (component "Google attribution" below), since this list shows Google content without a map. My week shows it above its rows when any place entry is listed.
 - **Status tabs**: three tabs as a segmented control with counts: "Want to explore (3)" · "Explored (5)" · "Revisit (1)". The first tab with places is shown first.
-- **Saved place card**: `--surface`, 20px radius. Name (h3, serif) and address, then a line "Explored Nov 2 · 2 visits" or "Saved Nov 4" in 14px `--ink-soft`. Then the status toggle (same as in details, compact), a "Your note" textarea (2 rows, grows as typed, the hint "Notes stay on this device. Please don't include children's names." under it), and "Open" (secondary) and "Remove" (text button) at the bottom.
+- **Saved place card**: `--surface`, 20px radius. Name (h3, serif) and address, then "Last explored Nov 2 · 2 visits" or "Saved Nov 4" in 14px `--ink-soft`, the latest "Next time" idea, and "Exploration history (n)" as a `<details>` showing the journal. "Open" (secondary) and "Remove" (text button) at the bottom. Status is changed in place details.
 - A place whose details couldn't be fetched shows "Place details unavailable right now" as its title, in `--ink-soft`, with the status, note and Remove still working.
 - **Empty tab**: "No places here yet." plus one helpful line: Want to explore → "Save places from Explore to plan your next walk."; Explored → "Mark places as explored after you visit."; Revisit → "Places you'd like to see again, with fresh ideas, appear here."
 
@@ -246,7 +246,7 @@ A major section, as prominent as Explore.
 
 One `--surface` card with rows (day + date on the left, entries on the right). Each row shows that day's weather in 14px when it's in the forecast ("☀️ 64° / 48° · Rain 10%") or "Forecast not available yet for this date." in `--ink-soft`.
 
-- **Place entry**: "📍" + place name (button, opens details), then time and theme on one line ("10:00 · Things with wheels"), notes in 14px `--ink-soft`, and "Remove".
+- **Place entry**: "📍" + place name (button, opens details), then time and theme on one line ("10:00 · Things with wheels"), notes in 14px `--ink-soft`, and "Edit" and "Remove" text buttons. Edit turns the entry into a small `--surface` form in place.
 - **Activity entry**: activity title (button, opens activity details) and "Remove".
 - Empty days say "Nothing planned" in `--ink-soft`. On phones each row stacks day above entries.
 

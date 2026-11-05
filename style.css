@@ -1174,11 +1174,18 @@ textarea {
 .visit-form label,
 .plan-form label,
 .edit-visit-form label {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 4px;
+  align-items: baseline;
   font-size: 14px;
   font-weight: 600;
 }
+
+/* The label text and "(optional)" share a line; the field goes below. */
+.visit-form label > :is(input, textarea),
+.plan-form label > :is(input, textarea),
+.edit-visit-form label > :is(input, textarea) { flex: 1 1 100%; }
 
 .visit-form h4,
 .plan-form h3 { margin: 0; }
@@ -1232,8 +1239,31 @@ textarea {
   border: 0;
 }
 
-.places-tabs .segmented span { padding: 0 14px; }
-.count { font-weight: 400; }
+.places-tabs .segmented { display: flex; max-width: 520px; }
+.places-tabs label { flex: 1; }
+
+/* Room for a two-line label on narrow screens, still at least 44px tall. */
+.places-tabs .segmented input + span {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 4px;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 44px;
+  padding: 6px 8px;
+  line-height: 1.25;
+}
+/* The count sits inside a segmented-control label, so undo that control's span styles. */
+.segmented .count {
+  display: inline;
+  min-width: 0;
+  padding: 0;
+  font-weight: 400;
+  line-height: inherit;
+  color: inherit;
+  background: none;
+}
 
 .places-list {
   display: grid;

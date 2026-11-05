@@ -315,22 +315,23 @@ My week holds two kinds of entries: **place visits** and **at-home activities** 
 - **Add an activity** with "Add to my week", as before (7.5, 7.8). The same activity can't be added twice to the same date ("Added ✓", disabled).
 - My week lists the seven forecast days plus any later saved dates. Each date shows its entries with a "Remove" button. Days with nothing say "Nothing planned".
 - **Weather for a date:** when the date is in `daily.time`, its row shows the icon, condition, high/low and "Rain {n}%", plus any hazard or caution word from 7.4. Otherwise it says "Forecast not available yet for this date." Nothing is estimated for dates outside the forecast.
-- A place entry shows the place's name and address, fetched from Google this visit (7.17). If that fails it shows "Saved place (details unavailable right now)".
+- A place entry shows the place's name (a button that opens its details), time and theme, notes, and **Edit** and **Remove**. Edit turns the entry into a small form (date, time, theme, notes) with "Save changes" and "Cancel"; moving it to a date where the same place is already planned is refused. Names come from Google this visit (7.17), fetched only once My week is on screen; if that fails it shows "Saved place (details unavailable right now)". When a place entry is listed, My week shows the Google Maps text attribution (9.4).
+- **Planning a visit never marks the place explored.** Only recording a visit does (7.17).
 - Before any search, or if the weather fails, My week still lists saved dates from today on, without weather.
 
-Saved in `localStorage` under `littleDays.plan.v2`:
+Saved in `localStorage` under `littleDays.plan.v2`. Activities stay exactly as in v1 (their RootMap ID as a string), and place visits are objects beside them:
 
 ```js
 {
   "2026-11-07": [
-    { kind: "place", placeId: "ChIJ...", time: "10:00", theme: "Things with wheels", notes: "Bring the clipboard" },
-    { kind: "activity", id: "bark-rubbing" }
+    "bark-rubbing",
+    { kind: "place", entry: "v1k2x9ab", placeId: "ChIJ...", category: "nature", time: "10:00", theme: "Things with wheels", notes: "Bring the clipboard" }
   ]
 }
 ```
 
-- `time` is `"HH:MM"` or `""`; `theme` and `notes` are the adult's own text, or `""`.
-- **Migration:** if `littleDays.plan.v1` exists and `v2` doesn't, each v1 ID becomes `{ kind: "activity", id }`, the result is saved as v2, and v1 is removed. Nothing in v1 is lost.
+- `entry` is the planned visit's own ID (for Edit and Remove). `category` is the Little Days category. `time` is `"HH:MM"` or `""`; `theme` (80) and `notes` (500) are the adult's own text, or `""`.
+- **Migration:** a v1 plan is already a valid v2 plan, so if `littleDays.plan.v2` doesn't exist, `littleDays.plan.v1` is read as it is, saved as v2, and v1 is removed. Nothing in v1 is lost.
 - When the page loads, dates before today, unknown activity IDs and malformed entries are dropped. Place IDs can't be checked offline, so they're kept until removed.
 - Code: `plan.js` (pure functions; storage is passed in so tests can use a fake).
 
@@ -487,7 +488,9 @@ Places use the same weather rules as 7.4, for the **selected day**. The threshol
 - Status: a "Save" button (sets "Want to explore"), or the current status as a tag
 - The name is a button that opens the details
 
-**Map:** a Google map with one marker for the search location ("Start") and one numbered marker per place in the filtered list, numbered like the list. Choosing a marker opens that place's details. The map keeps Google's logo and attributions visible.
+**Map:** a Google map with one marker for the search location ("Start") and one numbered marker per place in the filtered list, numbered like the list. Choosing a marker selects it and shows a preview. The map keeps Google's logo and attributions visible. **Markers are reused:** a redraw (units, day, filters, walking times arriving) only adds markers for new places, removes those no longer listed, and updates a changed number; the map is refit only when the set of places changes.
+
+**Detail map:** one Google map inside the details dialog, created the first time a place is opened and reused for every place after: it moves to the new place, replaces the place marker, clears the old route line and draws the new one. Routes are kept in page memory per starting point and place, so reopening a place doesn't ask Google again.
 
 **Layout:** on desktop (720px and up) the list and map sit side by side. On phones a **List / Map** switch (two radio buttons) shows one at a time, List first. Details are specified in DESIGN.md.
 
@@ -511,26 +514,40 @@ The walking-time limit is the 7.1 input (7.12). There's no age filter on places:
 
 Focus behaves as in 7.8: it moves into the dialog on open, Escape and Close close it, and focus returns to what opened it.
 
-### 7.17 My Places
+### 7.17 My Places and the exploration journal
 
-Saved in `localStorage` under `littleDays.places.v1`, keyed by Google place ID:
+Saved in `localStorage` under `littleDays.places.v2`, keyed by Google place ID:
 
 ```js
 {
-  "ChIJ...": { status: "want", visits: ["2026-11-02"], note: "" }
+  "ChIJ...": {
+    status: "explored",            // "want", "explored" or "revisit"
+    category: "nature",            // the Little Days category it was found under
+    saved: "2026-11-02",           // when it was first saved
+    visits: [                      // the journal, oldest first
+      { date: "2026-11-04", observation: "Children noticed different leaf shapes.", next: "Look for changes in the trees." }
+    ],
+    note: ""                       // only a note carried over from v1
+  }
 }
 ```
 
-- `status`: `"want"` (Want to explore), `"explored"`, or `"revisit"`. `visits`: ISO dates of recorded visits. `note`: the adult's own text, up to 500 characters.
-- **Save** → status `want`.
-- **Mark as explored** → status `explored`, and today is added to `visits` (once per date).
-- **Revisit** → status `revisit`. The next guide set shows (7.14). Marking it explored again records another visit.
-- **Remove** deletes the entry.
-- A place counts as "explored" for the filter when it has at least one visit.
+**Journal.** Each recorded visit is one entry: the place ID (the key), the visit date, an optional observation (500) and an optional idea for next time (200). It's a simple record for the adult, not an assessment: no children's names, photos or profiles. Entries are added, never overwritten, so a place can have many visits.
 
-**My Places section:** the Google Maps text attribution under the heading (9.4), then three groups (Want to explore, Explored, Revisit), each row with the place's name and address, the last visit date, the note field (with the hint "Notes stay on this device. Please don't include children's names."), an "Open" button (details) and "Remove".
+**Actions** (in place details, under "Your visits"):
+- **Want to explore** (toggle) → status `want`. "Save" on a card does the same.
+- **Visit again** (toggle) → status `revisit`. Visits stay.
+- **Record a visit** form: date (today or earlier), "What did you notice?" (optional), "An idea for next time" (optional), hint "Saved only in this browser. Please don't write children's names.", and **Mark as explored**, which adds a journal entry and sets status `explored`.
+- **Remove from My Places**, after `confirm()`: deletes the entry and its journal.
+- The journal shows under the buttons, newest first.
 
-**Names and addresses aren't stored.** Google's terms allow keeping place IDs, not place content, so once per visit, after the Maps API loads, the page fetches each saved place's fields (7.2) with `fetchFields`, at most 50 places. A place that fails shows "Place details unavailable right now" and keeps its status and note.
+**Revisits.** The number of journal entries chooses the guide's first perspective (7.14): no visits → First visit, one → Second visit, and so on, repeating after three. Details then say "You've recorded {n} visits, so a new perspective comes first." On a card, an explored place keeps showing in results with its status tag ("Explored · 2 visits") and its idea line reads "Next visit: …" from that next perspective. A place counts as explored for the Explored filter when it has at least one visit.
+
+**My Places section:** the Google Maps text attribution under the heading (9.4), three tabs with counts ("Want to explore (3)", "Explored (5)", "Revisit (1)"), then cards: name and address, "Last explored {date} · {n} visits" or "Saved {date}", the latest "Next time" idea, "Exploration history ({n})" (a `<details>` with the journal), **Open** (details) and **Remove**. Empty tabs say "No places here yet. Save places from Explore to plan your next walk.", "No explored places yet. Record a visit from a place's details after you go." or "Places you'd like to visit again, with fresh ideas, appear here."
+
+**Names and addresses aren't stored.** Google's terms allow keeping place IDs, not place content. Places in the current results are already known. For the rest, the page fetches their fields (7.2) with `fetchFields` **only once My Places (or My week) is on screen**, once per place per visit, at most 50. A place that fails shows "Place details unavailable right now" and keeps its status and journal; its Open button is disabled. A saved place opened without a search uses the chosen address as the route's starting point, or says "Choose a starting point at the top of the page to see the walking route."
+
+**Migration:** if `littleDays.places.v2` doesn't exist, `littleDays.places.v1` is read: each visit date becomes a journal entry with empty texts, a v1 note is kept as `note` (shown under the journal if not empty), saved as v2, and v1 is removed.
 
 ### 7.18 Saved data and privacy
 
@@ -539,15 +556,15 @@ Everything is stored in `localStorage` on this device, and every read and write 
 | Key | Holds |
 |---|---|
 | `littleDays.settings.v2` | `{ unit, mode, ages, minutes, interest, location }`: `unit` `"F"`/`"C"`; `mode` `"family"`/`"classroom"`; `ages` `"under-2"`/`"2-3"`/`"4-6"`/`"2-6"`; `minutes` 5/10/15/20/30; `interest` a category key, `"all"`, or `null`; `location` `{ kind: "place", placeId }`, `{ kind: "city", name }` or `null`. |
-| `littleDays.places.v1` | My Places (7.17) |
+| `littleDays.places.v2` | My Places and the journal (7.17) |
 | `littleDays.plan.v2` | My week (7.9) |
 
 - **Location.** Saved once its weather has loaded: a picked Google address as its place ID, or a fallback city as the name that was searched. On a return visit the page restores it, fetches its location again (one Google place-details request, or one Open-Meteo geocoding request), and **refreshes the weather only**. It never starts a place search (8.1). Device location and the example address are **never saved**. Device coordinates are kept in memory for this visit only.
 - **Settings migration:** if `littleDays.settings.v2` doesn't exist, `littleDays.settings.v1` is read: its `unit` is kept and its `city` becomes `{ kind: "city", name: city }`, so a returning visitor still gets their weather. The rest takes the defaults (7.1). The result is saved as v2 and v1 is removed.
 - **What goes where:** Google gets the address text typed into Autocomplete and the search location (for nearby search and routes). Open-Meteo gets latitude and longitude **rounded to 2 decimals** (about 1 km), which is plenty for a forecast, and in the fallback the city name typed. Nager.Date gets the country code and year. The age range, mode, notes, themes and My Places never leave the device.
 - No analytics, no cookies set by Little Days, no backend.
-- **Delete my saved data:** a button in the footer's "Your data" area. After `confirm("Delete your saved address, places, notes and plan from this device?")` it removes every `littleDays.*` key and reloads the page.
-- A short **privacy note** in the footer: "Little Days saves your choices only in this browser. Searches go to Google Maps Platform and Open-Meteo. Your location is used only when you press Use my location, and it isn't saved."
+- **Delete my saved data:** a button in the footer's "Your data" area. After `confirm("Delete your saved places, journal entries, plan and choices from this browser? This can't be undone.")` it removes every `littleDays.*` key, old versions included, and reloads the page.
+- **Your data** in the footer, as a short list: saved places, journal entries, plan and choices are stored only in this browser, with no accounts or sync; location permission is optional and asked only for "Use my location", and the device's position is never stored; place details, maps and walking routes come from Google Maps, and Little Days keeps only Google's place IDs; weather comes from Open-Meteo and holidays from Nager.Date; please don't write children's names in notes or journal entries.
 
 ## 8. Page states
 
@@ -702,8 +719,9 @@ Requests Little Days makes:
 | One search (All) | up to 6 nearby searches (only the categories not loaded yet) + 1 route matrix (only places without a walking time, up to 12 elements) |
 | Showing an interest again in the same visit | Nothing (kept in page memory, 7.10) |
 | Choosing a location, or a return visit | No Google search. A picked address costs its place-details request; a restored saved address costs 1 place-details request. Weather and holidays are free. |
-| Opening a place | 1 compute-routes request (once per place per visit) + 1 detail map load |
-| A visit with saved places | 1 place-details request per saved place (max 50) |
+| Opening a place | 1 compute-routes request the first time per place and starting point (reused after that), and 1 detail map load the first time only: the one detail map is reused for every place |
+| Saved places not in the results | 1 place-details request each, only once My Places or My week is on screen (max 50 per visit) |
+| Changing units, mode, ages, the day or filters | Nothing: the list redraws and existing markers are reused |
 
 Changing units, mode, ages, the day, or filters costs nothing.
 
