@@ -28,6 +28,12 @@
       window.fakeGoogleCalls.push({ call: "fetchFields", id: this.id, fields });
       if (options.failFetch) throw new Error("fake fetchFields failure");
       fill(this);
+      // A saved place from the made-up list gets its own name, type and location back.
+      const known = NEARBY.find((p) => p.id === this.id);
+      if (known) {
+        Object.assign(this, { displayName: known.name, formattedAddress: known.address, primaryType: known.primaryType, types: [known.primaryType] });
+        this.location = { lat: () => known.lat, lng: () => known.lng };
+      }
       return { place: this };
     }
     static async searchNearby(request) {
@@ -100,9 +106,16 @@
     },
   };
 
+  window.fakeMapCount = 0;
   class FakeMap {
-    constructor(element, opts) { this.element = element; this.opts = opts; element.dataset.fakeMap = "1"; }
+    constructor(element, opts) {
+      this.element = element;
+      this.opts = opts;
+      element.dataset.fakeMap = String(++window.fakeMapCount);
+    }
     fitBounds() {}
+    setCenter() {}
+    setZoom() {}
   }
   class PinElement {
     constructor(opts) { Object.assign(this, opts); }
@@ -116,7 +129,11 @@
     }
     addEventListener(type, fn) { this.listeners[type] = fn; }
   }
-  class Polyline { constructor(opts) { window.fakePolyline = opts; } }
+  window.fakePolylines = [];
+  class Polyline {
+    constructor(opts) { Object.assign(this, opts); window.fakePolylines.push(this); }
+    setMap(map) { this.map = map; }
+  }
   class LatLngBounds { constructor() {} extend() {} }
 
   window.google = {

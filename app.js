@@ -31,6 +31,11 @@ const exploreMap = document.querySelector("#explore-map");
 const mapPeek = document.querySelector("#map-peek");
 const placeDialog = document.querySelector("#place-dialog");
 const placeBody = document.querySelector("#place-body");
+const placeHead = document.querySelector("#place-head");
+const routeBox = document.querySelector("#place-route");
+const routeReminder = document.querySelector("#route-reminder");
+const detailMap = document.querySelector("#place-map");
+const placesList = document.querySelector("#places-list");
 const weatherSection = document.querySelector("#weather");
 const weatherStatus = document.querySelector("#weather-status");
 const weatherNow = document.querySelector("#weather-now");
@@ -360,6 +365,8 @@ async function startGoogle() {
     exampleButton.hidden = false;
     showChoices();
     renderExploreStatus();
+    renderMyPlaces();
+    renderPlan();
   } catch (error) {
     useFallback(error);
   }
@@ -469,7 +476,8 @@ document.addEventListener("change", (event) => {
     if (place) resetExplore();
     else showChoices();
   }
-  if (name === "setting-filter") renderPlaces();
+  if (name === "setting-filter" || name === "explored-filter") renderPlaces();
+  if (name === "places-tab") renderMyPlaces();
   if (name === "explore-view") {
     applyView();
     // Moving between the list and the map keeps the keyboard in the same place.
@@ -486,6 +494,7 @@ agesSelect.addEventListener("change", () => {
 
 function clearFilters() {
   document.querySelector("input[name=setting-filter][value=all]").checked = true;
+  document.querySelector("input[name=explored-filter][value=all]").checked = true;
   renderPlaces();
 }
 document.querySelector("#clear-filters").addEventListener("click", clearFilters);
@@ -503,7 +512,37 @@ window.matchMedia("(max-width: 719px)").addEventListener("change", applyView);
 placeDialog.addEventListener("close", () => {
   if (placeOpener && placeOpener.isConnected) placeOpener.focus();
   placeOpener = null;
+  openPlaceId = null;
 });
+
+// Forms inside the details dialog and My week are drawn often, so one listener handles them.
+document.addEventListener("submit", (event) => {
+  const form = event.target;
+  if (form.matches("[data-visit-form]")) submitVisit(form);
+  else if (form.matches("[data-plan-form]")) submitPlanForm(form);
+  else if (form.matches("[data-edit-form]")) submitEditVisit(form);
+  else return;
+  event.preventDefault();
+});
+
+document.querySelector("#delete-data").addEventListener("click", () => {
+  if (!confirm("Delete your saved places, journal entries, plan and choices from this browser? This can't be undone.")) return;
+  deleteSavedData(storage);
+  location.reload();
+});
+
+// Saved places' Google details are fetched only when their section is on screen.
+const sectionObserver = new IntersectionObserver((entries) => {
+  for (const entry of entries) {
+    if (!entry.isIntersecting) continue;
+    visibleSections.add(entry.target.id);
+    sectionObserver.unobserve(entry.target);
+    if (entry.target.id === "my-places") renderMyPlaces();
+    else renderPlan();
+  }
+});
+sectionObserver.observe(document.querySelector("#my-places"));
+sectionObserver.observe(document.querySelector("#my-week"));
 locateButton.addEventListener("click", locate);
 exampleButton.addEventListener("click", useExample);
 
@@ -538,6 +577,23 @@ document.addEventListener("click", (event) => {
   const walk = event.target.closest("[data-walk]");
   if (walk) checkWalkingTimes(explore.shortlist.filter((p) => p.id === walk.dataset.walk));
   if (event.target.closest("[data-place-close]")) placeDialog.close();
+  const status = event.target.closest("[data-status]");
+  if (status) setStatus(status.dataset.placeId, status.dataset.status);
+  const removePlaceButton = event.target.closest("[data-remove-place]");
+  if (removePlaceButton) removeSavedPlace(removePlaceButton.dataset.removePlace);
+  const edit = event.target.closest("[data-edit-visit]");
+  if (edit) {
+    editingEntry = edit.dataset.editVisit;
+    renderPlan();
+    planBox.querySelector("[data-edit-form] input")?.focus();
+  }
+  if (event.target.closest("[data-cancel-edit]")) {
+    editingEntry = null;
+    renderPlan();
+    planHeading.focus();
+  }
+  const removeVisitButton = event.target.closest("[data-remove-visit]");
+  if (removeVisitButton) removeVisit(removeVisitButton.dataset.removeVisit);
   if (event.target.closest("[data-clear-filters]")) clearFilters();
   const perspective = event.target.closest("[data-perspective]");
   if (perspective) showPerspective(perspective.dataset.placeId, Number(perspective.dataset.perspective));
@@ -556,7 +612,7 @@ document.addEventListener("error", (event) => {
 
 // What's loaded for the current starting point and walking time, kept in page memory
 // only (PRD.md 7.10): { key, origin, loaded: { category: [place] }, routes: { placeId: route },
-// detailRoutes: { placeId: route or null }, shortlist, partial, routesFailed, map, markers }
+// shortlist, partial, routesFailed, map, markers }
 let explore = null;
 let selectedPlace = null;
 // The place shown in the details dialog, and the button that opened it.
@@ -630,7 +686,6 @@ async function findAdventures() {
       origin: { lat: place.latitude, lng: place.longitude },
       loaded: {},
       routes: {},
-      detailRoutes: {},
       shortlist: [],
     };
   }
@@ -707,7 +762,10 @@ function settingFilter() {
 async function renderPlaces() {
   if (!explore || exploreResults.hidden) return;
   const day = current ? current.days[selectedDay] : null;
-  const filtered = filterBySetting(explore.shortlist, settingFilter());
+  for (const p of explore.shortlist) placeInfo[p.id] = p;
+  const exploredOnly = document.querySelector("input[name=explored-filter]:checked").value;
+  const filtered = filterBySetting(explore.shortlist, settingFilter())
+    .filter((p) => exploredOnly === "all" || (visitCount(savedPlaces, p.id) > 0) === (exploredOnly === "explored"));
   const { within, unknown, over } = byWalkingTime(filtered, explore.routes, settings.minutes);
   const weather = day && day.weather;
   const shown = [...orderForWeather(within, weather, settingFor), ...orderForWeather(unknown, weather, settingFor)];
@@ -736,7 +794,8 @@ async function renderPlaces() {
   // The list is complete without the map, so a map problem never hides it.
   try {
     if (!explore.map) explore.map = await createMap(exploreMap, explore.origin, config.googleMapId || "DEMO_MAP_ID");
-    explore.markers = await showMarkers(explore.map, explore.origin, shown, selectPlace, explore.markers);
+    // Markers are reused: only places that appear or disappear change (PRD.md 7.16).
+    explore.markers = await syncMarkers(explore.map, explore.origin, shown, selectPlace, explore.markers);
   } catch (error) {
     console.error(error);
   }
@@ -785,7 +844,8 @@ function placeWeatherLines(placeItem, day) {
 function placeCardHtml(placeItem, day) {
   const category = CATEGORIES[placeItem.category];
   const guide = guideFor(placeType(placeItem), placeItem.category);
-  const saved = savedPlaces[placeItem.id];
+  const visits = visitCount(savedPlaces, placeItem.id);
+  const idea = guide.sets[perspectiveFor(guide, visits)].notice[0];
   const name = escapeHtml(placeItem.name || "Unnamed place");
   return `
     <article class="place-card${placeItem.id === selectedPlace ? " is-selected" : ""}" data-place="${placeItem.id}">
@@ -805,10 +865,10 @@ function placeCardHtml(placeItem, day) {
         <p>${accessHtml(placeItem)}</p>
         <ul class="place-weather">${placeWeatherLines(placeItem, day).map((line) => `<li>${line}</li>`).join("")}</ul>
         <p>${ageNotes(settings.ages).join(" ")}</p>
-        <p class="place-idea"><strong>Notice:</strong> ${escapeHtml(guide.sets[0].notice[0])}</p>
+        <p class="place-idea"><strong>${visits ? "Next visit:" : "Notice:"}</strong> ${escapeHtml(idea)}</p>
       </div>
       <div class="place-actions">
-        ${saved ? `<span class="tag tag-saved">Want to explore ✓</span>`
+        ${savedPlaces[placeItem.id] ? statusTagHtml(placeItem.id)
           : `<button type="button" class="button-secondary" data-save="${placeItem.id}" aria-label="Save ${name}">Save</button>`}
         <button type="button" class="button-secondary" data-place-open="${placeItem.id}" aria-label="Details for ${name}">Details</button>
       </div>
@@ -832,17 +892,6 @@ function selectPlace(id) {
   if (!isPhone()) placeList.querySelector(`[data-place="${id}"]`)?.scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
 }
 
-function savePlaceId(id) {
-  savedPlaces = savePlace(savedPlaces, id);
-  storePlaces(storage, savedPlaces);
-  const placeItem = explore.shortlist.find((p) => p.id === id);
-  announce(`Saved ${placeItem ? placeItem.name : "the place"} to Want to explore.`);
-  renderPlaces();
-  // Only the buttons change, so the detail map stays.
-  const actions = placeBody.querySelector(".place-actions");
-  if (placeDialog.open && actions) actions.innerHTML = placeActionsHtml(id);
-}
-
 // On phones only one of the list and the map shows (DESIGN.md 5).
 function applyView() {
   const view = document.querySelector("input[name=explore-view]:checked").value;
@@ -860,60 +909,98 @@ function reducedMotion() {
 
 // --- Place details (PRD.md 7.16) ---
 
+// Google details for places seen this visit, by ID: from search results, or fetched for
+// saved places. Memory only, never stored (PRD.md 9.4).
+const placeInfo = {};
+// "loading" or "failed", by place ID, for saved places being fetched.
+const placeInfoState = {};
+// Walking routes for the detail map, by "lat,lng|placeId", for this visit only.
+const routeCache = {};
+// The one detail map, reused for every place (PRD.md 7.16): { map, markers, line }.
+const detailView = {};
+let openPlaceId = null;
+
+// A place to show: from the current results (with its list number), or from what's known
+// about a saved place. Returns null when Google's details aren't available.
+function findPlace(id) {
+  const listed = explore && explore.shortlist.find((p) => p.id === id);
+  if (listed) return listed;
+  if (!placeInfo[id]) return null;
+  const saved = savedPlaces[id];
+  return { ...placeInfo[id], category: categoryOf({ ...placeInfo[id], category: saved && saved.category }) };
+}
+
+function routeOrigin() {
+  if (explore) return explore.origin;
+  return place ? { lat: place.latitude, lng: place.longitude } : null;
+}
+
 async function openPlace(id, opener) {
+  const placeItem = findPlace(id);
+  if (!placeItem) return;
   placeOpener = opener;
-  renderPlaceDetails(id, 0);
-  placeDialog.showModal();
+  openPlaceId = id;
+  const origin = routeOrigin();
+  renderPlaceDetails(placeItem);
+  routeBox.innerHTML = origin
+    ? `<p class="walk-pending">Checking the walking route…</p>`
+    : `<p>Choose a starting point at the top of the page to see the walking route.</p>`;
+  if (!placeDialog.open) placeDialog.showModal();
   document.querySelector("#place-title").focus();
-  const placeItem = explore.shortlist.find((p) => p.id === id);
-  const run = explore;
-  if (!(id in run.detailRoutes)) {
-    try {
-      run.detailRoutes[id] = await walkingRoute(run.origin, placeItem.location);
-    } catch (error) {
-      console.error(error);
-      run.detailRoutes[id] = null;
+
+  let route = null;
+  if (origin && mapsState === "ready") {
+    const key = `${origin.lat},${origin.lng}|${id}`;
+    // A route already fetched this visit is reused, not requested again.
+    if (!(key in routeCache)) {
+      try {
+        routeCache[key] = await walkingRoute(origin, placeItem.location);
+      } catch (error) {
+        console.error(error);
+        routeCache[key] = null;
+      }
     }
+    route = routeCache[key];
     // The route also gives this place's walking time, if the matrix hasn't.
-    const route = run.detailRoutes[id];
-    if (route && (!run.routes[id] || run.routes[id].status !== "ok")) {
-      run.routes[id] = { status: "ok", durationMillis: route.durationMillis, distanceMeters: route.distanceMeters };
+    if (route && explore && explore.origin === origin && (!explore.routes[id] || explore.routes[id].status !== "ok")) {
+      explore.routes[id] = { status: "ok", durationMillis: route.durationMillis, distanceMeters: route.distanceMeters };
+      renderPlaces();
     }
   }
-  if (run !== explore || !placeDialog.open) return;
-  renderRoute(id);
+  if (openPlaceId !== id || !placeDialog.open) return;
+  if (origin) renderRoute(route);
+  if (mapsState !== "ready") return;
   try {
-    await showRouteMap(document.querySelector("#place-map"), run.origin, placeItem, run.detailRoutes[id], config.googleMapId || "DEMO_MAP_ID");
+    await showRouteMap(detailView, detailMap, origin, { ...placeItem, number: placeItem.number || "" }, route, config.googleMapId || "DEMO_MAP_ID");
   } catch (error) {
     console.error(error);
   }
 }
 
-function renderPlaceDetails(id, perspective) {
-  const placeItem = explore.shortlist.find((p) => p.id === id);
+// Everything in the dialog except the map and the route, which stay while the
+// rest is redrawn (after saving, recording a visit, or planning).
+function renderPlaceDetails(placeItem, perspective) {
+  const id = placeItem.id;
   const day = current ? current.days[selectedDay] : null;
   const guide = guideFor(placeType(placeItem), placeItem.category);
   const category = CATEGORIES[placeItem.category];
+  const visits = visitCount(savedPlaces, id);
+  const suggested = perspectiveFor(guide, visits);
+  const shown = perspective == null ? suggested : perspective;
   const name = escapeHtml(placeItem.name || "Unnamed place");
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeItem.name || "")}&query_place_id=${encodeURIComponent(id)}`;
+
+  placeHead.innerHTML = `
+    <div>
+      <h2 id="place-title" tabindex="-1">${name}</h2>
+      <p class="place-address">${escapeHtml(placeItem.address || "")}</p>
+      <p><span class="tag tag-soft"><span aria-hidden="true">${category.emoji}</span> ${category.label}</span> ${statusTagHtml(id)}</p>
+    </div>
+    <button type="button" class="button-secondary" data-place-close>Close</button>`;
+  routeReminder.innerHTML = `A Google walking route isn't a check that the way suits young children. Before you go, look for busy road crossings, water, construction, closed or restricted areas, and the weather, and plan enough adults to supervise.
+    ${settings.mode === "classroom" ? `<br>${CLASSROOM_WALKING} Walk the route yourself before taking a group.` : ""}`;
+
   placeBody.innerHTML = `
-    <header class="place-head">
-      <div>
-        <h2 id="place-title" tabindex="-1">${name}</h2>
-        <p class="place-address">${escapeHtml(placeItem.address || "")}</p>
-        <p><span class="tag tag-soft"><span aria-hidden="true">${category.emoji}</span> ${category.label}</span></p>
-      </div>
-      <button type="button" class="button-secondary" data-place-close>Close</button>
-    </header>
-
-    <section class="place-section" aria-labelledby="route-heading">
-      <h3 id="route-heading">Walking route</h3>
-      <div id="place-map" class="map map-detail"></div>
-      <div id="place-route"><p class="walk-pending">Checking the walking route…</p></div>
-      <p class="route-reminder">A Google walking route isn't a check that the way suits young children. Before you go, look for busy road crossings, water, construction, closed or restricted areas, and the weather, and plan enough adults to supervise.
-        ${settings.mode === "classroom" ? `<br>${CLASSROOM_WALKING} Walk the route yourself before taking a group.` : ""}</p>
-    </section>
-
     <section class="place-section" aria-labelledby="weather-detail-heading">
       <h3 id="weather-detail-heading">Weather${day ? ` on ${formatDay(day.date)}` : ""}</h3>
       ${day ? `<p>${(WEATHER[day.code] || ["🌡️", "Unknown"]).map((part, i) => i ? part : `<span aria-hidden="true">${part}</span>`).join(" ")} ·
@@ -932,26 +1019,95 @@ function renderPlaceDetails(id, perspective) {
       <p class="notes-label">Little Days ideas</p>
       <h3 id="ideas-detail-heading">Why explore this place?</h3>
       <p>${escapeHtml(guide.why)}</p>
+      ${visits ? `<p class="perspective-note">You've recorded ${visits} ${visits === 1 ? "visit" : "visits"}, so a new perspective comes first.</p>` : ""}
       <div class="perspectives" role="group" aria-label="Visit">
         ${guide.sets.map((set, i) => `<button type="button" class="perspective" data-perspective="${i}" data-place-id="${id}"
-          aria-pressed="${i === perspective}">${["First", "Second", "Third"][i]} visit</button>`).join("")}
+          aria-pressed="${i === shown}">${["First", "Second", "Third"][i]} visit</button>`).join("")}
       </div>
-      <div id="guide-set">${guideSetHtml(guide.sets[perspective])}</div>
+      <div id="guide-set">${guideSetHtml(guide.sets[shown])}</div>
       ${atHomeHtml(guide, day)}
     </section>
 
-    <div class="place-actions">${placeActionsHtml(id)}</div>`;
-  if (explore.detailRoutes[id] !== undefined) renderRoute(id);
+    ${visitsHtml(placeItem)}
+    ${planFormHtml(placeItem, guide.sets[suggested].focus, day)}
+
+    <div class="place-actions"><button type="button" class="button-secondary" data-place-close>Close</button></div>`;
 }
 
-function placeActionsHtml(id) {
-  return `${savedPlaces[id] ? `<span class="tag tag-saved">Want to explore ✓</span>` : `<button type="button" data-save="${id}">Save</button>`}
-    <button type="button" class="button-secondary" data-place-close>Close</button>`;
+function statusTagHtml(id) {
+  const entry = savedPlaces[id];
+  if (!entry) return "";
+  const visits = entry.visits.length;
+  const count = visits ? ` · ${visits} ${visits === 1 ? "visit" : "visits"}` : "";
+  const label = { want: "Want to explore", explored: "Explored", revisit: "Revisit" }[entry.status];
+  return `<span class="tag tag-saved">${label}${entry.status === "want" ? "" : count}</span>`;
 }
 
-// Switching perspective changes only the guide, so the detail map stays.
+// My Places status, the journal, and the form to record a visit (PRD.md 7.17).
+function visitsHtml(placeItem) {
+  const id = placeItem.id;
+  const entry = savedPlaces[id];
+  const pressed = (status) => String(Boolean(entry && entry.status === status));
+  return `
+    <section class="place-section" aria-labelledby="visits-heading">
+      <h3 id="visits-heading">Your visits</h3>
+      <div class="status-buttons">
+        <button type="button" class="toggle" data-status="want" data-place-id="${id}" aria-pressed="${pressed("want")}">Want to explore</button>
+        <button type="button" class="toggle" data-status="revisit" data-place-id="${id}" aria-pressed="${pressed("revisit")}">Visit again</button>
+        ${entry ? `<button type="button" class="link-button remove-button" data-remove-place="${id}">Remove from My Places</button>` : ""}
+      </div>
+      ${journalHtml(entry)}
+      <form class="visit-form" data-visit-form="${id}" novalidate>
+        <h4>Record a visit</h4>
+        <label>Date <input type="date" name="date" value="${isoToday()}" max="${isoToday()}" required></label>
+        <label>What did you notice? <span class="optional">(optional)</span>
+          <textarea name="observation" rows="2" maxlength="500" placeholder="The children noticed different leaf shapes."></textarea></label>
+        <label>An idea for next time <span class="optional">(optional)</span>
+          <input type="text" name="next" maxlength="200" placeholder="Look for changes in the trees."></label>
+        <p class="hint">Saved only in this browser. Please don't write children's names.</p>
+        <p class="field-message" data-form-message hidden></p>
+        <button type="submit">Mark as explored</button>
+      </form>
+    </section>`;
+}
+
+function journalHtml(entry) {
+  if (!entry || !entry.visits.length) return "";
+  const visits = [...entry.visits].reverse();
+  return `<ol class="journal" reversed>${visits.map((visit) => `
+    <li>
+      <p class="journal-date">${formatDay(visit.date)}</p>
+      ${visit.observation ? `<p>${escapeHtml(visit.observation)}</p>` : ""}
+      ${visit.next ? `<p><strong>Next time:</strong> ${escapeHtml(visit.next)}</p>` : ""}
+    </li>`).join("")}</ol>
+    ${entry.note ? `<p class="journal-note"><strong>Note:</strong> ${escapeHtml(entry.note)}</p>` : ""}`;
+}
+
+// Planning a visit never marks it explored (PRD.md 7.9).
+function planFormHtml(placeItem, focus, day) {
+  const date = day && day.date >= isoToday() ? day.date : isoToday();
+  return `
+    <section class="place-section" aria-labelledby="plan-form-heading">
+      <form class="plan-form" data-plan-form="${placeItem.id}" novalidate>
+        <h3 id="plan-form-heading">Add to my week</h3>
+        <div class="form-row">
+          <label>Date <input type="date" name="date" value="${date}" min="${isoToday()}" required></label>
+          <label>Time <span class="optional">(optional)</span> <input type="time" name="time"></label>
+        </div>
+        <label>Exploration theme <span class="optional">(optional)</span>
+          <input type="text" name="theme" maxlength="80" placeholder="${escapeHtml(focus)}"></label>
+        <label>Preparation notes <span class="optional">(optional)</span>
+          <textarea name="notes" rows="2" maxlength="500" placeholder="Bring a bag for treasures."></textarea></label>
+        <p class="field-message" data-form-message hidden></p>
+        <button type="submit">Add to my week</button>
+        <p class="form-done" data-form-done role="status"></p>
+      </form>
+    </section>`;
+}
+
+// Switching perspective changes only the guide.
 function showPerspective(id, perspective) {
-  const placeItem = explore.shortlist.find((p) => p.id === id);
+  const placeItem = findPlace(id);
   const guide = guideFor(placeType(placeItem), placeItem.category);
   placeBody.querySelector("#guide-set").innerHTML = guideSetHtml(guide.sets[perspective]);
   for (const button of placeBody.querySelectorAll(".perspective")) {
@@ -985,18 +1141,178 @@ function atHomeHtml(guide, day) {
       ${escapeHtml(activity.rootmap.title)}</button> <span class="source-note">from RootMap</span></li>`).join("")}</ul>`;
 }
 
-function renderRoute(id) {
-  const box = document.querySelector("#place-route");
-  if (!box) return;
-  const route = explore.detailRoutes[id];
+function renderRoute(route) {
   if (!route) {
-    box.innerHTML = `<p>Walking route unavailable.</p>`;
+    routeBox.innerHTML = `<p>Walking route unavailable.</p>`;
     return;
   }
-  box.innerHTML = `
+  routeBox.innerHTML = `
     <p class="place-walk"><span aria-hidden="true">🚶</span> ${walkingMinutes(route.durationMillis)} min walk · ${formatDistance(route.distanceMeters, settings.unit)}
       <span class="walk-source">Google walking estimate</span></p>
     ${route.warnings.length ? `<p class="route-warnings">From Google: ${route.warnings.map(escapeHtml).join(" ")}</p>` : ""}`;
+}
+
+// After a change to My Places: the cards, the section, and the open dialog.
+function placesChanged(id, message) {
+  storePlaces(storage, savedPlaces);
+  renderPlaces();
+  renderMyPlaces();
+  if (placeDialog.open && openPlaceId === id) {
+    const placeItem = findPlace(id);
+    if (placeItem) renderPlaceDetails(placeItem);
+  }
+  if (message) announce(message);
+}
+
+function savePlaceId(id) {
+  const placeItem = findPlace(id);
+  savedPlaces = savePlace(savedPlaces, id, placeItem && placeItem.category, isoToday());
+  placesChanged(id, `Saved ${placeItem ? placeItem.name : "the place"} to Want to explore.`);
+}
+
+function setStatus(id, status) {
+  const placeItem = findPlace(id);
+  savedPlaces = setPlaceStatus(savedPlaces, id, status, placeItem && placeItem.category, isoToday());
+  placesChanged(id, status === "revisit" ? "Marked to visit again." : "Marked as want to explore.");
+  placeDialog.querySelector(`[data-status="${status}"]`)?.focus();
+}
+
+function removeSavedPlace(id) {
+  const placeItem = findPlace(id);
+  const name = placeItem ? placeItem.name : "this place";
+  if (!confirm(`Remove ${name} from My Places? Its journal entries will be removed too.`)) return;
+  savedPlaces = removePlace(savedPlaces, id);
+  placesChanged(id, `Removed ${name} from My Places.`);
+}
+
+function formMessage(form, text) {
+  const message = form.querySelector("[data-form-message]");
+  message.textContent = text ? `⚠︎ ${text}` : "";
+  message.hidden = !text;
+}
+
+// Recording a visit adds a journal entry; earlier entries stay as they are.
+function submitVisit(form) {
+  const id = form.dataset.visitForm;
+  const date = form.elements.date.value;
+  if (!date || date > isoToday()) {
+    formMessage(form, "Choose today or an earlier date.");
+    form.elements.date.focus();
+    return;
+  }
+  const placeItem = findPlace(id);
+  savedPlaces = recordVisit(savedPlaces, id, placeItem && placeItem.category, isoToday(), {
+    date, observation: form.elements.observation.value, next: form.elements.next.value,
+  });
+  placesChanged(id, `Recorded a visit on ${formatDay(date)}.`);
+  document.querySelector("#visits-heading")?.focus();
+}
+
+function newEntryId() {
+  return `v${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function submitPlanForm(form) {
+  const id = form.dataset.planForm;
+  const date = form.elements.date.value;
+  if (!date || date < isoToday()) {
+    formMessage(form, "Choose today or a later date.");
+    form.elements.date.focus();
+    return;
+  }
+  if (isPlacePlanned(plan, date, id)) {
+    formMessage(form, `This place is already in your week for ${formatDay(date)}.`);
+    return;
+  }
+  formMessage(form, "");
+  const placeItem = findPlace(id);
+  plan = addPlaceToPlan(plan, date, {
+    placeId: id,
+    category: placeItem && placeItem.category,
+    time: form.elements.time.value,
+    theme: form.elements.theme.value,
+    notes: form.elements.notes.value,
+  }, newEntryId());
+  savePlan(storage, plan);
+  renderPlan();
+  form.querySelector("[data-form-done]").textContent = `Added to ${formatDay(date)} ✓`;
+}
+
+// --- My Places (PRD.md 7.17) ---
+
+// Sections whose saved places need Google's details; they're fetched only once a section
+// is on screen, to avoid paying for places nobody looks at.
+const visibleSections = new Set();
+
+// Fetches Google's details for saved place IDs not known yet, at most 50 per visit.
+async function ensurePlaceInfo(ids) {
+  if (mapsState !== "ready") return;
+  const missing = ids.filter((id) => !placeInfo[id] && !placeInfoState[id]).slice(0, 50 - Object.keys(placeInfoState).length);
+  if (!missing.length) return;
+  for (const id of missing) placeInfoState[id] = "loading";
+  await Promise.all(missing.map(async (id) => {
+    try {
+      placeInfo[id] = await placeDetails(id);
+      delete placeInfoState[id];
+    } catch (error) {
+      console.error(error);
+      placeInfoState[id] = "failed";
+    }
+  }));
+  renderMyPlaces();
+  renderPlan();
+}
+
+function placesTab() {
+  return document.querySelector("input[name=places-tab]:checked").value;
+}
+
+function lastActivity(entry) {
+  return entry.visits.length ? entry.visits[entry.visits.length - 1].date : entry.saved;
+}
+
+function renderMyPlaces() {
+  const ids = Object.keys(savedPlaces);
+  for (const span of document.querySelectorAll("[data-count]")) {
+    span.textContent = `(${ids.filter((id) => savedPlaces[id].status === span.dataset.count).length})`;
+  }
+  const tab = placesTab();
+  const shown = ids.filter((id) => savedPlaces[id].status === tab)
+    .sort((a, b) => (lastActivity(savedPlaces[a]) < lastActivity(savedPlaces[b]) ? 1 : -1));
+  if (!shown.length) {
+    placesList.innerHTML = `<p class="status">${{
+      want: "No places here yet. Save places from Explore to plan your next walk.",
+      explored: "No explored places yet. Record a visit from a place's details after you go.",
+      revisit: "Places you'd like to visit again, with fresh ideas, appear here.",
+    }[tab]}</p>`;
+    return;
+  }
+  if (visibleSections.has("my-places")) ensurePlaceInfo(shown);
+  placesList.innerHTML = shown.map((id) => savedPlaceHtml(id)).join("");
+}
+
+function savedPlaceHtml(id) {
+  const entry = savedPlaces[id];
+  const info = findPlace(id);
+  const visits = entry.visits.length;
+  const title = info ? escapeHtml(info.name || "Unnamed place")
+    : placeInfoState[id] === "failed" || mapsState === "missing" || mapsState === "failed"
+      ? "Place details unavailable right now" : "Loading place details…";
+  const latest = entry.visits[visits - 1];
+  return `
+    <article class="saved-place">
+      <h3${info ? "" : ` class="unavailable"`}>${title}</h3>
+      ${info ? `<p class="place-address">${escapeHtml(info.address || "")}</p>` : ""}
+      <p class="saved-meta">${visits ? `Last explored ${formatDay(latest.date)} · ${visits} ${visits === 1 ? "visit" : "visits"}`
+        : entry.saved ? `Saved ${formatDay(entry.saved)}` : "Saved"}</p>
+      ${latest && latest.next ? `<p><strong>Next time:</strong> ${escapeHtml(latest.next)}</p>` : ""}
+      ${visits ? `<details class="history"><summary>Exploration history (${visits})</summary>${journalHtml(entry)}</details>` : ""}
+      <div class="place-actions">
+        <button type="button" class="button-secondary" data-place-open="${id}" ${info ? "" : "disabled"}
+          aria-label="Open ${info ? escapeHtml(info.name || "") : "place"}">Open</button>
+        <button type="button" class="link-button remove-button" data-remove-place="${id}">Remove</button>
+      </div>
+    </article>`;
 }
 
 // Choosing an interest never searches by itself (PRD.md 7.1): an interest already
@@ -1050,29 +1366,133 @@ function planDates() {
   return [...dates].filter((d) => d >= isoToday()).sort();
 }
 
+// The planned visit being edited in My week, by its entry ID.
+let editingEntry = null;
+
 function renderPlan() {
   const dates = planDates();
   if (!dates.length) {
-    planBox.innerHTML = `<p class="status">Your week is empty. Pick activities from the days above to add them here.</p>`;
+    planBox.innerHTML = `<p class="status">Your week is empty. Add activities or places to plan your week.</p>`;
     return;
   }
-  planBox.innerHTML = `<ul class="plan">${dates.map((date) => {
-    const ids = plan[date] || [];
-    const items = ids.map((id) => {
-      const title = escapeHtml(activityById(id).rootmap.title);
+  const placeIds = Object.values(plan).flat().filter((x) => typeof x === "object").map((x) => x.placeId);
+  if (placeIds.length && visibleSections.has("my-week")) ensurePlaceInfo(placeIds);
+  // My week can be redrawn while a visit is being edited (weather or place details
+  // arriving), so what's been typed is carried over.
+  const editForm = planBox.querySelector("[data-edit-form]");
+  const draft = editForm && editForm.dataset.editForm === editingEntry ? new FormData(editForm) : null;
+  planBox.innerHTML = `
+    ${placeIds.length ? `<p class="google-attribution" translate="no">Google Maps</p>` : ""}
+    <ul class="plan">${dates.map((date) => {
+      const entries = plan[date] || [];
+      const items = entries.map((entry) => typeof entry === "string" ? activityItemHtml(entry, date) : placeItemHtml(entry, date)).join("");
       return `
         <li>
-          <button type="button" class="link-button" data-open="${id}" data-date="${date}">${title}</button>
-          <button type="button" class="link-button remove-button" data-remove="${id}" data-date="${date}"
-            aria-label="Remove ${title} from ${formatDay(date)}">Remove</button>
+          <div>
+            <h3 class="plan-day">${formatDay(date)}</h3>
+            ${planWeatherHtml(date)}
+          </div>
+          ${entries.length ? `<ul class="plan-items">${items}</ul>` : `<p class="plan-empty">Nothing planned</p>`}
         </li>`;
-    }).join("");
+    }).join("")}</ul>`;
+  const newForm = planBox.querySelector("[data-edit-form]");
+  if (draft && newForm) {
+    for (const [name, value] of draft) newForm.elements[name].value = value;
+  }
+}
+
+// The day's forecast when the date is in it; never an estimate beyond it (PRD.md 7.9).
+function planWeatherHtml(date) {
+  if (!current) return "";
+  const day = current.days.find((d) => d.date === date);
+  if (!day) return `<p class="plan-weather">Forecast not available yet for this date.</p>`;
+  const [icon, label] = WEATHER[day.code] || ["🌡️", "Unknown"];
+  const words = [...day.weather.hazards, ...day.weather.cautions].length ? " · Check the warnings" : "";
+  return `<p class="plan-weather"><span aria-hidden="true">${icon}</span> ${label} · ${temp(day.high)} / ${temp(day.low)} ·
+    ${day.rainChance == null ? "Rain –" : `Rain ${day.rainChance}%`}${words}</p>`;
+}
+
+function activityItemHtml(id, date) {
+  const title = escapeHtml(activityById(id).rootmap.title);
+  return `
+    <li>
+      <button type="button" class="link-button" data-open="${id}" data-date="${date}">${title}</button>
+      <button type="button" class="link-button remove-button" data-remove="${id}" data-date="${date}"
+        aria-label="Remove ${title} from ${formatDay(date)}">Remove</button>
+    </li>`;
+}
+
+function placeItemHtml(visit, date) {
+  const info = findPlace(visit.placeId);
+  const name = info ? escapeHtml(info.name || "Unnamed place") : "Saved place (details unavailable right now)";
+  if (editingEntry === visit.entry) {
     return `
-      <li>
-        <h3 class="plan-day">${formatDay(date)}</h3>
-        ${ids.length ? `<ul class="plan-items">${items}</ul>` : `<p class="plan-empty">Nothing planned</p>`}
+      <li class="plan-place">
+        <form class="edit-visit-form" data-edit-form="${visit.entry}" novalidate>
+          <p class="plan-place-name"><span aria-hidden="true">📍</span> ${name}</p>
+          <div class="form-row">
+            <label>Date <input type="date" name="date" value="${date}" min="${isoToday()}" required></label>
+            <label>Time <span class="optional">(optional)</span> <input type="time" name="time" value="${visit.time}"></label>
+          </div>
+          <label>Exploration theme <span class="optional">(optional)</span>
+            <input type="text" name="theme" maxlength="80" value="${escapeHtml(visit.theme)}"></label>
+          <label>Preparation notes <span class="optional">(optional)</span>
+            <textarea name="notes" rows="2" maxlength="500">${escapeHtml(visit.notes)}</textarea></label>
+          <p class="field-message" data-form-message hidden></p>
+          <div class="place-actions">
+            <button type="submit">Save changes</button>
+            <button type="button" class="button-secondary" data-cancel-edit>Cancel</button>
+          </div>
+        </form>
       </li>`;
-  }).join("")}</ul>`;
+  }
+  const meta = [visit.time, visit.theme].filter(Boolean).map(escapeHtml).join(" · ");
+  return `
+    <li class="plan-place">
+      <div>
+        <span aria-hidden="true">📍</span>
+        ${info ? `<button type="button" class="link-button" data-place-open="${visit.placeId}">${name}</button>` : `<span>${name}</span>`}
+        ${meta ? `<p class="plan-meta">${meta}</p>` : ""}
+        ${visit.notes ? `<p class="plan-notes">${escapeHtml(visit.notes)}</p>` : ""}
+      </div>
+      <div class="plan-place-actions">
+        <button type="button" class="link-button" data-edit-visit="${visit.entry}" aria-label="Edit the visit to ${name}">Edit</button>
+        <button type="button" class="link-button remove-button" data-remove-visit="${visit.entry}"
+          aria-label="Remove the visit to ${name} from ${formatDay(date)}">Remove</button>
+      </div>
+    </li>`;
+}
+
+function submitEditVisit(form) {
+  const entry = form.dataset.editForm;
+  const date = form.elements.date.value;
+  if (!date || date < isoToday()) {
+    formMessage(form, "Choose today or a later date.");
+    form.elements.date.focus();
+    return;
+  }
+  const before = plan;
+  plan = updatePlannedPlace(plan, entry, {
+    date, time: form.elements.time.value, theme: form.elements.theme.value, notes: form.elements.notes.value,
+  });
+  if (plan === before) {
+    formMessage(form, `This place is already in your week for ${formatDay(date)}.`);
+    return;
+  }
+  savePlan(storage, plan);
+  editingEntry = null;
+  renderPlan();
+  announce("Saved the changes to your visit.");
+  planHeading.focus();
+}
+
+function removeVisit(entry) {
+  plan = removePlannedPlace(plan, entry);
+  savePlan(storage, plan);
+  if (editingEntry === entry) editingEntry = null;
+  renderPlan();
+  announce("Removed the visit from your week.");
+  planHeading.focus();
 }
 
 // --- Activity details ---
@@ -1467,8 +1887,10 @@ document.querySelector("#explore-chips").innerHTML = interestChipsHtml("explore-
 showChoices();
 applyView();
 saveSettings(storage, settings); // finishes a v1 → v2 migration (PRD.md 7.18)
-savePlan(storage, plan); // keep the cleaned-up plan
+savePlan(storage, plan); // keep the cleaned-up plan (and finish a v1 → v2 migration)
+storePlaces(storage, savedPlaces); // the same for My Places
 renderPlan();
+renderMyPlaces();
 renderExploreStatus();
 // Resolves once Google is ready or the fallback is in place.
 const googleStarted = config.googleMapsKey ? startGoogle() : Promise.resolve(useFallback());

@@ -14,6 +14,7 @@
       <nav class="site-nav" aria-label="Sections">
         <a href="#explore"><span aria-hidden="true">🧭</span> Explore</a>
         <a href="#weather"><span aria-hidden="true">☀️</span> Weather</a>
+        <a href="#my-places"><span aria-hidden="true">📍</span> My Places</a>
         <a href="#my-week"><span aria-hidden="true">🗓️</span> My week</a>
       </nav>
     </div>
@@ -117,6 +118,14 @@
               <label><input type="radio" name="setting-filter" value="outdoors"><span>Outdoors</span></label>
             </div>
           </fieldset>
+          <fieldset class="field">
+            <legend>Explored</legend>
+            <div class="segmented segmented-small">
+              <label><input type="radio" name="explored-filter" value="all" checked><span>All</span></label>
+              <label><input type="radio" name="explored-filter" value="new"><span>Not explored yet</span></label>
+              <label><input type="radio" name="explored-filter" value="explored"><span>Explored</span></label>
+            </div>
+          </fieldset>
           <button id="clear-filters" type="button" class="link-button">Clear filters</button>
         </div>
         <div id="explore-notes" class="explore-notes"></div>
@@ -167,6 +176,22 @@
       </div>
     </section>
 
+    <section id="my-places" class="wrap" aria-labelledby="places-heading">
+      <div class="section-head">
+        <h2 id="places-heading">My Places</h2>
+        <p class="google-attribution" translate="no">Google Maps</p>
+      </div>
+      <fieldset class="places-tabs">
+        <legend class="visually-hidden">Show places</legend>
+        <div class="segmented segmented-small">
+          <label><input type="radio" name="places-tab" value="want" checked><span>Want to explore <span class="count" data-count="want"></span></span></label>
+          <label><input type="radio" name="places-tab" value="explored"><span>Explored <span class="count" data-count="explored"></span></span></label>
+          <label><input type="radio" name="places-tab" value="revisit"><span>Revisit <span class="count" data-count="revisit"></span></span></label>
+        </div>
+      </fieldset>
+      <div id="places-list" class="places-list"></div>
+    </section>
+
     <section id="my-week" class="wrap" aria-labelledby="plan-heading">
       <div class="section-head">
         <h2 id="plan-heading" tabindex="-1">My week</h2>
@@ -175,8 +200,21 @@
     </section>
   </main>
 
-  <footer class="wrap">
-    Weather by Open-Meteo · Holidays by Nager.Date · Activities and photos from RootMap
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Weather by Open-Meteo · Holidays by Nager.Date · Activities and photos from RootMap · Places, maps and walking routes from Google Maps</p>
+      <section class="your-data" aria-labelledby="data-heading">
+        <h2 id="data-heading">Your data</h2>
+        <ul>
+          <li>Your saved places, journal entries, plan and choices are stored only in this browser. There are no accounts and nothing is synced.</li>
+          <li>Location permission is optional. Little Days asks only when you press "Use my location", and never stores your device's position.</li>
+          <li>Place details, maps and walking routes come from Google Maps. Little Days keeps only Google's place IDs.</li>
+          <li>Weather comes from Open-Meteo, and public holidays from Nager.Date.</li>
+          <li>Please don't write children's names in notes or journal entries.</li>
+        </ul>
+        <button id="delete-data" type="button" class="button-secondary">Delete my saved data</button>
+      </section>
+    </div>
   </footer>
 
   <dialog id="details" aria-labelledby="details-title">
@@ -189,6 +227,14 @@
   </dialog>
 
   <dialog id="place-dialog" class="place-dialog" aria-labelledby="place-title">
+    <header id="place-head" class="place-head"></header>
+    <section class="place-section" aria-labelledby="route-heading">
+      <h3 id="route-heading">Walking route</h3>
+      <!-- Kept outside place-body so the one detail map is reused (PRD.md 7.16). -->
+      <div id="place-map" class="map map-detail"></div>
+      <div id="place-route"></div>
+      <p id="route-reminder" class="route-reminder"></p>
+    </section>
     <div id="place-body"></div>
   </dialog>
 

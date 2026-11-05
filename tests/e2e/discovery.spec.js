@@ -96,14 +96,14 @@ test("place details: route, weather, guide perspectives, at-home idea, and Save 
   await expect(dialog.locator(".perspective-focus")).toHaveText("Focus: Shapes and colors");
   await dialog.getByRole("button", { name: "Second visit" }).click();
   await expect(dialog.locator(".perspective-focus")).toHaveText("Focus: Smells and ingredients");
-  await expect(dialog.locator("#place-map")).toHaveAttribute("data-fake-map", "1");
+  await expect(dialog.locator("#place-map")).toHaveAttribute("data-fake-map", /\d/);
   await expect(dialog.getByRole("link", { name: /Check hours and details on Google Maps/ })).toHaveAttribute("href", /query_place_id=fake-bakery-1/);
   await expect(dialog).toContainText("At home afterwards");
 
-  await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(dialog).toContainText("Want to explore ✓");
-  const saved = await page.evaluate(() => localStorage.getItem("littleDays.places.v1"));
-  expect(JSON.parse(saved)).toEqual({ "fake-bakery-1": { status: "want", visits: [], note: "" } });
+  await dialog.getByRole("button", { name: "Want to explore" }).click();
+  await expect(dialog.getByRole("button", { name: "Want to explore" })).toHaveAttribute("aria-pressed", "true");
+  const saved = await page.evaluate(() => localStorage.getItem("littleDays.places.v2"));
+  expect(JSON.parse(saved)).toEqual({ "fake-bakery-1": { status: "want", category: "everyday-life", saved: "2026-11-04", visits: [], note: "" } });
   expect(saved).not.toContain("Test Bakery");
 
   await dialog.getByRole("button", { name: "Close" }).first().click();
@@ -154,8 +154,8 @@ test("phone: list first, a List/Map switch, the Google attribution on the list, 
   await page.getByRole("button", { name: "Find Little Adventures" }).click();
   await expect(page.locator(".place-card").first()).toBeVisible();
   await expect(page.locator("#place-map-box")).toBeHidden();
-  await expect(page.locator(".google-attribution")).toHaveText("Google Maps");
-  await expect(page.locator(".google-attribution")).toHaveAttribute("translate", "no");
+  await expect(page.locator("#place-list-box .google-attribution")).toHaveText("Google Maps");
+  await expect(page.locator("#place-list-box .google-attribution")).toHaveAttribute("translate", "no");
 
   await page.locator(".view-switch label", { hasText: "Map" }).click();
   await expect(page.locator("#place-map-box")).toBeVisible();

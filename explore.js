@@ -158,6 +158,14 @@ function settingFor(place) {
   return OUTDOOR_TYPES.includes(placeType(place)) ? "outdoors" : "indoors";
 }
 
+// The place's Little Days category: the one it was found or saved under, or else the
+// first category whose types include its type.
+function categoryOf(place) {
+  if (CATEGORIES[place.category]) return place.category;
+  const type = placeType(place);
+  return CATEGORY_KEYS.find((key) => CATEGORIES[key].types.includes(type)) || "everyday-life";
+}
+
 // "All", "indoors" or "outdoors".
 function filterBySetting(places, setting) {
   return setting === "all" ? places : places.filter((place) => settingFor(place) === setting);
@@ -166,6 +174,6 @@ function filterBySetting(places, setting) {
 if (typeof module !== "undefined") {
   module.exports = {
     CATEGORIES, CATEGORY_KEYS, MAX_RESULTS, ROUTE_BATCH, searchRadius, categoriesToSearch, straightLine,
-    shortlist, routeTargets, byWalkingTime, walkingMinutes, placeType, accessFor, settingFor, filterBySetting, ageNotes,
+    shortlist, routeTargets, byWalkingTime, walkingMinutes, placeType, accessFor, settingFor, filterBySetting, ageNotes, categoryOf,
   };
 }

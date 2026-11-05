@@ -254,6 +254,9 @@ gmp-place-autocomplete[aria-invalid=true]::part(input) { border-color: var(--acc
 .now-loading { color: var(--ink-soft); }
 
 input[type=text],
+input[type=date],
+input[type=time],
+textarea,
 select {
   width: 100%;
   min-width: 0;
@@ -687,9 +690,9 @@ section { padding-block: 32px; }
 
 .plan > li {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: 180px 1fr;
   gap: 12px;
-  align-items: center;
+  align-items: start;
   padding: 8px 16px;
   border-top: 1px solid var(--line);
 }
@@ -787,12 +790,19 @@ dialog p { margin: 8px 0 0; }
 
 .details-actions button:first-child { flex: 1; }
 
-footer {
+.site-footer {
+  margin-top: 32px;
   padding-block: 32px;
   font-size: 14px;
   color: var(--ink-soft);
-  text-align: center;
+  background: var(--tint);
 }
+
+.site-footer p { margin: 0 0 16px; }
+.your-data { padding: 0; }
+.your-data h2 { font-size: 20px; color: var(--ink); margin-bottom: 8px; }
+.your-data ul { margin: 0 0 16px; padding-left: 20px; }
+.your-data li + li { margin-top: 4px; }
 
 /* More controls: ages, who's exploring, walking time, interests, Find */
 
@@ -1140,6 +1150,131 @@ footer {
 
 .perspective-focus { font-weight: 600; }
 .place-dialog .place-actions { padding: 0 20px 20px; margin-top: 24px; }
+
+/* Forms in the details dialog and My week */
+
+textarea {
+  min-height: 0;
+  padding: 10px 12px;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.visit-form,
+.plan-form,
+.edit-visit-form {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+}
+
+.visit-form label,
+.plan-form label,
+.edit-visit-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.visit-form h4,
+.plan-form h3 { margin: 0; }
+.visit-form button[type=submit],
+.plan-form button[type=submit] { justify-self: start; }
+.form-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.form-row label { flex: 1 1 140px; }
+.optional { font-weight: 400; color: var(--ink-soft); }
+.hint,
+.form-done { margin: 0; font-size: 13px; color: var(--ink-soft); }
+.form-done:empty { display: none; }
+.form-done { color: var(--leaf-ink); font-weight: 600; }
+
+/* Your visits and the journal */
+
+.status-buttons { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+
+.toggle {
+  color: var(--accent);
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+.toggle[aria-pressed=true] {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.journal {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.journal li {
+  padding: 8px 0 8px 12px;
+  border-left: 3px solid var(--tint);
+}
+
+.journal p { margin: 0 0 2px; }
+.journal-date { font-weight: 700; color: var(--ink); }
+.journal-note { font-size: 14px; }
+.perspective-note { font-size: 14px; color: var(--ink-soft); }
+
+/* My Places */
+
+.places-tabs {
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+}
+
+.places-tabs .segmented span { padding: 0 14px; }
+.count { font-weight: 400; }
+
+.places-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.saved-place {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.saved-place h3 { font-size: 19px; }
+.saved-place h3.unavailable { color: var(--ink-soft); font-family: var(--font-body); font-size: 16px; }
+.saved-place p { margin: 4px 0 0; }
+.saved-meta { font-size: 14px; color: var(--ink-soft); }
+.history { margin-top: 8px; font-size: 14px; }
+.history summary { min-height: 44px; display: flex; align-items: center; color: var(--accent); font-weight: 600; cursor: pointer; }
+#my-places .section-head .google-attribution { margin-top: 4px; }
+
+/* My week: weather and planned places */
+
+.plan-weather { margin: 2px 0 0; font-size: 13px; color: var(--ink-soft); }
+
+.plan-place {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 4px 0;
+}
+
+.plan-place > div:first-child { flex: 1 1 220px; }
+.plan-meta,
+.plan-notes { margin: 0 0 0 28px; font-size: 14px; color: var(--ink-soft); }
+.plan-place-actions { display: flex; gap: 4px; }
+.plan-place-name { margin: 0; font-weight: 600; }
+.edit-visit-form { flex: 1 1 100%; }
 
 /* Phone */
 

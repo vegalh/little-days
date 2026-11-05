@@ -183,26 +183,57 @@ async function createMap(element, center, mapId) {
   });
 }
 
-// Removes old markers, then shows the start and one numbered marker per place
-// (place.number). Returns { placeId: { marker, pin } } for highlighting.
-async function showMarkers(map, origin, places, onChoose, oldMarkers = {}) {
+// Keeps markers in step with the list without rebuilding them: markers is
+// { start, placeId: { marker, pin } } from the last call (changed in place and returned).
+// origin is the starting point, or null for none (no start marker).
+// Only new places get new markers, only removed places lose theirs, and a changed list
+// number just updates the pin. The map is refit only when the set of places changes.
+async function syncMarkers(map, origin, places, onChoose, markers = {}) {
   const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
-  for (const { marker } of Object.values(oldMarkers)) marker.map = null;
   const accent = cssColor("--accent");
-  const ink = cssColor("--ink");
   const onAccent = cssColor("--accent-ink");
-  // glyphText and the pin itself as content: Google deprecated glyph and pin.element.
-  const start = new PinElement({ background: ink, borderColor: ink, glyphColor: onAccent, glyphText: "●" });
-  const markers = { start: { marker: new AdvancedMarkerElement({ map, position: origin, content: start, title: "Start" }) } };
-  const bounds = new google.maps.LatLngBounds(origin);
+  let changed = false;
+  const ids = new Set(places.map((place) => place.id));
+  for (const [id, { marker }] of Object.entries(markers)) {
+    if (id !== "start" && !ids.has(id)) {
+      marker.map = null;
+      delete markers[id];
+      changed = true;
+    }
+  }
+  if (!origin && markers.start) {
+    markers.start.marker.map = null;
+    delete markers.start;
+  } else if (origin && !markers.start) {
+    const ink = cssColor("--ink");
+    // glyphText and the pin itself as content: Google deprecated glyph and pin.element.
+    const start = new PinElement({ background: ink, borderColor: ink, glyphColor: onAccent, glyphText: "●" });
+    markers.start = { marker: new AdvancedMarkerElement({ map, position: origin, content: start, title: "Start" }) };
+    changed = true;
+  } else if (origin) {
+    markers.start.marker.position = origin;
+  }
   for (const place of places) {
+    const entry = markers[place.id];
+    if (entry) {
+      if (entry.pin.glyphText !== String(place.number)) entry.pin.glyphText = String(place.number);
+      continue;
+    }
     const pin = new PinElement({ background: accent, borderColor: accent, glyphColor: onAccent, glyphText: String(place.number) });
     const marker = new AdvancedMarkerElement({ map, position: place.location, content: pin, title: place.name, gmpClickable: true });
     marker.addEventListener("gmp-click", () => onChoose(place.id));
     markers[place.id] = { marker, pin };
-    bounds.extend(place.location);
+    changed = true;
   }
-  if (places.length) map.fitBounds(bounds, 48);
+  if (changed && !origin && places.length === 1) {
+    map.setCenter(places[0].location);
+    map.setZoom(16);
+  } else if (changed && places.length) {
+    const bounds = new google.maps.LatLngBounds();
+    if (origin) bounds.extend(origin);
+    for (const place of places) bounds.extend(place.location);
+    map.fitBounds(bounds, 48);
+  }
   return markers;
 }
 
@@ -214,12 +245,26 @@ function highlightMarker(markers, id) {
   }
 }
 
-// The detail map: start, the place, and the walking route line when there is one.
-async function showRouteMap(element, origin, place, route, mapId) {
-  const map = await createMap(element, place.location, mapId);
-  await showMarkers(map, origin, [place], () => {});
+// The one detail map, reused for every place: view is { map, markers, line }, kept by
+// the caller. Opening another place moves the place marker, clears the old route line
+// and draws the new one. origin is null when there's no starting point (no route).
+async function showRouteMap(view, element, origin, place, route, mapId) {
+  if (!view.map) view.map = await createMap(element, place.location, mapId);
+  if (view.line) {
+    view.line.setMap(null);
+    view.line = null;
+  }
+  view.markers = await syncMarkers(view.map, origin, [place], () => {}, view.markers || {});
   if (route && route.path.length) {
     const { Polyline } = await google.maps.importLibrary("maps");
-    new Polyline({ map, path: route.path, strokeColor: cssColor("--accent"), strokeOpacity: 0.9, strokeWeight: 5 });
+    view.line = new Polyline({ map: view.map, path: route.path, strokeColor: cssColor("--accent"), strokeOpacity: 0.9, strokeWeight: 5 });
   }
+}
+
+// A saved place's Google details, fetched again each visit (only its ID is stored, PRD.md 9.4).
+async function placeDetails(id) {
+  const { Place } = await google.maps.importLibrary("places");
+  const place = new Place({ id });
+  await place.fetchFields({ fields: PLACE_FIELDS.filter((field) => field !== "id") });
+  return placeFromGoogle(place);
 }
