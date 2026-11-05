@@ -17,29 +17,32 @@ A neighborhood field guide: like a well-made nature journal with a real map tuck
 
 ## 2. Color
 
-Little Days follows **RootMap's visual identity** (RootMapMVP `src/index.css` and `src/rootmap-theme.css`), so the two read as one family: warm cream, soft sage, forest green, brown-black text.
+The colors come from **Peninsula Montessori Academy's Newton site** (peninsulama.com/newton): white and light-grey pages, honey-gold headings, near-black text and warm peach highlights. The fonts, shapes and icons still follow RootMap (sections 3–4).
 
 Defined as CSS custom properties on `:root` in `style.css`. **`style.css` is the source of truth**: this table lists exactly what it defines. Component styles use the tokens, never raw hex values. Don't rename a token that's in use; add a new one only when a component needs it, and add it here.
 
-| Token | Value | RootMap name | Use |
-|---|---|---|---|
-| `--bg` | `#FBF2E4` | `--bg` | Page background (warm cream) |
-| `--surface` | `#FFFCF6` | `--card` | Cards, controls card, status areas |
-| `--tint` | `#EEF1E6` | `--elevated` | Soft sage panels: Little Days notes, What to wear, the segmented-control track |
-| `--apricot` | `#FBE9D7` | `--apricot` | Warm boxes: weather warnings, the route reminder |
-| `--ink` | `#3B2A1A` | `--text` | Main text (brown-black) |
-| `--ink-soft` | `#75644F` | `--muted` (`#8A7863`, darkened here to pass 4.5:1 on `--bg`) | Secondary text, labels, unselected controls |
-| `--heading` | `#2F4D3D` | `--dark-purple` | Headings, logo, place and activity titles |
-| `--line` | `#EEE1D0` | `--border` | Borders, dividers |
-| `--accent` | `#4B7C63` | `--primary` | Buttons, selected text, focus ring, markers, route line |
-| `--accent-ink` | `#FFFFFF` | `--on-primary` | Text on accent |
-| `--selected` | `#E3EBE0` | `--lavender` | Selected segment and pill background, selected day and place card |
-| `--sky` | `#7FA7C9` | — | Rain/cool details (defined, not used yet) |
-| `--leaf-ink` | `#3F6B35` | — | "Added ✓", status tags |
-| `--holiday` | `#96421A` | — | Holiday tags (RootMap's `--orange` is too light for text) |
-| `--warning` | `#7A4F00` | — | Warning icons, "Indoor day" tag |
-| `--google-gray` | `#5E5E5E` | — | Only Google's "Google Maps" text attribution |
-| `--shadow` | `0 6px 20px rgba(59,42,26,.08)` | `--shadow` | The one soft shadow, on cards |
+| Token | Value | Use |
+|---|---|---|
+| `--bg` | `#F6F6F6` | Page background (their light-grey sections) |
+| `--surface` | `#FFFFFF` | Cards, controls, status areas |
+| `--tint` | `#FDF4E6` | Soft cream panels: Little Days notes, What to wear, the segmented-control track |
+| `--apricot` | `#FDEBCF` | Warm boxes: weather warnings, the route reminder |
+| `--peach` | `#FAC97F` | Their peach highlight (defined for accents) |
+| `--selected` | `#FCE3BC` | Selected pill and day, selected place card |
+| `--ink` | `#1B1B1B` | Main text |
+| `--ink-soft` | `#5E5E5E` | Secondary text, labels, unselected controls |
+| `--heading` | `#917140` | Headings, logo, place and activity titles (their deeper gold; their lighter `#B58D51` is too faint for text) |
+| `--accent` | `#917140` | Buttons, selected text, focus ring, markers, route line (4.8:1 with white text) |
+| `--accent-ink` | `#FFFFFF` | Text on accent |
+| `--line` | `#E8E2D8` | Borders, dividers |
+| `--sky` | `#7FA7C9` | Rain/cool details (defined, not used yet) |
+| `--leaf-ink` | `#3F6B35` | "Added ✓", status tags |
+| `--holiday` | `#96421A` | Holiday tags |
+| `--warning` | `#7A4F00` | Warning icons, "Indoor day" tag |
+| `--google-gray` | `#5E5E5E` | Only Google's "Google Maps" text attribution |
+| `--shadow` | `0 6px 20px rgba(27,27,27,.06)` | The one soft shadow, on cards |
+
+Text on a peach or cream background is `--ink`, never gold: gold on peach is too faint. Buttons are rounded pills, like the site's.
 
 Shape tokens: `--radius` (20px, cards) and `--radius-small` (14px, controls, RootMap's `--radius-control`). Font tokens: section 3.
 
@@ -55,7 +58,8 @@ RootMap's two fonts, **bundled with the site** in `fonts/` (woff2, SIL Open Font
 
 - **Headings** (`--font-head`): `"Caveat", cursive`, weights 600 and 700. A handwritten script for the logo, page title, section headings, day names, and place and activity titles. Caveat runs small, so its sizes are larger than a serif's would be.
 - **Body** (`--font-body`): `"Nunito", system-ui, sans-serif`, weights 400, 600, 700. Rounded and friendly, for everything else.
-- Chinese (next phase) uses the system's Chinese font, as RootMap does (`"PingFang SC", "Microsoft YaHei", sans-serif`), never a downloaded one.
+- **Chinese** (`html:lang(zh-CN)`) uses the system's Chinese font, as RootMap does: `"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif`, never a downloaded one (a full Chinese font is too large, and Google Fonts is slow in mainland China). Headings are weight 600 with slight letter spacing, at Chinese sizes: logo 24px, hero 36px (phone 28px), section headings 28px (phone 24px), card titles 21px, panel and detail headings 20px, day names 17px. Line height 1.65.
+- **EN / 中文 switch:** a small pill at the end of the top bar (white, gold bold text, 1.5px `--line` border, at least 40px tall), showing the other language in its own script.
 - Base size 16px, line height 1.5. Headings line height 1.15, color `--heading`.
 
 | Role | Desktop | Phone |
@@ -87,7 +91,11 @@ RootMap's two fonts, **bundled with the site** in `fonts/` (woff2, SIL Open Font
 
 ### Navigation
 
-Little Days stays **one page** with sections in task order. There is no router and no separate "pages": "Home" and "Explore" are sections of the same page. Navigation is plain anchor links.
+Little Days is **four views, one shown at a time**: **Explore** (with the search controls and the hero), **Weather** (with the at-home ideas), **My Places** and **My week**. The URL hash chooses the view (`#explore`, `#weather`, `#my-places`, `#my-week`), so links like "More weather" and the browser's back button work without a router. The current tab has `aria-current="page"`: gold text with a gold underline in the top bar, bold gold in the phone's bottom bar. Switching views scrolls to the top. The footer (Your data) shows under every view.
+
+Explore on a computer (1100px and up) is an app layout: the search controls in a sticky column on the left (380px), the results (tabs, filters, list and map side by side) on the right. Between 720px and 1100px the controls sit above the results. On phones everything is one column.
+
+The section table below lists where each part lives.
 
 | Section | id | Reached by |
 |---|---|---|

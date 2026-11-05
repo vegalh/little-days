@@ -555,7 +555,7 @@ Everything is stored in `localStorage` on this device, and every read and write 
 
 | Key | Holds |
 |---|---|
-| `littleDays.settings.v2` | `{ unit, mode, ages, minutes, interest, location }`: `unit` `"F"`/`"C"`; `mode` `"family"`/`"classroom"`; `ages` `"under-2"`/`"2-3"`/`"4-6"`/`"2-6"`; `minutes` 5/10/15/20/30; `interest` a category key, `"all"`, or `null`; `location` `{ kind: "place", placeId }`, `{ kind: "city", name }` or `null`. |
+| `littleDays.settings.v2` | `{ unit, mode, ages, minutes, interest, lang, location }`: `lang` `"en"`, `"zh"` or `null` (follow the browser); `unit` `"F"`/`"C"`; `mode` `"family"`/`"classroom"`; `ages` `"under-2"`/`"2-3"`/`"4-6"`/`"2-6"`; `minutes` 5/10/15/20/30; `interest` a category key, `"all"`, or `null`; `location` `{ kind: "place", placeId }`, `{ kind: "city", name }` or `null`. |
 | `littleDays.places.v2` | My Places and the journal (7.17) |
 | `littleDays.plan.v2` | My week (7.9) |
 
@@ -567,6 +567,20 @@ Everything is stored in `localStorage` on this device, and every read and write 
 - **Import my data:** a button that opens a file picker. **Importing replaces** what's saved in this browser; it doesn't merge (the page says so next to the buttons). The file is checked first (under 1 MB, valid JSON, `format` and `version` match, all three parts present), then every part goes through the same cleaning as stored data, and only safe IDs are accepted as keys (no `__proto__`, `constructor` and so on). A file that fails says why and "Your saved data hasn't changed." A valid one asks `confirm("Replace everything Little Days has saved in this browser with this backup ({n} places)? This can't be undone.")`. If storage refuses a write (full or blocked), what was there before is put back and the page says "The backup couldn't be saved in this browser (storage may be full or blocked). Your saved data hasn't changed." After a successful import the page reloads.
 - **Delete my saved data:** a button set apart on its own line in "Your data". After `confirm("Delete your saved places, journal entries, plan and choices from this browser? This can't be undone.")` it removes every `littleDays.*` key, old versions included, and reloads the page.
 - **Your data** in the footer, as a short list: saved places, journal entries, plan and choices are stored only in this browser, with no accounts or sync; location permission is optional and asked only for "Use my location", and the device's position is never stored; place details, maps and walking routes come from Google Maps, and Little Days keeps only Google's place IDs; weather comes from Open-Meteo and holidays from Nager.Date; please don't write children's names in notes or journal entries.
+
+### 7.19 Language: English and Chinese
+
+The whole page works in **English** and **Simplified Chinese**.
+
+- **Choosing:** an **EN / 中文** button at the end of the top bar shows the other language. Pressing it saves the choice (`settings.lang`, 7.18) and reloads the page. With nothing saved, the page follows the browser: Chinese for any `zh` browser language, otherwise English.
+- **How text is translated** (`i18n.js`): the English text is its own key. `translate("zh", text, vars)` returns the Chinese from the `ZH` dictionary; English, or any text without an entry, comes back unchanged. `{name}` marks a value filled in by the page. The static text and labels in `index.html` are swapped in place when the page starts in Chinese. `tests/i18n.test.js` fails if any English text the page uses (app.js, google.js, index.html, guides, categories, access labels, age notes, clothing lines, import errors) has no Chinese entry, or if an entry's `{placeholders}` differ.
+- **Sentences built from facts** ("Why these activities?") have their own Chinese sentences in `advice.js` (`explainDayZh`), because Chinese grammar doesn't fit the English pieces.
+- **RootMap activities** use RootMap's own Chinese (`rootmap.zh`: title, age, description, materials, steps, skills, safety). Nothing is translated by Little Days.
+- **Google:** the Maps script is loaded with `language=zh-CN` in Chinese, so the map labels, Autocomplete suggestions, place names and addresses come back in Chinese where Google has them; otherwise Google returns its own default.
+- **Holidays:** Nager.Date's names are English. Common US holidays and the listed celebrations have Chinese entries; others stay in English.
+- **Dates and times** use `zh-CN` formatting (`11月6日周五`, `下午6时`). Units stay °F/°C, mph/km/h, mi/km.
+- **Weather warnings** keep the same cautious meaning in Chinese, and the page never says "safe" (安全) about play, a place or a route.
+- **Chinese typography:** the system's Chinese font (PingFang SC, Hiragino Sans GB, Microsoft YaHei, Noto Sans SC), never a downloaded one, at sizes suited to Chinese (DESIGN.md 3).
 
 ## 8. Page states
 
