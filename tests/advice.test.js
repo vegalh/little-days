@@ -3,7 +3,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { ACTIVITIES } = require("../activities.js");
 const { weatherFor, seasonFor, pickIdeas } = require("../recommend.js");
-const { toFahrenheit, toMph, formatTemp, formatWind, WEAR_LIMITS, whatToWear, explainDay, activityDetails } = require("../advice.js");
+const { toFahrenheit, toMph, formatTemp, formatWind, formatRain, WEAR_LIMITS, whatToWear, explainDay, activityDetails } = require("../advice.js");
 
 const CLEAR = { code: 0, feelsMax: 18, feelsMin: 14, gusts: 20, rainChance: 0, uv: 2 };
 function day(values = {}) {
@@ -153,4 +153,12 @@ test("details: safety is null when RootMap has none", () => {
   const noSafety = ACTIVITIES.find((a) => !a.rootmap.safety);
   assert.equal(activityDetails(noSafety).safety, null);
   assert.ok(activityDetails(byId("washing-pumpkin")).safety.length > 0);
+});
+
+test("units: rain amounts in inches (°F) or millimetres (°C), missing stays missing", () => {
+  assert.equal(formatRain(0, "F"), "0.00 in");
+  assert.equal(formatRain(0.3, "F"), "0.01 in");
+  assert.equal(formatRain(25.4, "F"), "1.00 in");
+  assert.equal(formatRain(0.3, "C"), "0.3 mm");
+  assert.equal(formatRain(null, "C"), "–");
 });

@@ -12,6 +12,7 @@
   --holiday: #96421A;
   --warning: #7A4F00;
   --leaf-ink: #3F6B35;
+  --google-gray: #5E5E5E; /* only Google's "Google Maps" text attribution */
   --font-head: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --radius: 20px;
@@ -19,6 +20,9 @@
 }
 
 * { box-sizing: border-box; }
+
+/* Grid and flex rules below would otherwise override the hidden attribute. */
+[hidden] { display: none !important; }
 
 body {
   margin: 0;
@@ -63,6 +67,11 @@ h1, h2, h3 {
   padding-block: 16px;
 }
 
+.site-nav {
+  display: flex;
+  gap: 20px;
+}
+
 .site-header nav a {
   font-size: 15px;
   font-weight: 600;
@@ -85,8 +94,8 @@ h1, h2, h3 {
 .hero { padding-block: 24px 32px; }
 
 .hero h1 {
-  max-width: 12ch;
-  font-size: 56px;
+  max-width: 18ch;
+  font-size: 52px;
   color: var(--accent);
 }
 
@@ -165,6 +174,84 @@ h1, h2, h3 {
   display: flex;
   gap: 8px;
 }
+
+/* Location on the left, the compact weather line to its right (under it when there's no room). */
+.location-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.field-location {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.controls .label {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Google's address field, styled only through what it exposes (DESIGN.md 6). */
+gmp-place-autocomplete {
+  width: 100%;
+  font-family: var(--font-body);
+  color-scheme: light;
+}
+
+gmp-place-autocomplete::part(input) {
+  min-height: 44px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+}
+
+gmp-place-autocomplete::part(prediction-list) {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+}
+
+gmp-place-autocomplete::part(prediction-item-selected) { background: var(--selected); }
+gmp-place-autocomplete::part(focus-ring) { outline-color: var(--accent); }
+gmp-place-autocomplete[aria-invalid=true]::part(input) { border-color: var(--accent); }
+
+.location-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.location-line {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.hint { font-size: 14px; }
+.hint p { margin: 8px 0 0; }
+
+/* The compact weather line next to the location. */
+.now-line {
+  flex: 1 1 280px;
+  min-width: 0;
+  padding: 12px;
+  font-size: 14px;
+  background: var(--tint);
+  border-radius: var(--radius-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.now-line p { margin: 0; }
+.now-line a { color: var(--accent); font-weight: 600; }
+.now-line p + a { display: inline-block; margin-top: 4px; }
+.now-warning { margin-top: 4px !important; }
+.now-warning::before { content: "⚠︎ "; color: var(--warning); }
+.now-loading { color: var(--ink-soft); }
 
 input[type=text],
 select {
@@ -258,6 +345,60 @@ section { padding-block: 32px; }
 .status.loading p { color: var(--ink-soft); }
 .status.error { border-left: 4px solid var(--accent); }
 .status.error button { margin-top: 12px; }
+#weather-status:not(:empty) { margin-bottom: 16px; }
+
+/* Weather: Now and Next hours side by side. */
+.weather-now {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 2fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.now-card,
+.hours {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.now-card h3,
+.hours h3 { font-size: 18px; margin-bottom: 8px; }
+.now-card p { margin: 0; color: var(--ink-soft); }
+
+.now-temp {
+  font-family: var(--font-head);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--ink) !important;
+}
+
+.now-card,
+.hour-list { font-variant-numeric: tabular-nums; }
+
+.hour-list {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(64px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: center;
+}
+
+.hour-list li {
+  position: relative; /* keeps .visually-hidden inside the scrolling row */
+  display: grid;
+  gap: 2px;
+}
+.hour-time,
+.hour-rain { font-size: 13px; color: var(--ink-soft); }
+.hour-icon { font-size: 24px; }
+.hour-temp { font-weight: 700; }
+
+#holiday-note { margin: 0 0 12px; color: var(--ink-soft); }
 
 /* Tags */
 
@@ -487,22 +628,21 @@ section { padding-block: 32px; }
 
 .idea-body > button:last-child { margin-top: 4px; }
 
-/* Selected day: warnings, then ideas, then wear and why side by side.
-   Phones put "What to wear" before the ideas (see the phone rules below). */
-.day-layout {
+/* Selected day: warnings and "What to wear" side by side under the strip,
+   then the at-home ideas and "Why these activities?" in their own section. */
+.day-weather {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-areas:
-    "warnings warnings"
-    "ideas ideas"
-    "wear why";
   gap: 16px;
+  margin-top: 16px;
 }
 
-.warnings { grid-area: warnings; margin-bottom: 0; }
-.ideas { grid-area: ideas; }
-.panel-wear { grid-area: wear; }
-.panel-why { grid-area: why; }
+.warnings { margin-bottom: 0; }
+
+.day-ideas {
+  display: grid;
+  gap: 16px;
+}
 
 .panel {
   padding: 16px 20px;
@@ -654,12 +794,359 @@ footer {
   text-align: center;
 }
 
+/* More controls: ages, who's exploring, walking time, interests, Find */
+
+.controls { grid-template-columns: 1fr; }
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  align-items: flex-start;
+}
+
+.choices select { width: auto; min-width: 140px; }
+.choices .segmented span { padding: 0 14px; }
+
+.classroom-note,
+.all-note {
+  margin: -4px 0 0;
+  color: var(--ink-soft);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip { position: relative; margin: 0 !important; }
+
+.chip input {
+  position: absolute;
+  opacity: 0;
+}
+
+.chip > span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.chip input:checked + span {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.chip input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.controls-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.find-button { min-width: 240px; }
+
+/* Explore */
+
+.explore-tabs {
+  min-width: 0;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+}
+
+.explore-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+
+.explore-tools fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.explore-tools legend {
+  margin-bottom: 6px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.segmented-small span { min-width: 0; padding: 0 14px; }
+
+.explore-notes {
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.explore-notes p { margin: 0 0 4px; }
+.classroom-line { color: var(--ink); font-weight: 600; }
+
+/* Only on phones (see below). */
+.view-switch { display: none; }
+
+.explore-layout {
+  display: grid;
+  grid-template-columns: minmax(340px, 5fr) 7fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.google-attribution {
+  margin: 0 0 8px;
+  font: 400 14px Roboto, var(--font-body);
+  color: var(--google-gray);
+  white-space: nowrap;
+}
+
+.place-list {
+  display: grid;
+  gap: 12px;
+}
+
+.list-divider {
+  margin: 8px 0 0;
+  font-size: 16px;
+  color: var(--ink-soft);
+}
+
+.place-card {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.place-card.is-selected {
+  padding: 15px;
+  background: var(--selected);
+  border: 2px solid var(--accent);
+}
+
+.place-google {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.place-number {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+.place-card h3 { font-size: 21px; }
+
+.place-title {
+  min-height: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  background: none;
+  border: 0;
+}
+
+.place-title:hover { text-decoration: underline; }
+
+.place-address {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.place-walk {
+  margin: 8px 0 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.walk-source,
+.walk-pending {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+.place-walk .link-button { min-height: 44px; font-weight: 600; }
+
+.place-notes {
+  margin-top: 12px;
+  padding: 12px;
+  font-size: 14px;
+  background: var(--tint);
+  border-radius: var(--radius-small);
+}
+
+.place-notes p { margin: 0 0 6px; }
+.place-notes > :last-child { margin-bottom: 0; }
+
+.notes-label {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.place-tags .tag { margin: 0 4px 4px 0; }
+
+.place-weather {
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.place-weather li::before { content: "⚠︎ "; color: var(--warning); }
+
+.place-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.tag-saved { --c: var(--leaf-ink); }
+
+.map-box {
+  position: sticky;
+  top: 16px;
+  height: calc(100vh - 32px);
+  max-height: 760px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.map { width: 100%; height: 100%; background: var(--tint); }
+
+/* Sits above the bottom of the map, clear of Google's logo and terms. */
+.map-peek {
+  position: absolute;
+  inset: auto 12px 36px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  align-items: center;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+}
+
+.map-peek p { margin: 0; }
+.peek-title { font-weight: 700; }
+.peek-walk { grid-column: 1; font-size: 14px; }
+.map-peek button { grid-row: 1 / 3; grid-column: 2; }
+
+/* Place details */
+
+.place-dialog {
+  width: min(640px, calc(100% - 32px));
+  padding: 0;
+  background: var(--bg);
+}
+
+.place-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.place-head p { margin: 4px 0 0; }
+#place-title:focus { outline: none; }
+#place-title:focus-visible { outline: 2px solid var(--accent); }
+
+.place-section { padding: 0 20px; margin-top: 24px; }
+.place-section h3 { font-size: 19px; margin-bottom: 8px; }
+.place-section p { margin: 0 0 8px; }
+.place-section a { color: var(--accent); font-weight: 600; }
+
+.map-detail {
+  height: auto;
+  aspect-ratio: 16 / 10;
+  margin-bottom: 8px;
+  border-radius: var(--radius);
+}
+
+.route-warnings,
+.route-reminder { font-size: 14px; }
+
+.route-reminder {
+  padding: 12px;
+  background: var(--tint);
+  border-radius: var(--radius-small);
+}
+
+.route-reminder::before { content: "⚠︎ "; color: var(--warning); }
+
+.ideas-panel {
+  margin: 24px 20px 0;
+  padding: 16px 20px;
+  background: var(--tint);
+  border-radius: var(--radius);
+}
+
+.ideas-panel h4 { margin: 16px 0 4px; font-size: 15px; }
+.ideas-panel ul { margin: 0; padding-left: 20px; }
+.perspectives { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+
+.perspective {
+  color: var(--accent);
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+.perspective[aria-pressed=true] {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.perspective-focus { font-weight: 600; }
+.place-dialog .place-actions { padding: 0 20px 20px; margin-top: 24px; }
+
 /* Phone */
 
 @media (max-width: 719px) {
   .wrap { padding: 0 16px; }
   .hero { padding-block: 8px 24px; }
-  .hero h1 { font-size: 34px; }
+  .hero h1 { font-size: 32px; }
   .hero > p { margin: 8px 0 16px; }
   /* City on its own row; the unit switch below it. */
   .controls { grid-template-columns: 1fr; gap: 12px; }
@@ -688,11 +1175,82 @@ footer {
   .idea h3 { font-size: 19px; }
 
   /* "What to wear" comes first on phones. */
-  .day-layout {
+  .day-weather {
     grid-template-columns: 1fr;
-    grid-template-areas: "warnings" "wear" "ideas" "why";
     gap: 12px;
   }
+  .day-ideas { gap: 12px; }
+
+  .location-actions > button { flex: 1 1 100%; }
+  #locate { width: 100%; }
+
+  /* Now on top; the next hours swipe sideways. */
+  .weather-now { grid-template-columns: 1fr; gap: 12px; }
+  .hours { overflow-x: auto; }
+  .hour-list { grid-template-columns: repeat(6, 64px); }
+
+  .choices { display: grid; gap: 12px; }
+  .choices select,
+  .choices .segmented { width: 100%; }
+  .choices .segmented label { flex: 1; }
+  .choices .segmented span { min-width: 0; }
+  .find-button { width: 100%; }
+  .controls-footer { gap: 12px; }
+
+  /* Interest tabs swipe sideways in Explore. */
+  .chips-scroll { flex-wrap: nowrap; overflow-x: auto; margin-right: -16px; padding-right: 16px; }
+  .chips-scroll .chip > span { white-space: nowrap; }
+
+  /* One of list and map at a time; the switch stays in reach while scrolling. */
+  .view-switch {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: block;
+    margin: 0 -16px 12px;
+    padding: 8px 16px;
+    background: var(--bg);
+    border: 0;
+  }
+  .view-switch .segmented { display: flex; }
+  .view-switch label { flex: 1; }
+  .explore-layout { grid-template-columns: 1fr; }
+  .map-box {
+    position: relative;
+    top: 0;
+    height: calc(100dvh - 160px);
+    min-height: 360px;
+  }
+  .place-card h3 { font-size: 19px; }
+
+  .place-dialog { width: 100%; max-width: 100%; }
+  .place-head { padding: 16px; }
+  .place-section { padding: 0 16px; }
+  .ideas-panel { margin: 24px 16px 0; padding: 16px; }
+  .place-dialog .place-actions { padding: 0 16px 16px; }
+
+  /* Section links move to a bar at the bottom, within reach of a thumb. */
+  body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  .site-nav {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 10;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+  }
+  .site-header .site-nav a {
+    display: grid;
+    place-items: center;
+    min-height: 56px;
+    font-size: 12px;
+    text-align: center;
+  }
+  .site-nav span { font-size: 18px; line-height: 1; }
 
   .plan > li { grid-template-columns: 1fr; gap: 0; padding-top: 12px; }
 

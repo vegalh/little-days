@@ -23,6 +23,18 @@ function formatWind(kmh, unit) {
   return unit === "F" ? `${Math.round(toMph(kmh))} mph` : `${Math.round(kmh)} km/h`;
 }
 
+// Rain amounts: inches with two decimals (15-minute amounts are small), mm with one.
+function formatRain(mm, unit) {
+  if (mm == null) return "–";
+  return unit === "F" ? `${(mm / 25.4).toFixed(2)} in` : `${mm.toFixed(1)} mm`;
+}
+
+// Walking distances: miles with °F, kilometres with °C, one decimal.
+function formatDistance(meters, unit) {
+  if (meters == null) return "–";
+  return unit === "F" ? `${(meters / 1609.344).toFixed(1)} mi` : `${(meters / 1000).toFixed(1)} km`;
+}
+
 // --- What to wear ---
 
 const WEAR_LIMITS = {
@@ -175,7 +187,7 @@ function activityDetails(activity) {
 
 if (typeof module !== "undefined") {
   module.exports = {
-    toFahrenheit, toMph, formatTemp, formatWind,
+    toFahrenheit, toMph, formatTemp, formatWind, formatRain, formatDistance,
     WEAR_LIMITS, whatToWear, explainDay, activityDetails,
   };
 }

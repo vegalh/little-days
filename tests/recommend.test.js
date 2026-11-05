@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const { ACTIVITIES } = require("../activities.js");
-const { weatherFor, seasonFor, pickIdeas, planWeek } = require("../recommend.js");
+const { weatherFor, seasonFor, pickIdeas, planWeek, nextHours } = require("../recommend.js");
 
 const CLEAR = { code: 0, feelsMax: 18, gusts: 20, rainChance: 0 };
 
@@ -163,4 +163,47 @@ test("every day has three ideas for every weather and season", () => {
       assert.equal(pickIdeas(day(w, { date }), ACTIVITIES, {}).length, 3, `${date} ${JSON.stringify(w)}`);
     }
   }
+});
+
+// --- Next hours (PRD.md 7.3) ---
+
+// A real Open-Meteo response for Newton, MA, saved on 2026-11-04 (current.time 18:15,
+// hourly starting at 00:00 local time).
+const FORECAST = JSON.parse(fs.readFileSync(path.join(__dirname, "e2e/fixtures/forecast.json"), "utf8"));
+
+test("next hours: start at the current hour, not at midnight", () => {
+  const hours = nextHours(FORECAST.hourly, FORECAST.current.time);
+  assert.equal(FORECAST.hourly.time[0], "2026-11-04T00:00");
+  assert.equal(FORECAST.current.time, "2026-11-04T18:15");
+  assert.deepEqual(hours.map((h) => h.time), [
+    "2026-11-04T18:00", "2026-11-04T19:00", "2026-11-04T20:00",
+    "2026-11-04T21:00", "2026-11-04T22:00", "2026-11-04T23:00",
+  ]);
+  const i = FORECAST.hourly.time.indexOf("2026-11-04T18:00");
+  assert.deepEqual(hours[0], {
+    time: "2026-11-04T18:00",
+    temperature: FORECAST.hourly.temperature_2m[i],
+    rainChance: FORECAST.hourly.precipitation_probability[i],
+    code: FORECAST.hourly.weather_code[i],
+  });
+});
+
+const HOURLY = {
+  time: ["2026-11-04T22:00", "2026-11-04T23:00", "2026-11-05T00:00", "2026-11-05T01:00"],
+  temperature_2m: [10, 9, 8, null],
+  precipitation_probability: [0, 5, 60, null],
+  weather_code: [0, 1, 61, 3],
+};
+
+test("next hours: an exact hour starts at that hour, and the row crosses midnight", () => {
+  assert.deepEqual(nextHours(HOURLY, "2026-11-04T23:00", 3).map((h) => h.time),
+    ["2026-11-04T23:00", "2026-11-05T00:00", "2026-11-05T01:00"]);
+});
+
+test("next hours: fewer are shown when the forecast runs out, and missing values stay missing", () => {
+  const hours = nextHours(HOURLY, "2026-11-05T00:45");
+  assert.equal(hours.length, 2);
+  assert.equal(hours[1].temperature, null);
+  assert.equal(hours[1].rainChance, null);
+  assert.deepEqual(nextHours(HOURLY, "2026-11-06T09:00"), []);
 });

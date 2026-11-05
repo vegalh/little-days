@@ -2,16 +2,42 @@ const GEOCODE_URL = "https://geocoding-api.open-meteo.com/v1/search";
 const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
 const HOLIDAYS_URL = "https://date.nager.at/api/v3/PublicHolidays";
 
-const form = document.querySelector("#search-form");
+const form = document.querySelector("#location-form");
+const googleLocation = document.querySelector("#google-location");
+const addressSlot = document.querySelector("#address-slot");
+const cityLocation = document.querySelector("#city-location");
 const cityInput = document.querySelector("#city");
 const cityOptions = document.querySelector("#city-options");
-const cityMessage = document.querySelector("#city-message");
-const searchButton = document.querySelector("#search-button");
+const cityButton = document.querySelector("#city-button");
+const locationMessage = document.querySelector("#location-message");
+const locateButton = document.querySelector("#locate");
+const exampleButton = document.querySelector("#example");
+const locationLine = document.querySelector("#location-line");
+const locationStatus = document.querySelector("#location-status");
+const nowLine = document.querySelector("#now-line");
 const unitInputs = document.querySelectorAll("input[name=unit]");
-const statusArea = document.querySelector("#status");
+const exploreStatus = document.querySelector("#explore-status");
+const agesSelect = document.querySelector("#ages");
+const allNote = document.querySelector(".all-note");
+const interestMessage = document.querySelector("#interest-message");
+const findButton = document.querySelector("#find");
+const exploreTabs = document.querySelector("#explore-tabs");
+const exploreResults = document.querySelector("#explore-results");
+const exploreNotes = document.querySelector("#explore-notes");
+const placeListBox = document.querySelector("#place-list-box");
+const placeList = document.querySelector("#place-list");
+const placeMapBox = document.querySelector("#place-map-box");
+const exploreMap = document.querySelector("#explore-map");
+const mapPeek = document.querySelector("#map-peek");
+const placeDialog = document.querySelector("#place-dialog");
+const placeBody = document.querySelector("#place-body");
+const weatherSection = document.querySelector("#weather");
+const weatherStatus = document.querySelector("#weather-status");
+const weatherNow = document.querySelector("#weather-now");
 const placeLine = document.querySelector("#place-line");
 const holidayNote = document.querySelector("#holiday-note");
 const week = document.querySelector("#week");
+const dayWeather = document.querySelector("#day-weather");
 const ideasSection = document.querySelector("#ideas");
 const ideasHeading = document.querySelector("#ideas-heading");
 const ideasSubtitle = document.querySelector("#ideas-subtitle");
@@ -81,22 +107,37 @@ let storage;
 try {
   storage = window.localStorage;
 } catch {
-  storage = { getItem: () => null, setItem: () => {} };
+  storage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
 }
 
+// config.js is gitignored and may be missing (PRD.md 9.2).
+const config = window.LITTLE_DAYS_CONFIG || {};
 const ACTIVITY_IDS = ACTIVITIES.map((a) => a.id);
-const settings = loadSettings(storage); // { city, unit }
+const settings = loadSettings(storage); // PRD.md 7.18
 let plan = loadPlan(storage, isoToday(), ACTIVITY_IDS);
-// The last successful search: { place, days, holidayProblem }
+// Saved Google place IDs and the adult's own data only (PRD.md 7.17).
+let savedPlaces = loadPlaces(storage);
+// "loading", "ready", "missing" (no key) or "failed" (refused or didn't load)
+let mapsState = config.googleMapsKey ? "loading" : "missing";
+// The chosen location: { kind, label, latitude, longitude, countryCode, placeId or name }.
+// kind is "place" (picked address), "example", "city" (fallback) or "device".
+let place = null;
+// The weather for that location: { location, now, hours, days, holidayProblem }
 let current = null;
 let selectedDay = 0;
+// Counts weather requests, so an answer for an older location is ignored.
+let weatherRequest = 0;
+// The text of the last address picked from Google's suggestions.
+let pickedLabel = "";
 // The button that opened the details dialog, to return focus to it.
 let dialogOpener = null;
-// Places offered while typing, by label: { "Portland, Maine, United States": place }
+// Fallback cities offered while typing, by label: { "Portland, Maine, United States": place }
 let suggestions = {};
 let suggestTimer = null;
 
-// Returns the first matching place, or null if the geocoder found nothing.
+// --- Open-Meteo and Nager.Date ---
+
+// Returns the first matching city, or null if the geocoder found nothing.
 async function findCity(name) {
   const url = `${GEOCODE_URL}?name=${encodeURIComponent(name)}&count=1`;
   const response = await fetch(url);
@@ -119,39 +160,43 @@ async function suggestCities(text) {
       throw new Error(`City suggestions failed with status ${response.status}`);
     }
     const data = await response.json();
-    // The parent kept typing, so this answer is out of date.
+    // The adult kept typing, so this answer is out of date.
     if (cityInput.value.trim() !== text) return;
     suggestions = {};
-    for (const place of data.results || []) suggestions[placeName(place)] = place;
+    for (const city of data.results || []) suggestions[cityName(city)] = city;
     cityOptions.innerHTML = Object.keys(suggestions).map((name) => `<option value="${escapeHtml(name)}">`).join("");
   } catch (error) {
-    // Suggestions are optional: Search still works and shows its own error.
+    // Suggestions are optional: Show weather still works and shows its own error.
     console.error(error);
   }
 }
 
-function placeName(place) {
-  return [place.name, place.admin1, place.country].filter(Boolean).join(", ");
+function cityName(city) {
+  return [city.name, city.admin1, city.country].filter(Boolean).join(", ");
 }
 
-// Returns the daily arrays: time, temperature_2m_max, temperature_2m_min, ...
-async function getForecast(place) {
-  const url = `${FORECAST_URL}?latitude=${place.latitude}&longitude=${place.longitude}` +
+// Returns Open-Meteo's { current, hourly, daily } (PRD.md 7.2). The location is rounded
+// to 2 decimals (about 1 km), which is plenty for a forecast (PRD.md 7.18).
+async function getForecast(location) {
+  const url = `${FORECAST_URL}?latitude=${location.latitude.toFixed(2)}&longitude=${location.longitude.toFixed(2)}` +
+    "&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_gusts_10m,precipitation" +
+    "&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code," +
+    "wind_speed_10m,wind_gusts_10m" +
     "&daily=temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min," +
-    "precipitation_probability_max,weather_code,wind_gusts_10m_max,uv_index_max" +
-    "&timezone=auto";
+    "precipitation_probability_max,precipitation_sum,weather_code,wind_speed_10m_max,wind_gusts_10m_max,uv_index_max" +
+    "&timezone=auto&forecast_days=7";
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Forecast failed with status ${response.status}`);
   }
-  const data = await response.json();
-  return data.daily;
+  return response.json();
 }
 
 // Returns { holidays: [{ date, name, ... }], problem }, where problem is null,
-// "unsupported" (Nager.Date has no data for the country) or "failed".
-// A problem here never stops the forecast from showing.
+// "no-country" (device location), "unsupported" (Nager.Date has no data for the
+// country) or "failed". A problem here never stops the forecast from showing.
 async function getHolidays(countryCode, years) {
+  if (!countryCode) return { holidays: [], problem: "no-country" };
   try {
     const lists = await Promise.all(years.map(async (year) => {
       const response = await fetch(`${HOLIDAYS_URL}/${year}/${countryCode}`);
@@ -172,37 +217,185 @@ async function getHolidays(countryCode, years) {
   }
 }
 
-async function search(city) {
-  showLoading(city);
+// --- Location ---
+
+// Every way of choosing a location ends here: show it, then load its weather.
+function chooseLocation(location) {
+  place = location;
+  clearInvalid();
+  locationStatus.textContent = "";
+  const example = location.kind === "example" ? " · Example address" : "";
+  locationLine.textContent = `📍 ${location.label}${example}`;
+  locationLine.hidden = false;
+  resetExplore();
+  return loadWeather(location);
+}
+
+async function loadWeather(location) {
+  const request = ++weatherRequest;
+  showWeatherLoading(location.label);
+  try {
+    const [data, holidays] = await Promise.all([
+      getForecast(location),
+      getHolidays(location.countryCode, yearsThisWeek()),
+    ]);
+    // A newer location was chosen while this one loaded.
+    if (request !== weatherRequest) return;
+    current = {
+      location,
+      now: data.current,
+      hours: nextHours(data.hourly, data.current.time),
+      days: buildDays(location, data.daily, holidays.holidays),
+      holidayProblem: holidays.problem,
+    };
+    selectedDay = 0;
+    // Only a picked address or a searched city is saved, never a device position
+    // or the example (PRD.md 7.18).
+    if (location.kind === "place" || location.kind === "city") {
+      settings.location = location;
+      saveSettings(storage, settings);
+    }
+    showStatus(weatherStatus, "", "");
+    render();
+  } catch (error) {
+    if (request !== weatherRequest) return;
+    console.error(error);
+    showWeatherError(() => loadWeather(location));
+  }
+}
+
+// The weather-only fallback: Open-Meteo geocoding, then the weather.
+async function searchCity(city) {
+  cityButton.disabled = true;
+  cityButton.textContent = "Searching…";
+  weatherRequest++;
+  showWeatherLoading(city);
   try {
     // A picked suggestion is used as is; anything typed is looked up.
-    const place = suggestions[city] || await findCity(city);
-    if (!place) {
+    const found = suggestions[city] || await findCity(city);
+    if (!found) {
       showNotFound(city);
       return;
     }
-    const [daily, holidays] = await Promise.all([
-      getForecast(place),
-      getHolidays(place.country_code, yearsThisWeek()),
-    ]);
-    current = { place, days: buildDays(place, daily, holidays.holidays), holidayProblem: holidays.problem };
-    selectedDay = 0;
-    settings.city = city;
-    saveSettings(storage, settings);
-    statusArea.className = "status";
-    statusArea.innerHTML = "";
-    render();
+    await chooseLocation({
+      kind: "city",
+      name: city,
+      label: cityName(found),
+      latitude: found.latitude,
+      longitude: found.longitude,
+      countryCode: found.country_code,
+    });
   } catch (error) {
     console.error(error);
-    showError(city);
+    showWeatherError(() => searchCity(city));
   } finally {
-    searchButton.disabled = false;
-    searchButton.textContent = "Search";
+    cityButton.disabled = false;
+    cityButton.textContent = "Show weather";
+  }
+}
+
+// Asks for the position only now, once (PRD.md 7.1). It's never watched or saved.
+function locate() {
+  if (!navigator.geolocation) {
+    showLocationProblem(2);
+    return;
+  }
+  locateButton.disabled = true;
+  locateButton.textContent = "Finding you…";
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      resetLocateButton();
+      chooseLocation({
+        kind: "device",
+        label: "Your current location",
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        countryCode: null,
+      });
+    },
+    (error) => {
+      resetLocateButton();
+      console.error(error);
+      showLocationProblem(error.code);
+    },
+    { timeout: 10000, maximumAge: 300000 },
+  );
+}
+
+function resetLocateButton() {
+  locateButton.disabled = false;
+  locateButton.innerHTML = `<span aria-hidden="true">📍</span> Use my location`;
+}
+
+// A saved location comes back on a return visit: weather only, never a place search.
+async function restoreLocation(saved) {
+  if (saved.kind === "city") {
+    cityInput.value = saved.name;
+    await searchCity(saved.name);
+    return;
+  }
+  await googleStarted;
+  try {
+    if (mapsState !== "ready") throw new Error("Google Maps isn't available to load the saved address");
+    await chooseLocation(await placeLocation(saved.placeId));
+  } catch (error) {
+    console.error(error);
+    showStatus(locationStatus, "", "We couldn't load your saved address. Enter it again.");
+  }
+}
+
+// --- Google Maps ---
+
+async function startGoogle() {
+  googleLocation.hidden = false;
+  try {
+    await loadGoogleMaps(config.googleMapsKey, () => useFallback(new Error("Google refused the Maps key (gm_authFailure)")));
+    await setupAutocomplete(addressSlot, "address-label", (location) => {
+      pickedLabel = location.label;
+      chooseLocation(location);
+    }, useFallback);
+    // Google may have refused the key while the address field was being set up.
+    if (mapsState === "failed") return;
+    mapsState = "ready";
+    exampleButton.hidden = false;
+    showChoices();
+    renderExploreStatus();
+  } catch (error) {
+    useFallback(error);
+  }
+}
+
+// Without Google, the city field gives weather only: no places, no walking routes.
+function useFallback(error) {
+  if (error) console.error(error);
+  mapsState = config.googleMapsKey ? "failed" : "missing";
+  googleLocation.hidden = true;
+  exampleButton.hidden = true;
+  cityLocation.hidden = false;
+  clearInvalid();
+  resetExplore();
+  renderFirstVisit();
+}
+
+async function useExample() {
+  exampleButton.disabled = true;
+  try {
+    const location = await findExampleAddress();
+    if (!location) throw new Error("Google found nothing for the example address");
+    const field = document.querySelector("#address");
+    if (field) field.value = EXAMPLE_ADDRESS;
+    pickedLabel = EXAMPLE_ADDRESS;
+    await chooseLocation(location);
+  } catch (error) {
+    console.error(error);
+    showStatus(locationStatus, "", "We couldn't load the example address right now.");
+  } finally {
+    exampleButton.disabled = false;
   }
 }
 
 // One object per forecast day, with what recommend.js and advice.js need.
-function buildDays(place, daily, holidays) {
+function buildDays(location, daily, holidays) {
   return daily.time.map((date, i) => {
     const forecast = {
       code: daily.weather_code[i],
@@ -213,29 +406,39 @@ function buildDays(place, daily, holidays) {
       uv: daily.uv_index_max[i],
     };
     const publicHolidays = holidays.filter((h) => h.date === date).map((h) => h.name);
-    const celebrations = celebrationsOn(date, place.country_code);
+    const celebrations = celebrationsOn(date, location.countryCode);
     return {
       date,
       high: daily.temperature_2m_max[i],
       low: daily.temperature_2m_min[i],
       ...forecast,
       weather: weatherFor(forecast),
-      season: seasonFor(date, place.latitude),
+      season: seasonFor(date, location.latitude),
       celebrations,
       holidays: [...new Set([...publicHolidays, ...celebrations])],
     };
   });
 }
 
+// --- Events ---
+
 form.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (cityLocation.hidden) {
+    // Google's field: only a picked suggestion counts as a location (PRD.md 8.4).
+    const field = document.querySelector("#address");
+    if (field && field.value && field.value !== pickedLabel) {
+      showInvalid(field, "Pick an address from the suggestions.");
+    }
+    return;
+  }
   const city = cityInput.value.trim();
   if (city.length === 0) {
-    showInvalid("Type a city name first.");
+    showInvalid(cityInput, "Type a city name first.");
   } else if (city.length < 2) {
-    showInvalid("Type at least 2 letters.");
+    showInvalid(cityInput, "Type at least 2 letters.");
   } else {
-    search(city);
+    searchCity(city);
   }
 });
 
@@ -248,12 +451,69 @@ cityInput.addEventListener("input", () => {
   suggestTimer = setTimeout(() => suggestCities(text), 300);
 });
 
+addressSlot.addEventListener("input", clearInvalid);
+findButton.addEventListener("click", findAdventures);
+
+document.addEventListener("change", (event) => {
+  const { name, value } = event.target;
+  if (name === "interest" || name === "explore-interest") chooseInterest(value);
+  if (name === "mode") {
+    settings.mode = value;
+    saveSettings(storage, settings);
+    showChoices();
+    renderPlaces();
+  }
+  if (name === "minutes") {
+    settings.minutes = Number(value);
+    saveSettings(storage, settings);
+    if (place) resetExplore();
+    else showChoices();
+  }
+  if (name === "setting-filter") renderPlaces();
+  if (name === "explore-view") {
+    applyView();
+    // Moving between the list and the map keeps the keyboard in the same place.
+    if (value === "map") document.querySelector("#map-heading").focus();
+    else placeList.querySelector("button")?.focus();
+  }
+});
+
+agesSelect.addEventListener("change", () => {
+  settings.ages = agesSelect.value;
+  saveSettings(storage, settings);
+  renderPlaces();
+});
+
+function clearFilters() {
+  document.querySelector("input[name=setting-filter][value=all]").checked = true;
+  renderPlaces();
+}
+document.querySelector("#clear-filters").addEventListener("click", clearFilters);
+
+// Hovering or focusing a card highlights its marker.
+for (const type of ["mouseover", "focusin"]) {
+  placeList.addEventListener(type, (event) => {
+    const card = event.target.closest(".place-card");
+    if (card && explore && explore.markers) highlightMarker(explore.markers, card.dataset.place);
+  });
+}
+
+window.matchMedia("(max-width: 719px)").addEventListener("change", applyView);
+
+placeDialog.addEventListener("close", () => {
+  if (placeOpener && placeOpener.isConnected) placeOpener.focus();
+  placeOpener = null;
+});
+locateButton.addEventListener("click", locate);
+exampleButton.addEventListener("click", useExample);
+
 // Changing the unit or day re-renders; neither sends a request.
 for (const input of unitInputs) {
   input.addEventListener("change", () => {
     settings.unit = input.value;
     saveSettings(storage, settings);
     if (current) render();
+    else renderPlaces();
   });
 }
 
@@ -271,6 +531,16 @@ document.addEventListener("click", (event) => {
   const add = event.target.closest("[data-add]");
   const remove = event.target.closest("[data-remove]");
   if (open) openDetails(open.dataset.open, open.dataset.date, open);
+  const placeOpen = event.target.closest("[data-place-open]");
+  if (placeOpen) openPlace(placeOpen.dataset.placeOpen, placeOpen);
+  const save = event.target.closest("[data-save]");
+  if (save) savePlaceId(save.dataset.save);
+  const walk = event.target.closest("[data-walk]");
+  if (walk) checkWalkingTimes(explore.shortlist.filter((p) => p.id === walk.dataset.walk));
+  if (event.target.closest("[data-place-close]")) placeDialog.close();
+  if (event.target.closest("[data-clear-filters]")) clearFilters();
+  const perspective = event.target.closest("[data-perspective]");
+  if (perspective) showPerspective(perspective.dataset.placeId, Number(perspective.dataset.perspective));
   if (add) addActivity(add.dataset.add, add.dataset.date);
   if (remove) removeActivity(remove.dataset.remove, remove.dataset.date);
 });
@@ -281,6 +551,471 @@ document.addEventListener("error", (event) => {
   event.target.closest(".art").classList.add("art-missing");
   event.target.remove();
 }, true);
+
+// --- Explore (PRD.md 7.10–7.16) ---
+
+// What's loaded for the current starting point and walking time, kept in page memory
+// only (PRD.md 7.10): { key, origin, loaded: { category: [place] }, routes: { placeId: route },
+// detailRoutes: { placeId: route or null }, shortlist, partial, routesFailed, map, markers }
+let explore = null;
+let selectedPlace = null;
+// The place shown in the details dialog, and the button that opened it.
+let placeOpener = null;
+
+function interestChipsHtml(name) {
+  const options = [...CATEGORY_KEYS.map((key) => [key, CATEGORIES[key]]), ["all", { label: "All", emoji: "✨" }]];
+  return options.map(([key, { label, emoji }]) => `
+    <label class="chip">
+      <input type="radio" name="${name}" value="${key}">
+      <span><span aria-hidden="true">${emoji}</span><span>${label}</span><span class="chip-loaded" hidden>✓<span class="visually-hidden"> (loaded)</span></span></span>
+    </label>`).join("");
+}
+
+// The chosen interest, ages, mode and walking time, shown on both sets of chips.
+function showChoices() {
+  for (const input of document.querySelectorAll("input[name=interest], input[name=explore-interest]")) {
+    input.checked = input.value === settings.interest;
+  }
+  for (const input of document.querySelectorAll("input[name=mode]")) input.checked = input.value === settings.mode;
+  for (const input of document.querySelectorAll("input[name=minutes]")) input.checked = Number(input.value) === settings.minutes;
+  agesSelect.value = settings.ages;
+  allNote.hidden = settings.interest !== "all";
+  for (const note of document.querySelectorAll(".classroom-note")) note.hidden = settings.mode !== "classroom";
+  for (const label of document.querySelectorAll(".chip")) {
+    const key = label.querySelector("input").value;
+    const loaded = explore && (key === "all" ? CATEGORY_KEYS.every((k) => explore.loaded[k]) : explore.loaded[key]);
+    label.querySelector(".chip-loaded").hidden = !loaded;
+  }
+  findButton.disabled = mapsState !== "ready";
+}
+
+function placeLabel() {
+  return place.kind === "device" ? "your location" : place.label;
+}
+
+function exploreKey() {
+  return `${place.latitude},${place.longitude},${settings.minutes}`;
+}
+
+// A new starting point or walking time starts over (PRD.md 7.10).
+function resetExplore() {
+  explore = null;
+  selectedPlace = null;
+  exploreResults.hidden = true;
+  exploreTabs.hidden = true;
+  placeList.innerHTML = "";
+  mapPeek.hidden = true;
+  showChoices();
+  renderExploreStatus();
+}
+
+// The only thing that starts a Places search (PRD.md 7.1).
+async function findAdventures() {
+  clearInvalid();
+  if (!place) {
+    const field = cityLocation.hidden ? document.querySelector("#address") : cityInput;
+    showInvalid(field || locateButton, "Enter an address or use your location first.");
+    return;
+  }
+  if (!settings.interest) {
+    interestMessage.textContent = "⚠︎ Choose what you'd like to explore.";
+    interestMessage.hidden = false;
+    document.querySelector("input[name=interest]").focus();
+    return;
+  }
+  if (mapsState !== "ready") return;
+  if (!explore || explore.key !== exploreKey()) {
+    explore = {
+      key: exploreKey(),
+      origin: { lat: place.latitude, lng: place.longitude },
+      loaded: {},
+      routes: {},
+      detailRoutes: {},
+      shortlist: [],
+    };
+  }
+  const run = explore;
+  const keys = categoriesToSearch(settings.interest, run.loaded);
+  if (keys.length) {
+    findButton.disabled = true;
+    findButton.textContent = "Searching…";
+    exploreResults.hidden = true;
+    showStatus(exploreStatus, "loading", `Finding little adventures near ${placeLabel()}…`);
+    const results = await Promise.allSettled(keys.map((key) =>
+      searchNearbyPlaces(run.origin, searchRadius(settings.minutes), CATEGORIES[key].types)));
+    findButton.textContent = "Find Little Adventures";
+    findButton.disabled = false;
+    if (run !== explore) return; // the location or walking time changed meanwhile
+    results.forEach((result, i) => {
+      if (result.status === "fulfilled") run.loaded[keys[i]] = result.value;
+      else console.error(result.reason);
+    });
+    const failed = results.filter((result) => result.status === "rejected").length;
+    if (failed === results.length) {
+      showStatus(exploreStatus, "error", "We couldn't load nearby places right now. Check your connection and try again.", findAdventures);
+      return;
+    }
+    run.partial = failed > 0;
+  }
+  await showResults(true);
+  document.querySelector("#explore").scrollIntoView({ block: "start", behavior: reducedMotion() ? "auto" : "smooth" });
+}
+
+// checkRoutes: false when only switching to an interest already loaded, so that
+// switching never sends a request by itself.
+async function showResults(checkRoutes) {
+  explore.shortlist = shortlist(explore.loaded, settings.interest, explore.origin);
+  selectedPlace = null;
+  showChoices();
+  exploreTabs.hidden = false;
+  if (!explore.shortlist.length) {
+    exploreResults.hidden = true;
+    const interest = settings.interest === "all" ? "" : `${CATEGORIES[settings.interest].label.toLowerCase()} `;
+    showStatus(exploreStatus, "", `We didn't find ${interest}places within about a ${settings.minutes}-minute walk. Try a longer walk or another interest.`);
+    return;
+  }
+  showStatus(exploreStatus, "", "");
+  exploreResults.hidden = false;
+  exploreTabs.hidden = false;
+  await renderPlaces();
+  if (checkRoutes) await checkWalkingTimes(routeTargets(explore.shortlist, explore.routes));
+}
+
+// One route-matrix request for up to 5 places (PRD.md 7.12).
+async function checkWalkingTimes(targets) {
+  if (!targets.length) return;
+  const run = explore;
+  for (const target of targets) run.routes[target.id] = { status: "pending" };
+  renderPlaces();
+  try {
+    Object.assign(run.routes, await walkingTimes(run.origin, targets));
+  } catch (error) {
+    console.error(error);
+    for (const target of targets) run.routes[target.id] = { status: "failed" };
+    run.routesFailed = true;
+  }
+  if (run !== explore) return;
+  await renderPlaces();
+  announce("Walking times are ready.");
+}
+
+function settingFilter() {
+  return document.querySelector("input[name=setting-filter]:checked").value;
+}
+
+// The list and the map markers, in the same order and numbers.
+async function renderPlaces() {
+  if (!explore || exploreResults.hidden) return;
+  const day = current ? current.days[selectedDay] : null;
+  const filtered = filterBySetting(explore.shortlist, settingFilter());
+  const { within, unknown, over } = byWalkingTime(filtered, explore.routes, settings.minutes);
+  const weather = day && day.weather;
+  const shown = [...orderForWeather(within, weather, settingFor), ...orderForWeather(unknown, weather, settingFor)];
+  shown.forEach((p, i) => { p.number = i + 1; });
+
+  const notes = [`${shown.length} ${shown.length === 1 ? "place" : "places"} near ${escapeHtml(placeLabel())} · walking times from Google`];
+  if (over) notes.push(`${over} ${over === 1 ? "place is" : "places are"} more than a ${settings.minutes}-minute walk.`);
+  if (explore.partial) notes.push("Some kinds of places couldn't be loaded right now.");
+  if (explore.routesFailed) notes.push("Walking times couldn't be checked right now, so the walking-time filter is off for those places.");
+  exploreNotes.innerHTML = `
+    ${notes.map((note) => `<p>${note}</p>`).join("")}
+    <p>These notes use the forecast for the whole area and fixed temperature levels. They're a starting point, not a safety check. Use your own judgement and your setting's rules.</p>
+    ${settings.mode === "classroom" ? `<p class="classroom-line">${CLASSROOM_WALKING}</p>` : ""}`;
+
+  if (!shown.length) {
+    placeList.innerHTML = `<div class="status"><p>No places match these filters.</p>
+      <button type="button" class="button-secondary" data-clear-filters>Clear filters</button></div>`;
+  } else {
+    placeList.innerHTML = shown.map((p, i) => {
+      const heading = i === within.length && within.length && unknown.length
+        ? `<h3 class="list-divider">No Google walking time yet</h3>` : "";
+      return heading + placeCardHtml(p, day);
+    }).join("");
+  }
+
+  // The list is complete without the map, so a map problem never hides it.
+  try {
+    if (!explore.map) explore.map = await createMap(exploreMap, explore.origin, config.googleMapId || "DEMO_MAP_ID");
+    explore.markers = await showMarkers(explore.map, explore.origin, shown, selectPlace, explore.markers);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+const CLASSROOM_WALKING = "Google walking estimates may not reflect the time needed when accompanying young children. Check crossings and the route before visiting.";
+
+function walkHtml(placeItem) {
+  const route = explore.routes[placeItem.id];
+  if (!route) {
+    return `Walking time not checked yet
+      <button type="button" class="link-button" data-walk="${placeItem.id}">Check walking time</button>`;
+  }
+  if (route.status === "pending") return `<span class="walk-pending">Checking walking time…</span>`;
+  if (route.status !== "ok") return "Walking time unavailable";
+  return `<span aria-hidden="true">🚶</span> ${walkingMinutes(route.durationMillis)} min walk · ${formatDistance(route.distanceMeters, settings.unit)}
+    <span class="walk-source">Google walking estimate</span>`;
+}
+
+function accessHtml(placeItem) {
+  const access = accessFor(placeItem);
+  const contact = access.contact || settings.mode === "classroom";
+  return `${access.estimate ? `${access.estimate} (Little Days estimate). ` : ""}Access not verified.` +
+    `${access.note ? ` ${access.note}` : ""}${contact ? ` <strong>Contact before a classroom visit.</strong>` : ""}`;
+}
+
+// Weather notes for a place on the selected day (PRD.md 7.15). Never says "safe".
+function placeWeatherLines(placeItem, day) {
+  if (!day) return ["Weather unavailable. Check the forecast before you go."];
+  const outdoors = settingFor(placeItem) === "outdoors";
+  const { hazards, cautions, notes } = day.weather;
+  const warnings = [...hazards, ...cautions, ...notes].map((key) => WARNINGS[key](day));
+  const lines = [];
+  if (warnings.length) {
+    if (!outdoors) lines.push(`For the walk there: ${warnings[0]}`, ...warnings.slice(1));
+    else lines.push(...warnings);
+    if (hazards.length && outdoors) lines.push("Outdoor places are better left for another day.");
+  } else if (outdoors) {
+    lines.push("The forecast looks good for time outdoors.");
+  }
+  const soon = selectedDay === 0 && outdoors ? rainSoon(current.hours) : null;
+  if (soon) lines.push(`Rain is likely in the next few hours (${soon}%).`);
+  return lines;
+}
+
+function placeCardHtml(placeItem, day) {
+  const category = CATEGORIES[placeItem.category];
+  const guide = guideFor(placeType(placeItem), placeItem.category);
+  const saved = savedPlaces[placeItem.id];
+  const name = escapeHtml(placeItem.name || "Unnamed place");
+  return `
+    <article class="place-card${placeItem.id === selectedPlace ? " is-selected" : ""}" data-place="${placeItem.id}">
+      <div class="place-google">
+        <span class="place-number" aria-hidden="true">${placeItem.number}</span>
+        <div>
+          <h3><button type="button" class="place-title" data-place-open="${placeItem.id}">
+            <span class="visually-hidden">${placeItem.number}. </span>${name}</button></h3>
+          <p class="place-address">${escapeHtml(placeItem.address || "")}</p>
+          <p class="place-walk">${walkHtml(placeItem)}</p>
+        </div>
+      </div>
+      <div class="place-notes">
+        <p class="notes-label">Little Days notes</p>
+        <p class="place-tags"><span class="tag tag-soft"><span aria-hidden="true">${category.emoji}</span> ${category.label}</span>
+          <span class="tag tag-soft">${settingFor(placeItem) === "outdoors" ? "Outdoors" : "Indoors"} (estimate)</span></p>
+        <p>${accessHtml(placeItem)}</p>
+        <ul class="place-weather">${placeWeatherLines(placeItem, day).map((line) => `<li>${line}</li>`).join("")}</ul>
+        <p>${ageNotes(settings.ages).join(" ")}</p>
+        <p class="place-idea"><strong>Notice:</strong> ${escapeHtml(guide.sets[0].notice[0])}</p>
+      </div>
+      <div class="place-actions">
+        ${saved ? `<span class="tag tag-saved">Want to explore ✓</span>`
+          : `<button type="button" class="button-secondary" data-save="${placeItem.id}" aria-label="Save ${name}">Save</button>`}
+        <button type="button" class="button-secondary" data-place-open="${placeItem.id}" aria-label="Details for ${name}">Details</button>
+      </div>
+    </article>`;
+}
+
+// A marker or card was chosen: highlight both, and show the preview on the map.
+function selectPlace(id) {
+  selectedPlace = id;
+  const placeItem = explore.shortlist.find((p) => p.id === id);
+  if (!placeItem) return;
+  highlightMarker(explore.markers || {}, id);
+  for (const card of placeList.querySelectorAll(".place-card")) {
+    card.classList.toggle("is-selected", card.dataset.place === id);
+  }
+  mapPeek.innerHTML = `
+    <p class="peek-title"><span class="place-number" aria-hidden="true">${placeItem.number}</span> ${escapeHtml(placeItem.name || "")}</p>
+    <p class="peek-walk">${walkHtml(placeItem)}</p>
+    <button type="button" data-place-open="${id}">Details</button>`;
+  mapPeek.hidden = false;
+  if (!isPhone()) placeList.querySelector(`[data-place="${id}"]`)?.scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
+}
+
+function savePlaceId(id) {
+  savedPlaces = savePlace(savedPlaces, id);
+  storePlaces(storage, savedPlaces);
+  const placeItem = explore.shortlist.find((p) => p.id === id);
+  announce(`Saved ${placeItem ? placeItem.name : "the place"} to Want to explore.`);
+  renderPlaces();
+  // Only the buttons change, so the detail map stays.
+  const actions = placeBody.querySelector(".place-actions");
+  if (placeDialog.open && actions) actions.innerHTML = placeActionsHtml(id);
+}
+
+// On phones only one of the list and the map shows (DESIGN.md 5).
+function applyView() {
+  const view = document.querySelector("input[name=explore-view]:checked").value;
+  placeListBox.hidden = isPhone() && view === "map";
+  placeMapBox.hidden = isPhone() && view === "list";
+}
+
+function isPhone() {
+  return window.matchMedia("(max-width: 719px)").matches;
+}
+
+function reducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+// --- Place details (PRD.md 7.16) ---
+
+async function openPlace(id, opener) {
+  placeOpener = opener;
+  renderPlaceDetails(id, 0);
+  placeDialog.showModal();
+  document.querySelector("#place-title").focus();
+  const placeItem = explore.shortlist.find((p) => p.id === id);
+  const run = explore;
+  if (!(id in run.detailRoutes)) {
+    try {
+      run.detailRoutes[id] = await walkingRoute(run.origin, placeItem.location);
+    } catch (error) {
+      console.error(error);
+      run.detailRoutes[id] = null;
+    }
+    // The route also gives this place's walking time, if the matrix hasn't.
+    const route = run.detailRoutes[id];
+    if (route && (!run.routes[id] || run.routes[id].status !== "ok")) {
+      run.routes[id] = { status: "ok", durationMillis: route.durationMillis, distanceMeters: route.distanceMeters };
+    }
+  }
+  if (run !== explore || !placeDialog.open) return;
+  renderRoute(id);
+  try {
+    await showRouteMap(document.querySelector("#place-map"), run.origin, placeItem, run.detailRoutes[id], config.googleMapId || "DEMO_MAP_ID");
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function renderPlaceDetails(id, perspective) {
+  const placeItem = explore.shortlist.find((p) => p.id === id);
+  const day = current ? current.days[selectedDay] : null;
+  const guide = guideFor(placeType(placeItem), placeItem.category);
+  const category = CATEGORIES[placeItem.category];
+  const name = escapeHtml(placeItem.name || "Unnamed place");
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeItem.name || "")}&query_place_id=${encodeURIComponent(id)}`;
+  placeBody.innerHTML = `
+    <header class="place-head">
+      <div>
+        <h2 id="place-title" tabindex="-1">${name}</h2>
+        <p class="place-address">${escapeHtml(placeItem.address || "")}</p>
+        <p><span class="tag tag-soft"><span aria-hidden="true">${category.emoji}</span> ${category.label}</span></p>
+      </div>
+      <button type="button" class="button-secondary" data-place-close>Close</button>
+    </header>
+
+    <section class="place-section" aria-labelledby="route-heading">
+      <h3 id="route-heading">Walking route</h3>
+      <div id="place-map" class="map map-detail"></div>
+      <div id="place-route"><p class="walk-pending">Checking the walking route…</p></div>
+      <p class="route-reminder">A Google walking route isn't a check that the way suits young children. Before you go, look for busy road crossings, water, construction, closed or restricted areas, and the weather, and plan enough adults to supervise.
+        ${settings.mode === "classroom" ? `<br>${CLASSROOM_WALKING} Walk the route yourself before taking a group.` : ""}</p>
+    </section>
+
+    <section class="place-section" aria-labelledby="weather-detail-heading">
+      <h3 id="weather-detail-heading">Weather${day ? ` on ${formatDay(day.date)}` : ""}</h3>
+      ${day ? `<p>${(WEATHER[day.code] || ["🌡️", "Unknown"]).map((part, i) => i ? part : `<span aria-hidden="true">${part}</span>`).join(" ")} ·
+        ${temp(day.high)} / ${temp(day.low)} · ${day.rainChance == null ? "Rain –" : `Rain ${day.rainChance}%`}</p>` : ""}
+      <ul class="place-weather">${placeWeatherLines(placeItem, day).map((line) => `<li>${line}</li>`).join("")}</ul>
+    </section>
+
+    <section class="place-section" aria-labelledby="before-heading">
+      <h3 id="before-heading">Before you set off</h3>
+      <p>${accessHtml(placeItem)}</p>
+      <p>${ageNotes(settings.ages).join(" ")}</p>
+      <p><a href="${mapsUrl}" target="_blank" rel="noopener">Check hours and details on Google Maps<span aria-hidden="true"> ↗</span></a></p>
+    </section>
+
+    <section class="place-section ideas-panel" aria-labelledby="ideas-detail-heading">
+      <p class="notes-label">Little Days ideas</p>
+      <h3 id="ideas-detail-heading">Why explore this place?</h3>
+      <p>${escapeHtml(guide.why)}</p>
+      <div class="perspectives" role="group" aria-label="Visit">
+        ${guide.sets.map((set, i) => `<button type="button" class="perspective" data-perspective="${i}" data-place-id="${id}"
+          aria-pressed="${i === perspective}">${["First", "Second", "Third"][i]} visit</button>`).join("")}
+      </div>
+      <div id="guide-set">${guideSetHtml(guide.sets[perspective])}</div>
+      ${atHomeHtml(guide, day)}
+    </section>
+
+    <div class="place-actions">${placeActionsHtml(id)}</div>`;
+  if (explore.detailRoutes[id] !== undefined) renderRoute(id);
+}
+
+function placeActionsHtml(id) {
+  return `${savedPlaces[id] ? `<span class="tag tag-saved">Want to explore ✓</span>` : `<button type="button" data-save="${id}">Save</button>`}
+    <button type="button" class="button-secondary" data-place-close>Close</button>`;
+}
+
+// Switching perspective changes only the guide, so the detail map stays.
+function showPerspective(id, perspective) {
+  const placeItem = explore.shortlist.find((p) => p.id === id);
+  const guide = guideFor(placeType(placeItem), placeItem.category);
+  placeBody.querySelector("#guide-set").innerHTML = guideSetHtml(guide.sets[perspective]);
+  for (const button of placeBody.querySelectorAll(".perspective")) {
+    button.setAttribute("aria-pressed", String(Number(button.dataset.perspective) === perspective));
+  }
+}
+
+function guideSetHtml(set) {
+  const list = (items) => `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+  return `
+    <p class="perspective-focus">Focus: ${escapeHtml(set.focus)}</p>
+    <h4>What children might notice</h4>${list(set.notice)}
+    <h4>Before you go</h4>${list(set.before)}
+    <h4>During the visit</h4>${list(set.during)}
+    <h4>After the visit</h4>${list(set.after)}
+    <h4>Practical life</h4><p>${escapeHtml(set.practical)}</p>`;
+}
+
+// RootMap activities for afterwards, for the chosen ages and the day's weather (PRD.md 7.5).
+function atHomeHtml(guide, day) {
+  const range = { "under-2": [0, 1], "2-3": [2, 3], "4-6": [4, 6], "2-6": [2, 6] }[settings.ages];
+  const ideas = guide.activities.map(activityById).filter((activity) => activity &&
+    activity.littleDays.minAge <= range[1] && activity.littleDays.maxAge >= range[0] &&
+    (!day || canDo(activity, day.weather, day.season)));
+  if (!ideas.length) {
+    return settings.ages === "under-2" ? `<h4>At home afterwards</h4><p>Little Days doesn't have at-home ideas for children under 2 yet.</p>` : "";
+  }
+  const date = day ? day.date : isoToday();
+  return `<h4>At home afterwards</h4>
+    <ul>${ideas.slice(0, 2).map((activity) => `<li><button type="button" class="link-button" data-open="${activity.id}" data-date="${date}">
+      ${escapeHtml(activity.rootmap.title)}</button> <span class="source-note">from RootMap</span></li>`).join("")}</ul>`;
+}
+
+function renderRoute(id) {
+  const box = document.querySelector("#place-route");
+  if (!box) return;
+  const route = explore.detailRoutes[id];
+  if (!route) {
+    box.innerHTML = `<p>Walking route unavailable.</p>`;
+    return;
+  }
+  box.innerHTML = `
+    <p class="place-walk"><span aria-hidden="true">🚶</span> ${walkingMinutes(route.durationMillis)} min walk · ${formatDistance(route.distanceMeters, settings.unit)}
+      <span class="walk-source">Google walking estimate</span></p>
+    ${route.warnings.length ? `<p class="route-warnings">From Google: ${route.warnings.map(escapeHtml).join(" ")}</p>` : ""}`;
+}
+
+// Choosing an interest never searches by itself (PRD.md 7.1): an interest already
+// loaded for this starting point shows again from memory; otherwise Find is needed.
+function chooseInterest(value) {
+  settings.interest = value;
+  saveSettings(storage, settings);
+  interestMessage.hidden = true;
+  showChoices();
+  if (!explore || explore.key !== exploreKey()) {
+    renderExploreStatus();
+  } else if (!categoriesToSearch(value, explore.loaded).length) {
+    showResults(false);
+  } else {
+    exploreResults.hidden = true;
+    const label = value === "all" ? "" : `${CATEGORIES[value].label.toLowerCase()} `;
+    showStatus(exploreStatus, "", `Press Find Little Adventures to see ${label}places near ${placeLabel()}.`, findAdventures, "Find Little Adventures");
+  }
+}
 
 // --- My week ---
 
@@ -403,80 +1138,170 @@ dialog.addEventListener("close", () => {
 
 // --- Page states (PRD.md section 8) ---
 
-function showStatus(className, text) {
-  statusArea.className = `status ${className}`;
-  statusArea.innerHTML = "";
+// Shows one message (and optionally a Try again button) in a status area.
+function showStatus(area, className, text, retry, retryLabel = "Try again") {
+  area.className = `${area.classList.contains("hint") ? "hint" : "status"} ${className}`.trim();
+  area.innerHTML = "";
+  if (!text) return;
   const message = document.createElement("p");
   message.textContent = text;
-  statusArea.append(message);
+  area.append(message);
+  if (retry) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "button-secondary";
+    button.textContent = retryLabel;
+    button.addEventListener("click", retry);
+    area.append(button);
+  }
 }
 
-function clearWeek() {
+function renderFirstVisit() {
+  if (place || settings.location) return;
+  showStatus(locationStatus, "", cityLocation.hidden
+    ? "Enter an address or use your location to see the weather and find places to explore nearby."
+    : "Enter your city or use your location to see the weather.");
+}
+
+function renderExploreStatus() {
+  if (mapsState === "loading") {
+    showStatus(exploreStatus, "", "");
+  } else if (mapsState === "missing") {
+    showStatus(exploreStatus, "", "Maps and places aren't set up on this copy of Little Days yet.");
+  } else if (mapsState === "failed") {
+    showStatus(exploreStatus, "", "Google Maps isn't available right now, so places and walking times can't be shown.");
+  } else if (place && settings.interest) {
+    showStatus(exploreStatus, "", `Press Find Little Adventures to see places near ${placeLabel()}.`);
+  } else {
+    showStatus(exploreStatus, "", "Choose a location and what you'd like to explore, then press Find Little Adventures.");
+  }
+}
+
+// Removes the weather of an earlier location, so it isn't mistaken for the new one.
+function clearWeather() {
   current = null;
+  weatherNow.hidden = true;
   week.hidden = true;
   week.innerHTML = "";
+  dayWeather.hidden = true;
   placeLine.hidden = true;
   holidayNote.hidden = true;
   ideasSection.hidden = true;
+  nowLine.hidden = true;
   renderPlan();
 }
 
-function showEmpty() {
-  showStatus("", "Enter your city to see this week's weather and activity ideas.");
+function showWeatherLoading(label) {
+  clearWeather();
+  weatherSection.hidden = false;
+  showStatus(weatherStatus, "loading", `Getting the weather for ${label}…`);
+  nowLine.innerHTML = `<p class="now-loading">Getting the weather…</p>`;
+  nowLine.hidden = false;
 }
 
-function showLoading(city) {
-  searchButton.disabled = true;
-  searchButton.textContent = "Searching…";
-  clearWeek();
-  showStatus("loading", `Getting the weather for ${city}…`);
+function showWeatherError(retry) {
+  clearWeather();
+  showStatus(weatherStatus, "error", "We couldn't load the weather right now. Check your internet connection and try again.", retry);
+  nowLine.innerHTML = `<p class="now-loading">Weather unavailable right now.</p>`;
+  nowLine.hidden = false;
 }
 
 function showNotFound(city) {
-  showStatus("", `We couldn't find "${city}". Check the spelling, or add the state or country, like "Portland, Maine".`);
+  place = null;
+  locationLine.hidden = true;
+  clearWeather();
+  weatherSection.hidden = true;
+  showStatus(locationStatus, "", `We couldn't find "${city}". Check the spelling, or add the state or country, like "Portland, Maine".`);
   cityInput.focus();
 }
 
-function showError(city) {
-  showStatus("error", "We couldn't load the weather right now. Check your internet connection and try again.");
-  const retry = document.createElement("button");
-  retry.type = "button";
-  retry.className = "button-secondary";
-  retry.textContent = "Try again";
-  retry.addEventListener("click", () => search(city));
-  statusArea.append(retry);
+function showLocationProblem(code) {
+  const instead = cityLocation.hidden ? "an address" : "a city";
+  showStatus(locationStatus, "", code === 1
+    ? `Location access is off, so type ${instead} instead.`
+    : `We couldn't find your location. Type ${instead} instead.`);
+  (cityLocation.hidden ? document.querySelector("#address") : cityInput)?.focus();
 }
 
-function showInvalid(text) {
-  cityMessage.textContent = `⚠︎ ${text}`;
-  cityMessage.hidden = false;
-  cityInput.setAttribute("aria-invalid", "true");
-  cityInput.setAttribute("aria-describedby", "city-message");
-  cityInput.focus();
+function showInvalid(field, text) {
+  locationMessage.textContent = `⚠︎ ${text}`;
+  locationMessage.hidden = false;
+  field.setAttribute("aria-invalid", "true");
+  field.setAttribute("aria-describedby", "location-message");
+  field.focus();
 }
 
 function clearInvalid() {
-  cityMessage.hidden = true;
-  cityInput.removeAttribute("aria-invalid");
-  cityInput.removeAttribute("aria-describedby");
+  locationMessage.hidden = true;
+  for (const field of document.querySelectorAll("[aria-describedby=location-message]")) {
+    field.removeAttribute("aria-invalid");
+    field.removeAttribute("aria-describedby");
+  }
 }
 
 // --- In use ---
 
 function render() {
   const weekPlan = planWeek(current.days, ACTIVITIES);
+  const day = current.days[selectedDay];
+  renderNow();
   renderWeek(weekPlan);
-  renderIdeas(current.days[selectedDay], weekPlan[selectedDay]);
+  renderDayWeather(day);
+  renderIdeas(day, weekPlan[selectedDay]);
   renderPlan();
+  renderPlaces();
+}
+
+// The compact line in the controls card and the Now / Next hours panel (PRD.md 7.15).
+function renderNow() {
+  const { now, hours, days } = current;
+  const [icon, label] = WEATHER[now.weather_code] || ["🌡️", "Unknown"];
+  const rainChance = hours.length && hours[0].rainChance != null ? `${hours[0].rainChance}%` : "–";
+  const today = days[0].weather;
+  const firstWarning = [...today.hazards, ...today.cautions, ...today.notes][0];
+  nowLine.innerHTML = `
+    <p><span aria-hidden="true">${icon}</span> ${label} · Now ${temp(now.temperature_2m)} ·
+      feels like ${temp(now.apparent_temperature)} · Rain ${rainChance} · Wind ${wind(now.wind_speed_10m)}</p>
+    ${firstWarning ? `<p class="now-warning">${WARNINGS[firstWarning](days[0])}</p>` : ""}
+    <a href="#weather">More weather</a>`;
+  nowLine.hidden = false;
+
+  weatherNow.innerHTML = `
+    <div class="now-card">
+      <h3>Now</h3>
+      <p class="now-temp">${temp(now.temperature_2m)}</p>
+      <p><span aria-hidden="true">${icon}</span> ${label}</p>
+      <p>Feels like ${temp(now.apparent_temperature)}</p>
+      <p>Wind ${wind(now.wind_speed_10m)}, gusts ${wind(now.wind_gusts_10m)}</p>
+      <p>Rain ${rainChance} this hour</p>
+      ${now.precipitation > 0 ? `<p>${formatRain(now.precipitation, settings.unit)} rain in the last 15 minutes</p>` : ""}
+    </div>
+    <div class="hours">
+      <h3>Next hours</h3>
+      <ol class="hour-list">${hours.map((hour) => {
+        const [hourIcon, hourLabel] = WEATHER[hour.code] || ["🌡️", "Unknown"];
+        return `
+          <li>
+            <span class="hour-time">${formatHour(hour.time)}</span>
+            <span class="hour-icon" aria-hidden="true">${hourIcon}</span>
+            <span class="visually-hidden">${hourLabel}</span>
+            <span class="hour-temp">${temp(hour.temperature)}</span>
+            <span class="hour-rain">${hour.rainChance == null ? "Rain –" : `Rain ${hour.rainChance}%`}</span>
+          </li>`;
+      }).join("")}</ol>
+    </div>`;
+  weatherNow.hidden = false;
 }
 
 function renderWeek(weekPlan) {
-  const { place, days } = current;
-  placeLine.textContent = `${placeName(place)} · ${formatDay(days[0].date)} – ${formatDay(days[days.length - 1].date)}`;
+  const { location, days } = current;
+  placeLine.textContent = `${location.label} · ${formatDay(days[0].date)} – ${formatDay(days[days.length - 1].date)}`;
   placeLine.hidden = false;
-  holidayNote.textContent = current.holidayProblem === "unsupported"
-    ? "Nager.Date doesn't list public holidays for this country, so none are shown."
-    : "Public holidays couldn't be loaded, so they aren't shown.";
+  holidayNote.textContent = {
+    "no-country": "Holidays show when you search an address or city.",
+    unsupported: "Nager.Date doesn't list public holidays for this country, so none are shown.",
+    failed: "Public holidays couldn't be loaded, so they aren't shown.",
+  }[current.holidayProblem] || "";
   holidayNote.hidden = !current.holidayProblem;
 
   week.innerHTML = days.map((day, i) => {
@@ -508,11 +1333,8 @@ function renderWeek(weekPlan) {
   week.hidden = false;
 }
 
-function renderIdeas(day, ideas) {
-  const [, label] = WEATHER[day.code] || ["", "Unknown"];
-  ideasHeading.textContent = `Ideas for ${toDate(day.date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}`;
-  ideasSubtitle.textContent = [`${temp(day.high)} and ${label.toLowerCase()}`, ...day.holidays].join(" · ");
-
+// The selected day's warnings and "What to wear", under the strip.
+function renderDayWeather(day) {
   const { hazards, cautions, notes } = day.weather;
   const lines = [...hazards, ...cautions, ...notes].map((key) => WARNINGS[key](day));
   if (hazards.length) lines.push("Outdoor ideas are left out today.");
@@ -528,6 +1350,13 @@ function renderIdeas(day, ideas) {
     ${wear.bring.length ? `<p class="panel-label">Bring</p><ul>${wear.bring.map((b) => `<li>${b}</li>`).join("")}</ul>` : ""}
     ${wear.notes.map((n) => `<p>${n}</p>`).join("")}
     <p class="panel-footnote">These tips are for comfort. They don't make outdoor play safe in bad weather.</p>`;
+  dayWeather.hidden = false;
+}
+
+function renderIdeas(day, ideas) {
+  const [, label] = WEATHER[day.code] || ["", "Unknown"];
+  ideasHeading.textContent = `Ideas for ${toDate(day.date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}`;
+  ideasSubtitle.textContent = [`${temp(day.high)} and ${label.toLowerCase()}`, ...day.holidays].join(" · ");
 
   ideaList.innerHTML = ideas.length
     ? ideas.map((idea) => ideaHtml(idea, day.date)).join("")
@@ -605,6 +1434,12 @@ function formatDay(isoDate) {
   return toDate(isoDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
+// "2026-11-04T19:00" (the place's local time) → "7 PM". Read and shown as local time,
+// so the visitor's own time zone doesn't shift it.
+function formatHour(isoTime) {
+  return new Date(isoTime).toLocaleTimeString("en-US", { hour: "numeric" });
+}
+
 // Today's date in the visitor's time zone, as YYYY-MM-DD.
 function isoToday() {
   const now = new Date();
@@ -623,14 +1458,19 @@ function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
+
 // --- Start ---
 
 for (const input of unitInputs) input.checked = input.value === settings.unit;
+document.querySelector("#interest-chips").innerHTML = interestChipsHtml("interest");
+document.querySelector("#explore-chips").innerHTML = interestChipsHtml("explore-interest");
+showChoices();
+applyView();
+saveSettings(storage, settings); // finishes a v1 → v2 migration (PRD.md 7.18)
 savePlan(storage, plan); // keep the cleaned-up plan
 renderPlan();
-if (settings.city) {
-  cityInput.value = settings.city;
-  search(settings.city);
-} else {
-  showEmpty();
-}
+renderExploreStatus();
+// Resolves once Google is ready or the fallback is in place.
+const googleStarted = config.googleMapsKey ? startGoogle() : Promise.resolve(useFallback());
+renderFirstVisit();
+if (settings.location) restoreLocation(settings.location);

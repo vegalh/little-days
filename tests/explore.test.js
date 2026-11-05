@@ -1,0 +1,103 @@
+// Run with: node --test
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const { ACTIVITIES } = require("../activities.js");
+const {
+  CATEGORIES, CATEGORY_KEYS, searchRadius, categoriesToSearch, shortlist, routeTargets, byWalkingTime,
+  walkingMinutes, accessFor, settingFor, filterBySetting, ageNotes,
+} = require("../explore.js");
+const { GUIDES, CATEGORY_GUIDES, GUIDE_FOR_TYPE, guideFor, perspectiveFor } = require("../guides.js");
+const { rainSoon, orderForWeather, weatherFor } = require("../recommend.js");
+const { formatDistance } = require("../advice.js");
+
+const ORIGIN = { lat: 42.35, lng: -71.21 };
+// A place about `meters` north of the origin.
+const at = (id, meters, primaryType = "park") => ({ id, name: id, primaryType, types: [primaryType], location: { lat: ORIGIN.lat + meters / 111195, lng: ORIGIN.lng } });
+
+test("categories: six, each with Google types, matching the saved-settings choices", () => {
+  assert.deepEqual(CATEGORY_KEYS, ["nature", "everyday-life", "community-helpers", "art-culture", "animals-wildlife", "movement"]);
+  const { SETTING_CHOICES } = require("../plan.js");
+  for (const key of CATEGORY_KEYS) {
+    assert.ok(CATEGORIES[key].types.length > 0);
+    assert.ok(SETTING_CHOICES.interest.includes(key));
+  }
+});
+
+test("search: radius from walking time, and All searches only what isn't loaded", () => {
+  assert.equal(searchRadius(5), 400);
+  assert.equal(searchRadius(30), 2400);
+  assert.deepEqual(categoriesToSearch("nature", {}), ["nature"]);
+  assert.deepEqual(categoriesToSearch("nature", { nature: [] }), []);
+  assert.deepEqual(categoriesToSearch("all", { nature: [], movement: [] }), ["everyday-life", "community-helpers", "art-culture", "animals-wildlife"]);
+});
+
+test("shortlist: one category is closest first; All keeps two per category, up to 12", () => {
+  const loaded = { nature: [at("far", 900), at("near", 100), { id: "nowhere", location: null }] };
+  assert.deepEqual(shortlist(loaded, "nature", ORIGIN).map((p) => p.id), ["near", "far"]);
+
+  const all = {};
+  CATEGORY_KEYS.forEach((key, k) => {
+    all[key] = [0, 1, 2, 3].map((n) => at(`${key}-${n}`, 100 + n * 100 + k * 1000));
+  });
+  const list = shortlist(all, "all", ORIGIN);
+  assert.equal(list.length, 12);
+  for (const key of CATEGORY_KEYS) assert.equal(list.filter((p) => p.category === key).length, 2);
+  // A place found by two searches counts once, in the first category.
+  const twice = shortlist({ nature: [at("same", 100)], movement: [at("same", 100)] }, "all", ORIGIN);
+  assert.deepEqual(twice.map((p) => [p.id, p.category]), [["same", "nature"]]);
+});
+
+test("walking: at most 5 routed at first, and places without a time are never hidden", () => {
+  const places = [1, 2, 3, 4, 5, 6, 7].map((n) => at(`p${n}`, n * 100));
+  assert.deepEqual(routeTargets(places, {}).map((p) => p.id), ["p1", "p2", "p3", "p4", "p5"]);
+  assert.deepEqual(routeTargets(places, { p1: { status: "pending" }, p2: { status: "ok" } }).map((p) => p.id), ["p3", "p4", "p5", "p6", "p7"]);
+  const routes = { p1: { status: "ok", durationMillis: 600000 }, p2: { status: "ok", durationMillis: 1200000 }, p3: { status: "none" } };
+  const split = byWalkingTime(places.slice(0, 4), routes, 15);
+  assert.deepEqual(split.within.map((p) => p.id), ["p1"]);
+  assert.deepEqual(split.unknown.map((p) => p.id), ["p3", "p4"]);
+  assert.equal(split.over, 1);
+  assert.equal(walkingMinutes(61000), 2);
+  assert.equal(formatDistance(1609.344, "F"), "1.0 mi");
+  assert.equal(formatDistance(560, "C"), "0.6 km");
+});
+
+test("access: estimates are never verified, and businesses say to contact first", () => {
+  assert.deepEqual(accessFor(at("b", 1, "bakery")), { verified: false, estimate: "Business", note: null, contact: true });
+  assert.deepEqual(accessFor(at("p", 1, "park")), { verified: false, estimate: "Park or outdoor space", note: "Check posted rules.", contact: false });
+  assert.deepEqual(accessFor(at("f", 1, "fire_station")).contact, true);
+  assert.deepEqual(accessFor(at("z", 1, "zoo")), { verified: false, estimate: null, note: null, contact: false });
+  assert.equal(settingFor(at("g", 1, "garden")), "outdoors");
+  assert.equal(settingFor(at("l", 1, "library")), "indoors");
+  assert.deepEqual(filterBySetting([at("g", 1, "garden"), at("l", 1, "library")], "indoors").map((p) => p.id), ["l"]);
+  assert.equal(ageNotes("2-6").length, 2);
+});
+
+test("weather: rain soon at 50%+, and indoor places first on a hazard day", () => {
+  assert.equal(rainSoon([{ rainChance: 10 }, { rainChance: 60 }, { rainChance: 20 }, { rainChance: 90 }]), 60);
+  assert.equal(rainSoon([{ rainChance: 10 }, { rainChance: null }]), null);
+  assert.equal(rainSoon([]), null);
+  const places = [at("park", 1, "park"), at("library", 2, "library")];
+  const storm = weatherFor({ code: 95, feelsMax: 20, gusts: 10, rainChance: 90 });
+  assert.deepEqual(orderForWeather(places, storm, settingFor).map((p) => p.id), ["library", "park"]);
+  const clear = weatherFor({ code: 0, feelsMax: 20, gusts: 10, rainChance: 0 });
+  assert.deepEqual(orderForWeather(places, clear, settingFor).map((p) => p.id), ["park", "library"]);
+});
+
+test("guides: every category and mapped type has a guide with three complete perspectives", () => {
+  const ids = ACTIVITIES.map((a) => a.id);
+  const guides = [...Object.values(GUIDES), ...Object.values(CATEGORY_GUIDES).filter((g) => typeof g !== "string")];
+  for (const key of CATEGORY_KEYS) assert.ok(guideFor(null, key), key);
+  for (const type of Object.keys(GUIDE_FOR_TYPE)) assert.ok(guideFor(type, "nature"), type);
+  for (const guide of guides) {
+    assert.equal(guide.sets.length, 3);
+    for (const activity of guide.activities) assert.ok(ids.includes(activity), activity);
+    for (const set of guide.sets) {
+      for (const field of ["focus", "notice", "before", "during", "after", "practical"]) assert.ok(set[field] && set[field].length, field);
+    }
+    // The page never calls a place or activity "safe".
+    assert.doesNotMatch(JSON.stringify(guide), /\bsafe\b/i);
+  }
+  assert.equal(guideFor("bakery", "everyday-life").sets[1].focus, "Smells and ingredients");
+  assert.equal(guideFor("park", "nature").sets[2].focus, "Seasonal changes");
+  assert.equal(perspectiveFor(GUIDES.park, 4), 1);
+});

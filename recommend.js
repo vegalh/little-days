@@ -145,6 +145,40 @@ function planWeek(days, activities) {
   });
 }
 
+// The hourly entries from the current hour on (PRD.md 7.3). Open-Meteo's hourly arrays
+// start at local midnight, so the first entries are usually in the past. currentTime is
+// Open-Meteo's current.time ("2026-11-04T17:15"), in the place's own time zone; the
+// browser's clock isn't used, because the visitor may be in another time zone.
+function nextHours(hourly, currentTime, count = 6) {
+  const thisHour = `${currentTime.slice(0, 13)}:00`;
+  const start = hourly.time.findIndex((time) => time >= thisHour);
+  if (start === -1) return [];
+  return hourly.time.slice(start, start + count).map((time, i) => ({
+    time,
+    temperature: hourly.temperature_2m[start + i],
+    rainChance: hourly.precipitation_probability[start + i],
+    code: hourly.weather_code[start + i],
+  }));
+}
+
+// The highest rain chance in the next three hours, when it reaches the rain caution
+// level (PRD.md 7.15), or null. hours come from nextHours.
+function rainSoon(hours) {
+  const chances = hours.slice(0, 3).map((hour) => hour.rainChance).filter((chance) => chance != null);
+  const highest = Math.max(...chances);
+  return chances.length && highest >= LIMITS.rainChance ? highest : null;
+}
+
+// On a hazard day, indoor places come first; otherwise the order stays (PRD.md 7.15).
+// settingOf(place) is "indoors" or "outdoors".
+function orderForWeather(places, weather, settingOf) {
+  if (!weather || !weather.hazards.length) return places;
+  return [...places].sort((a, b) => (settingOf(a) === "outdoors") - (settingOf(b) === "outdoors"));
+}
+
 if (typeof module !== "undefined") {
-  module.exports = { LIMITS, weatherFor, seasonFor, canDo, canGoOutside, matchesHoliday, pickIdeas, planWeek };
+  module.exports = {
+    LIMITS, weatherFor, seasonFor, canDo, canGoOutside, matchesHoliday, pickIdeas, planWeek, nextHours,
+    rainSoon, orderForWeather,
+  };
 }

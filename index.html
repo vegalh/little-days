@@ -2,52 +2,158 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Little Days</title>
-  <meta name="description" content="Weather-based activity ideas for young children, ages 2–6.">
+  <meta name="description" content="Find meaningful places to explore with young children, right outside your door.">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="site-header">
     <div class="wrap">
-      <a class="logo" href="./"><span aria-hidden="true">🌱</span> Little Days</a>
-      <nav><a href="#my-week">My week</a></nav>
+      <a class="logo" href="#start"><span aria-hidden="true">🌱</span> Little Days</a>
+      <nav class="site-nav" aria-label="Sections">
+        <a href="#explore"><span aria-hidden="true">🧭</span> Explore</a>
+        <a href="#weather"><span aria-hidden="true">☀️</span> Weather</a>
+        <a href="#my-week"><span aria-hidden="true">🗓️</span> My week</a>
+      </nav>
     </div>
   </header>
 
   <main>
-    <div class="hero wrap">
-      <h1>Every day holds a little adventure.</h1>
-      <p>Weather-based activity ideas for curious little learners, ages 2–6.</p>
+    <div id="start" class="hero wrap">
+      <h1>Your neighborhood is full of little discoveries.</h1>
+      <p>Find meaningful places to explore with young children, right outside your door.</p>
 
-      <form id="search-form" class="controls" role="search" novalidate>
-        <div class="field field-city">
-          <label for="city">City</label>
-          <div class="city-row">
-            <input id="city" name="city" type="text" list="city-options" autocomplete="off" placeholder="e.g. Boston" autofocus>
-            <datalist id="city-options"></datalist>
-            <button id="search-button" type="submit">Search</button>
+      <form id="location-form" class="controls" role="search" novalidate>
+        <div class="location-row">
+          <div class="field field-location">
+            <div id="google-location" hidden>
+              <p id="address-label" class="label">Address or place</p>
+              <div id="address-slot" class="address-slot"></div>
+            </div>
+            <div id="city-location" hidden>
+              <label for="city">City (for weather)</label>
+              <div class="city-row">
+                <input id="city" name="city" type="text" list="city-options" autocomplete="off" placeholder="e.g. Boston">
+                <datalist id="city-options"></datalist>
+                <button id="city-button" type="submit">Show weather</button>
+              </div>
+              <p class="note">Maps aren't available right now, so you can check the weather by city.</p>
+            </div>
+            <p id="location-message" class="field-message" hidden></p>
+            <div class="location-actions">
+              <button id="locate" type="button" class="button-secondary"><span aria-hidden="true">📍</span> Use my location</button>
+              <button id="example" type="button" class="link-button" hidden>Try an example address</button>
+            </div>
+            <p id="location-line" class="location-line" hidden></p>
+            <div id="location-status" class="hint" role="status" aria-live="polite"></div>
           </div>
-          <p id="city-message" class="field-message" hidden></p>
+          <div id="now-line" class="now-line" hidden></div>
         </div>
-        <fieldset class="field">
-          <legend>Temperature</legend>
-          <div class="segmented">
-            <label><input type="radio" name="unit" value="F" checked><span>°F</span></label>
-            <label><input type="radio" name="unit" value="C"><span>°C</span></label>
+        <div class="choices">
+          <div class="field">
+            <label for="ages">Ages</label>
+            <select id="ages" name="ages">
+              <option value="2-6">Mixed 2–6</option>
+              <option value="under-2">Under 2</option>
+              <option value="2-3">2–3</option>
+              <option value="4-6">4–6</option>
+            </select>
           </div>
+          <fieldset class="field">
+            <legend>Who's exploring</legend>
+            <div class="segmented">
+              <label><input type="radio" name="mode" value="family"><span>Family</span></label>
+              <label><input type="radio" name="mode" value="classroom"><span>Classroom</span></label>
+            </div>
+          </fieldset>
+          <fieldset class="field">
+            <legend>Walking time (minutes)</legend>
+            <div class="segmented segmented-wide">
+              <label><input type="radio" name="minutes" value="5"><span>5</span></label>
+              <label><input type="radio" name="minutes" value="10"><span>10</span></label>
+              <label><input type="radio" name="minutes" value="15"><span>15</span></label>
+              <label><input type="radio" name="minutes" value="20"><span>20</span></label>
+              <label><input type="radio" name="minutes" value="30"><span>30</span></label>
+            </div>
+          </fieldset>
+        </div>
+        <p class="note classroom-note" hidden>Google walking estimates may not reflect the time needed when accompanying young children. Check crossings and the route before visiting.</p>
+        <fieldset class="field">
+          <legend>What would you like to explore?</legend>
+          <div id="interest-chips" class="chips"></div>
+          <p class="note all-note" hidden>All searches six kinds of places, so it takes a little longer.</p>
+          <p id="interest-message" class="field-message" hidden></p>
         </fieldset>
+        <div class="controls-footer">
+          <fieldset class="field">
+            <legend>Temperature</legend>
+            <div class="segmented">
+              <label><input type="radio" name="unit" value="F" checked><span>°F</span></label>
+              <label><input type="radio" name="unit" value="C"><span>°C</span></label>
+            </div>
+          </fieldset>
+          <button id="find" type="button" class="find-button">Find Little Adventures</button>
+        </div>
       </form>
     </div>
 
-    <section class="wrap" aria-labelledby="week-heading">
+    <section id="explore" class="wrap" aria-labelledby="explore-heading">
       <div class="section-head">
-        <h2 id="week-heading">This week</h2>
-        <p id="place-line" hidden></p>
-        <p id="holiday-note" class="note" hidden>Public holidays couldn't be loaded, so they aren't shown.</p>
+        <h2 id="explore-heading">Explore</h2>
       </div>
-      <div id="status" class="status" role="status" aria-live="polite"></div>
+      <fieldset id="explore-tabs" class="explore-tabs" hidden>
+        <legend class="visually-hidden">What to explore</legend>
+        <div id="explore-chips" class="chips chips-scroll"></div>
+      </fieldset>
+      <div id="explore-status" class="status" role="status" aria-live="polite"></div>
+      <div id="explore-results" hidden>
+        <div class="explore-tools">
+          <fieldset class="field">
+            <legend>Setting</legend>
+            <div class="segmented segmented-small">
+              <label><input type="radio" name="setting-filter" value="all" checked><span>All</span></label>
+              <label><input type="radio" name="setting-filter" value="indoors"><span>Indoors</span></label>
+              <label><input type="radio" name="setting-filter" value="outdoors"><span>Outdoors</span></label>
+            </div>
+          </fieldset>
+          <button id="clear-filters" type="button" class="link-button">Clear filters</button>
+        </div>
+        <div id="explore-notes" class="explore-notes"></div>
+        <fieldset class="view-switch">
+          <legend class="visually-hidden">Show places as</legend>
+          <div class="segmented">
+            <label><input type="radio" name="explore-view" value="list" checked><span>List</span></label>
+            <label><input type="radio" name="explore-view" value="map"><span>Map</span></label>
+          </div>
+        </fieldset>
+        <div class="explore-layout">
+          <div id="place-list-box" class="place-list-box">
+            <p class="google-attribution" translate="no">Google Maps</p>
+            <div id="place-list" class="place-list"></div>
+          </div>
+          <div id="place-map-box" class="map-box">
+            <h3 id="map-heading" class="visually-hidden" tabindex="-1">Map of places</h3>
+            <div id="explore-map" class="map"></div>
+            <div id="map-peek" class="map-peek" hidden></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="weather" class="wrap" aria-labelledby="weather-heading" hidden>
+      <div class="section-head">
+        <h2 id="weather-heading">Weather</h2>
+        <p id="place-line" hidden></p>
+      </div>
+      <div id="weather-status" class="status" role="status" aria-live="polite"></div>
+      <div id="weather-now" class="weather-now" hidden></div>
+      <p id="holiday-note" class="note" hidden></p>
       <ol id="week" class="week" hidden></ol>
+      <div id="day-weather" class="day-weather" hidden>
+        <div id="warnings" class="warnings"></div>
+        <div id="wear" class="panel panel-wear"></div>
+      </div>
     </section>
 
     <section id="ideas" class="wrap" aria-labelledby="ideas-heading" hidden>
@@ -55,9 +161,7 @@
         <h2 id="ideas-heading"></h2>
         <p id="ideas-subtitle"></p>
       </div>
-      <div class="day-layout">
-        <div id="warnings" class="warnings"></div>
-        <div id="wear" class="panel panel-wear"></div>
+      <div class="day-ideas">
         <div id="idea-list" class="ideas"></div>
         <div id="why" class="panel panel-why"></div>
       </div>
@@ -84,13 +188,22 @@
     </div>
   </dialog>
 
+  <dialog id="place-dialog" class="place-dialog" aria-labelledby="place-title">
+    <div id="place-body"></div>
+  </dialog>
+
   <p id="announce" class="visually-hidden" role="status" aria-live="polite"></p>
 
+  <!-- config.js is gitignored (PRD.md 9.2). Without it, the page runs without Google. -->
+  <script src="config.js"></script>
   <script src="activities.js"></script>
   <script src="celebrations.js"></script>
   <script src="recommend.js"></script>
   <script src="advice.js"></script>
   <script src="plan.js"></script>
+  <script src="explore.js"></script>
+  <script src="guides.js"></script>
+  <script src="google.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
