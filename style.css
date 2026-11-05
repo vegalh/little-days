@@ -1,22 +1,34 @@
+/* RootMap's fonts, bundled in fonts/ (SIL Open Font License, fonts/OFL.txt) rather than
+   loaded from Google Fonts, which is blocked or slow in mainland China. */
+@font-face { font-family: "Caveat"; font-weight: 600; font-display: swap; src: url("fonts/caveat-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Caveat"; font-weight: 700; font-display: swap; src: url("fonts/caveat-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 400; font-display: swap; src: url("fonts/nunito-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 600; font-display: swap; src: url("fonts/nunito-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 700; font-display: swap; src: url("fonts/nunito-latin-700-normal.woff2") format("woff2"); }
+
+/* RootMap's palette (RootMapMVP src/index.css), under Little Days' token names. */
 :root {
-  --bg: #FBF6EC;
-  --surface: #FFFDF8;
-  --tint: #F1F3E8;
-  --ink: #22352C;
-  --ink-soft: #5E6B63;
-  --line: #ECE3D3;
-  --accent: #2F5A46;
+  --bg: #FBF2E4;
+  --surface: #FFFCF6;
+  --tint: #EEF1E6;
+  --ink: #3B2A1A;
+  --ink-soft: #75644F; /* RootMap's #8A7863, darkened to reach 4.5:1 on the cream background */
+  --line: #EEE1D0;
+  --accent: #4B7C63;
   --accent-ink: #FFFFFF;
-  --selected: #FFF8EC;
+  --selected: #E3EBE0;
+  --heading: #2F4D3D;
+  --apricot: #FBE9D7;
+  --shadow: 0 6px 20px rgba(59, 42, 26, .08);
   --sky: #7FA7C9;
   --holiday: #96421A;
   --warning: #7A4F00;
   --leaf-ink: #3F6B35;
   --google-gray: #5E5E5E; /* only Google's "Google Maps" text attribution */
-  --font-head: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-head: "Caveat", cursive;
+  --font-body: "Nunito", system-ui, sans-serif;
   --radius: 20px;
-  --radius-small: 12px;
+  --radius-small: 14px;
 }
 
 * { box-sizing: border-box; }
@@ -34,7 +46,21 @@ body {
 h1, h2, h3 {
   margin: 0;
   font-family: var(--font-head);
+  font-weight: 700;
   line-height: 1.15;
+  color: var(--heading);
+}
+
+/* Line icons from RootMap (24 × 24, drawn with the text color). */
+.icon {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: middle;
 }
 
 .wrap {
@@ -73,19 +99,23 @@ h1, h2, h3 {
 }
 
 .site-header nav a {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
   font-size: 15px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--ink-soft);
   text-decoration: none;
 }
 
-.site-header nav a:hover { text-decoration: underline; }
+.site-header nav a:hover { color: var(--accent); }
+
 
 .logo {
   font-family: var(--font-head);
-  font-size: 22px;
+  font-size: 32px;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--heading);
   text-decoration: none;
 }
 
@@ -95,8 +125,9 @@ h1, h2, h3 {
 
 .hero h1 {
   max-width: 18ch;
-  font-size: 52px;
-  color: var(--accent);
+  font-size: 62px;
+  line-height: 1.05;
+  color: var(--heading);
 }
 
 .hero > p {
@@ -115,7 +146,7 @@ h1, h2, h3 {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
+  box-shadow: var(--shadow);
 }
 
 .controls label,
@@ -137,9 +168,10 @@ h1, h2, h3 {
 /* °F / °C: two radio buttons styled as one control. */
 .segmented {
   display: inline-flex;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-small);
+  gap: 2px;
+  padding: 3px;
+  background: var(--tint);
+  border-radius: 12px;
 }
 
 .controls .segmented label { margin: 0; }
@@ -152,22 +184,26 @@ h1, h2, h3 {
 .segmented span {
   display: block;
   min-width: 52px;
-  line-height: 42px;
+  padding: 0 10px;
+  line-height: 38px;
   font-weight: 600;
   text-align: center;
-  background: var(--bg);
+  color: var(--ink-soft);
+  border-radius: 9px;
   cursor: pointer;
 }
 
+/* RootMap's raised pill, on white rather than pale green so the choice stands out clearly. */
 .segmented input:checked + span {
-  color: var(--accent-ink);
-  background: var(--accent);
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(59, 42, 26, .16);
 }
 
 .segmented input:focus-visible + span {
   outline: 2px solid var(--accent);
-  outline-offset: -4px;
-  box-shadow: inset 0 0 0 4px var(--accent-ink);
+  outline-offset: 1px;
 }
 
 .city-row {
@@ -296,7 +332,8 @@ button:disabled {
 
 .button-secondary {
   color: var(--accent);
-  background: transparent;
+  background: var(--surface);
+  border-width: 1.5px;
 }
 
 .button-added,
@@ -324,7 +361,7 @@ button:disabled {
 section { padding-block: 32px; }
 
 .section-head { margin-bottom: 16px; }
-.section-head h2 { font-size: 30px; }
+.section-head h2 { font-size: 40px; }
 
 .section-head p {
   margin: 4px 0 0;
@@ -341,6 +378,7 @@ section { padding-block: 32px; }
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
 .status:empty { display: none; }
@@ -364,18 +402,18 @@ section { padding-block: 32px; }
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
 .now-card h3,
-.hours h3 { font-size: 18px; margin-bottom: 8px; }
+.hours h3 { font-size: 26px; margin-bottom: 8px; }
 .now-card p { margin: 0; color: var(--ink-soft); }
 
 .now-temp {
-  font-family: var(--font-head);
   font-size: 40px;
   font-weight: 700;
   line-height: 1.1;
-  color: var(--ink) !important;
+  color: var(--heading) !important;
 }
 
 .now-card,
@@ -478,6 +516,7 @@ section { padding-block: 32px; }
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
   scroll-snap-align: start;
 }
 
@@ -489,8 +528,10 @@ section { padding-block: 32px; }
 
 .day-name {
   font-family: var(--font-head);
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 700;
+  line-height: 1.1;
+  color: var(--heading);
 }
 
 .day-date,
@@ -544,7 +585,7 @@ section { padding-block: 32px; }
 .warnings {
   margin-bottom: 16px;
   padding: 12px 16px;
-  background: var(--tint);
+  background: var(--apricot);
   border-radius: var(--radius);
 }
 
@@ -587,6 +628,7 @@ section { padding-block: 32px; }
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
 .idea-body {
@@ -595,7 +637,7 @@ section { padding-block: 32px; }
   gap: 8px;
 }
 
-.idea h3 { font-size: 21px; }
+.idea h3 { font-size: 27px; }
 .idea p { margin: 0; }
 
 .meta {
@@ -655,7 +697,7 @@ section { padding-block: 32px; }
 
 .panel h3 {
   margin-bottom: 8px;
-  font-size: 19px;
+  font-size: 26px;
 }
 
 .panel ul {
@@ -686,6 +728,7 @@ section { padding-block: 32px; }
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
 .plan > li {
@@ -800,7 +843,7 @@ dialog p { margin: 8px 0 0; }
 
 .site-footer p { margin: 0 0 16px; }
 .your-data { padding: 0; }
-.your-data h2 { font-size: 20px; color: var(--ink); margin-bottom: 8px; }
+.your-data h2 { font-size: 30px; margin-bottom: 8px; }
 .your-data ul { margin: 0 0 16px; padding-left: 20px; }
 .your-data li + li { margin-top: 4px; }
 .data-actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -847,17 +890,17 @@ dialog p { margin: 8px 0 0; }
   gap: 6px;
   align-items: center;
   min-height: 44px;
-  padding: 0 16px;
+  padding: 0 14px;
   font-weight: 600;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 12px;
   cursor: pointer;
 }
 
 .chip input:checked + span {
-  color: var(--accent-ink);
-  background: var(--accent);
+  color: var(--accent);
+  background: var(--selected);
   border-color: var(--accent);
 }
 
@@ -950,6 +993,7 @@ dialog p { margin: 8px 0 0; }
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
 .place-card.is-selected {
@@ -977,13 +1021,13 @@ dialog p { margin: 8px 0 0; }
   border-radius: 50%;
 }
 
-.place-card h3 { font-size: 21px; }
+.place-card h3 { font-size: 28px; }
 
 .place-title {
   min-height: 0;
   padding: 0;
   font: inherit;
-  color: var(--ink);
+  color: var(--heading);
   text-align: left;
   background: none;
   border: 0;
@@ -1108,7 +1152,7 @@ dialog p { margin: 8px 0 0; }
 #place-title:focus-visible { outline: 2px solid var(--accent); }
 
 .place-section { padding: 0 20px; margin-top: 24px; }
-.place-section h3 { font-size: 19px; margin-bottom: 8px; }
+.place-section h3 { font-size: 26px; margin-bottom: 8px; }
 .place-section p { margin: 0 0 8px; }
 .place-section a { color: var(--accent); font-weight: 600; }
 
@@ -1124,7 +1168,7 @@ dialog p { margin: 8px 0 0; }
 
 .route-reminder {
   padding: 12px;
-  background: var(--tint);
+  background: var(--apricot);
   border-radius: var(--radius-small);
 }
 
@@ -1282,9 +1326,10 @@ textarea {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
-.saved-place h3 { font-size: 19px; }
+.saved-place h3 { font-size: 26px; }
 .saved-place h3.unavailable { color: var(--ink-soft); font-family: var(--font-body); font-size: 16px; }
 .saved-place p { margin: 4px 0 0; }
 .saved-meta { font-size: 14px; color: var(--ink-soft); }
@@ -1317,12 +1362,12 @@ textarea {
 @media (max-width: 719px) {
   .wrap { padding: 0 16px; }
   .hero { padding-block: 8px 24px; }
-  .hero h1 { font-size: 32px; }
+  .hero h1 { font-size: 44px; }
   .hero > p { margin: 8px 0 16px; }
   /* City on its own row; the unit switch below it. */
   .controls { grid-template-columns: 1fr; gap: 12px; }
   section { padding-block: 24px; }
-  .section-head h2 { font-size: 24px; }
+  .section-head h2 { font-size: 34px; }
 
   /* Swipeable row; the next card peeks in at the edge. */
   .week {
@@ -1343,7 +1388,7 @@ textarea {
     grid-template-columns: 96px 1fr;
     align-items: start;
   }
-  .idea h3 { font-size: 19px; }
+  .idea h3 { font-size: 25px; }
 
   /* "What to wear" comes first on phones. */
   .day-weather {
@@ -1392,7 +1437,7 @@ textarea {
     height: calc(100dvh - 160px);
     min-height: 360px;
   }
-  .place-card h3 { font-size: 19px; }
+  .place-card h3 { font-size: 26px; }
 
   .place-dialog { width: 100%; max-width: 100%; }
   .place-head { padding: 16px; }
@@ -1411,17 +1456,20 @@ textarea {
     grid-auto-columns: 1fr;
     gap: 0;
     padding-bottom: env(safe-area-inset-bottom);
-    background: var(--surface);
+    background: color-mix(in srgb, var(--surface) 96%, transparent);
     border-top: 1px solid var(--line);
+    box-shadow: 0 -6px 20px rgba(59, 42, 26, .06);
+    backdrop-filter: blur(14px);
   }
   .site-header .site-nav a {
     display: grid;
+    gap: 2px;
     place-items: center;
-    min-height: 56px;
+    align-content: center;
+    min-height: 60px;
     font-size: 12px;
     text-align: center;
   }
-  .site-nav span { font-size: 18px; line-height: 1; }
 
   .plan > li { grid-template-columns: 1fr; gap: 0; padding-top: 12px; }
 

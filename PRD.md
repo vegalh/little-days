@@ -751,7 +751,7 @@ Requests Little Days makes (checked live on 2026-11-04, PRD 7.2):
 
 ### 9.5 Deployment
 
-**Workflow:** `.github/workflows/pages.yml`. It runs **only when started by hand** (Actions → "Deploy to GitHub Pages" → Run workflow), never on push. It checks out the code, runs `node --test`, copies only the site files (`index.html`, `style.css`, the `.js` files and `images/`) into `_site`, writes `_site/config.js` from two repository secrets, and publishes `_site` with GitHub's Pages actions. There's no build step. `node_modules`, `tests`, `tools`, `design`, the docs and the package files aren't published.
+**Workflow:** `.github/workflows/pages.yml`. It runs **only when started by hand** (Actions → "Deploy to GitHub Pages" → Run workflow), never on push. It checks out the code, runs `node --test`, copies only the site files (`index.html`, `style.css`, the `.js` files, `images/` and `fonts/`) into `_site`, writes `_site/config.js` from two repository secrets, and publishes `_site` with GitHub's Pages actions. There's no build step. `node_modules`, `tests`, `tools`, `design`, the docs and the package files aren't published.
 
 **Repository secrets** (Settings → Secrets and variables → Actions → New repository secret):
 

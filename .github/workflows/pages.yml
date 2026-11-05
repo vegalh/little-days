@@ -35,7 +35,7 @@ jobs:
         run: |
           mkdir _site
           cp index.html style.css app.js google.js explore.js recommend.js advice.js plan.js guides.js celebrations.js activities.js _site/
-          cp -R images _site/
+          cp -R images fonts _site/
 
       - name: Write config.js from secrets
         env:

@@ -2,7 +2,7 @@
 
 Read this before writing any CSS or markup.
 
-**Chosen direction: Storybook** ([design/trial-a.html](design/trial-a.html)), with the softer card corners of Paper planner ([design/trial-b.html](design/trial-b.html)). Both trials and the original mockup ([design/mockup.png](design/mockup.png)) are kept for reference. They show the earlier weekly planner, not the neighborhood explorer. Where they disagree with this file, this file wins.
+**Chosen direction: RootMap family.** Little Days now shares RootMap's palette, fonts, controls and icons (sections 2–4). The earlier Storybook trial ([design/trial-a.html](design/trial-a.html)) and Paper planner ([design/trial-b.html](design/trial-b.html)) and the original mockup ([design/mockup.png](design/mockup.png)) are kept for reference only. Where they disagree with this file, this file wins.
 
 ## 1. Feeling
 
@@ -17,57 +17,69 @@ A neighborhood field guide: like a well-made nature journal with a real map tuck
 
 ## 2. Color
 
+Little Days follows **RootMap's visual identity** (RootMapMVP `src/index.css` and `src/rootmap-theme.css`), so the two read as one family: warm cream, soft sage, forest green, brown-black text.
+
 Defined as CSS custom properties on `:root` in `style.css`. **`style.css` is the source of truth**: this table lists exactly what it defines. Component styles use the tokens, never raw hex values. Don't rename a token that's in use; add a new one only when a component needs it, and add it here.
 
-| Token | Value | Use |
-|---|---|---|
-| `--bg` | `#FBF6EC` | Page background (warm cream) |
-| `--surface` | `#FFFDF8` | Cards |
-| `--tint` | `#F1F3E8` | Soft green panels: art tiles, Little Days notes and ideas, "What to wear", "Why these activities?" |
-| `--ink` | `#22352C` | Main text (deep green-black) |
-| `--ink-soft` | `#5E6B63` | Secondary text, labels |
-| `--line` | `#ECE3D3` | Borders, dividers |
-| `--accent` | `#2F5A46` | Forest green: buttons, selected states, headings, focus ring, place markers, the walking route line |
-| `--accent-ink` | `#FFFFFF` | Text on accent |
-| `--selected` | `#FFF8EC` | Background of a selected day or place card |
-| `--sky` | `#7FA7C9` | Rain/cool weather details (defined, not used yet) |
-| `--leaf-ink` | `#3F6B35` | "Added ✓", "Explored" status (dark enough for AA text) |
-| `--holiday` | `#96421A` | Holiday and celebration tags, holiday-inspired label (deep pumpkin; darkened from `#D9692B` to pass AA on its tint) |
-| `--warning` | `#7A4F00` | Weather warning icons, "Indoor day" tag, route reminder icon |
-| `--google-gray` | `#5E5E5E` | Only Google's "Google Maps" text attribution, in one of the colors Google allows |
+| Token | Value | RootMap name | Use |
+|---|---|---|---|
+| `--bg` | `#FBF2E4` | `--bg` | Page background (warm cream) |
+| `--surface` | `#FFFCF6` | `--card` | Cards, controls card, status areas |
+| `--tint` | `#EEF1E6` | `--elevated` | Soft sage panels: Little Days notes, What to wear, the segmented-control track |
+| `--apricot` | `#FBE9D7` | `--apricot` | Warm boxes: weather warnings, the route reminder |
+| `--ink` | `#3B2A1A` | `--text` | Main text (brown-black) |
+| `--ink-soft` | `#75644F` | `--muted` (`#8A7863`, darkened here to pass 4.5:1 on `--bg`) | Secondary text, labels, unselected controls |
+| `--heading` | `#2F4D3D` | `--dark-purple` | Headings, logo, place and activity titles |
+| `--line` | `#EEE1D0` | `--border` | Borders, dividers |
+| `--accent` | `#4B7C63` | `--primary` | Buttons, selected text, focus ring, markers, route line |
+| `--accent-ink` | `#FFFFFF` | `--on-primary` | Text on accent |
+| `--selected` | `#E3EBE0` | `--lavender` | Selected segment and pill background, selected day and place card |
+| `--sky` | `#7FA7C9` | — | Rain/cool details (defined, not used yet) |
+| `--leaf-ink` | `#3F6B35` | — | "Added ✓", status tags |
+| `--holiday` | `#96421A` | — | Holiday tags (RootMap's `--orange` is too light for text) |
+| `--warning` | `#7A4F00` | — | Warning icons, "Indoor day" tag |
+| `--google-gray` | `#5E5E5E` | — | Only Google's "Google Maps" text attribution |
+| `--shadow` | `0 6px 20px rgba(59,42,26,.08)` | `--shadow` | The one soft shadow, on cards |
 
-Shape tokens: `--radius` (20px) and `--radius-small` (12px). Font tokens: `--font-head`, `--font-body` (section 3).
+Shape tokens: `--radius` (20px, cards) and `--radius-small` (14px, controls, RootMap's `--radius-control`). Font tokens: section 3.
 
-Sky, leaf, holiday, and warning colors are only for small tags and text, never large backgrounds. Body text must meet WCAG AA contrast (4.5:1) on `--bg`, `--surface`, and `--tint`.
+Sky, leaf, holiday, and warning colors are only for small tags and text, never large backgrounds. Body text must meet WCAG AA contrast (4.5:1) on `--bg`, `--surface`, `--tint` and `--apricot`.
 
-**Map colors.** Markers and the route line use `--accent` (read with `getComputedStyle`, since Google's map can't read CSS variables). The start marker uses `--ink`. The map itself keeps Google's default style. If a calmer look is wanted later, it's set with cloud-based map styling on the map ID in Google Cloud, not in code.
+**Map colors.** Markers and the route line use `--accent` (read with `getComputedStyle`, since Google's map can't read CSS variables). The start marker uses `--ink`. The map keeps Google's default style.
 
 Dark mode is not part of version 1. The Autocomplete element is set to `color-scheme: light` so it matches.
 
 ## 3. Type
 
-System fonts only. Nothing is loaded from a CDN, including Google Fonts.
+RootMap's two fonts, **bundled with the site** in `fonts/` (woff2, SIL Open Font License, `fonts/OFL.txt`). Nothing is loaded from Google Fonts or any CDN, which also keeps the site fast in mainland China.
 
-- **Headings** (`--font-head`): `"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif`. Elegant serif for the page title, section headings, day names, place names and activity titles.
-- **Body** (`--font-body`): `system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`.
-- Base size 16px, line height 1.5. Headings line height 1.15.
+- **Headings** (`--font-head`): `"Caveat", cursive`, weights 600 and 700. A handwritten script for the logo, page title, section headings, day names, and place and activity titles. Caveat runs small, so its sizes are larger than a serif's would be.
+- **Body** (`--font-body`): `"Nunito", system-ui, sans-serif`, weights 400, 600, 700. Rounded and friendly, for everything else.
+- Chinese (next phase) uses the system's Chinese font, as RootMap does (`"PingFang SC", "Microsoft YaHei", sans-serif`), never a downloaded one.
+- Base size 16px, line height 1.5. Headings line height 1.15, color `--heading`.
 
 | Role | Desktop | Phone |
 |---|---|---|
-| Hero title | 52px / 700 | 32px |
-| Section heading (h2) | 30px / 700 | 24px |
-| Place and activity title (h3) | 21px / 700 | 19px |
-| Day name | 18px / 700 | 16px |
+| Logo | 32px / 700 | same |
+| Hero title | 62px / 700 | 44px |
+| Section heading (h2) | 40px / 700 | 34px |
+| Place and activity title (h3) | 27–28px / 700 | 25–26px |
+| Panel and detail headings | 26px / 700 | same |
+| Day name | 24px / 700 | same |
 | Body | 16px | 16px |
 | Labels, meta, tags | 13–14px / 600 | same |
 
-- Temperatures, walking minutes and distances use `font-variant-numeric: tabular-nums`.
+- Temperatures, walking minutes and distances use `font-variant-numeric: tabular-nums`, in Nunito (never Caveat).
 - Sentence case everywhere ("Add to my week", "Want to explore"). No all-caps.
 
 ## 4. Shape and spacing
 
-- **Corners** (from Paper planner): cards, panels and the map frame `--radius: 20px`; inputs, buttons, chips' container and art tiles `12px`; tags and chips fully rounded.
-- **Borders:** 1px `--line`. Shadow at most `0 1px 2px rgba(0,0,0,.04)`, on the controls card only.
+- **Corners:** cards, panels and the map frame `--radius: 20px`; inputs, buttons, pills and art tiles `--radius-small: 14px` (pills 12px); tags fully rounded.
+- **Borders:** 1px `--line`. Secondary buttons have a 1.5px `--accent` border on `--surface`.
+- **Shadow:** `--shadow`, RootMap's single soft shadow, on cards (controls card, place cards, saved places, idea cards, day cards, Now and Next hours, My week, status areas) and on the selected segment.
+- **Segmented controls** (°F/°C, Family/Classroom, walking time, filters, List/Map, My Places tabs) follow RootMap's: a `--tint` track with 3px padding and 12px corners; the selected segment is `--surface` (white) with `--accent` bold text, 9px corners and a small shadow. RootMap uses its pale green here; white was chosen so the selection is easy to see. Unselected segments are `--ink-soft`.
+- **Interest chips** follow RootMap's filter pills: `--surface`, 1px `--line`, 12px corners; the selected pill is `--selected` with an `--accent` border and text.
+- **Icons:** RootMap's line icons (24 × 24, 1.8 stroke, `currentColor`) for navigation: compass (Explore), sun (Weather), heart (My Places), calendar (My week). Weather and category emoji stay, always next to text.
 - **Spacing** uses a 4px base: 4, 8, 12, 16, 24, 32, 48.
 - Content max width 1040px, centered, except the Explore section, which may widen to 1200px on large screens so the map has room. Side gutter 16px on phones, 24px from 720px up.
 
@@ -293,7 +305,7 @@ Almost none. 150ms fades on hover color and dialog open. Smooth `scroll-snap` on
 ## 10. Don't
 
 - No gradients, glassmorphism, or big hero images.
-- No web fonts and nothing loaded from a CDN (Google's Maps API script is the one exception, PRD.md 9.1). Google's text attribution names Roboto first but allows the sans-serif fallback, so no font is loaded.
+- Nothing loaded from a CDN or Google Fonts (Google's Maps API script is the one exception, PRD.md 9.1). The only fonts are the bundled Caveat and Nunito files in `fonts/`. Google's text attribution names Roboto first but allows the sans-serif fallback, so no Roboto is loaded.
 - No CSS framework or component library.
 - No decorative animation.
 - No all-caps text.
