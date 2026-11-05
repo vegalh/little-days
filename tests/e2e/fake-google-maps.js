@@ -150,6 +150,7 @@
     },
   };
 
+  window.fakeGoogleLanguage = new URL(document.currentScript.src).searchParams.get("language");
   const callback = new URL(document.currentScript.src).searchParams.get("callback");
   window[callback]();
   // Google reports a refused key after the script has loaded.

@@ -257,6 +257,7 @@ const SETTING_CHOICES = {
   ages: ["2-6", "under-2", "2-3", "4-6"],
   minutes: [15, 5, 10, 20, 30],
   interest: [null, "nature", "everyday-life", "community-helpers", "art-culture", "animals-wildlife", "movement", "all"],
+  lang: [null, "en", "zh"], // null: follow the browser's language
 };
 
 // Only a picked Google address or a searched city is ever saved, never a device position.
@@ -278,7 +279,7 @@ function settingsFromV1(old) {
   return { unit: old.unit, location: { kind: "city", name: old.city } };
 }
 
-// Returns { unit, mode, ages, minutes, interest, location } with defaults for
+// Returns { unit, mode, ages, minutes, interest, lang, location } with defaults for
 // anything missing or invalid. Reads v1 when there is no v2 yet.
 function loadSettings(storage) {
   return cleanSettings(readJson(storage, SETTINGS_KEY) || settingsFromV1(readJson(storage, OLD_SETTINGS_KEY)));

@@ -61,51 +61,69 @@ const announcer = document.querySelector("#announce");
 
 // WMO weather codes used by Open-Meteo: [emoji, label]
 const WEATHER = {
-  0: ["☀️", "Clear"],
-  1: ["🌤️", "Mainly clear"],
-  2: ["⛅", "Partly cloudy"],
-  3: ["☁️", "Overcast"],
-  45: ["🌫️", "Fog"],
-  48: ["🌫️", "Fog"],
-  51: ["🌦️", "Light drizzle"],
-  53: ["🌦️", "Drizzle"],
-  55: ["🌦️", "Heavy drizzle"],
-  56: ["🌧️", "Freezing drizzle"],
-  57: ["🌧️", "Freezing drizzle"],
-  61: ["🌧️", "Light rain"],
-  63: ["🌧️", "Rain"],
-  65: ["🌧️", "Heavy rain"],
-  66: ["🌧️", "Freezing rain"],
-  67: ["🌧️", "Freezing rain"],
-  71: ["❄️", "Light snow"],
-  73: ["❄️", "Snow"],
-  75: ["❄️", "Heavy snow"],
-  77: ["❄️", "Snow grains"],
-  80: ["🌦️", "Showers"],
-  81: ["🌧️", "Showers"],
-  82: ["🌧️", "Heavy showers"],
-  85: ["❄️", "Snow showers"],
-  86: ["❄️", "Snow showers"],
-  95: ["⛈️", "Thunderstorm"],
-  96: ["⛈️", "Thunderstorm"],
-  99: ["⛈️", "Thunderstorm"],
+  0: ["☀️", tr("Clear")],
+  1: ["🌤️", tr("Mainly clear")],
+  2: ["⛅", tr("Partly cloudy")],
+  3: ["☁️", tr("Overcast")],
+  45: ["🌫️", tr("Fog")],
+  48: ["🌫️", tr("Fog")],
+  51: ["🌦️", tr("Light drizzle")],
+  53: ["🌦️", tr("Drizzle")],
+  55: ["🌦️", tr("Heavy drizzle")],
+  56: ["🌧️", tr("Freezing drizzle")],
+  57: ["🌧️", tr("Freezing drizzle")],
+  61: ["🌧️", tr("Light rain")],
+  63: ["🌧️", tr("Rain")],
+  65: ["🌧️", tr("Heavy rain")],
+  66: ["🌧️", tr("Freezing rain")],
+  67: ["🌧️", tr("Freezing rain")],
+  71: ["❄️", tr("Light snow")],
+  73: ["❄️", tr("Snow")],
+  75: ["❄️", tr("Heavy snow")],
+  77: ["❄️", tr("Snow grains")],
+  80: ["🌦️", tr("Showers")],
+  81: ["🌧️", tr("Showers")],
+  82: ["🌧️", tr("Heavy showers")],
+  85: ["❄️", tr("Snow showers")],
+  86: ["❄️", tr("Snow showers")],
+  95: ["⛈️", tr("Thunderstorm")],
+  96: ["⛈️", tr("Thunderstorm")],
+  99: ["⛈️", tr("Thunderstorm")],
 };
+
+// An activity's RootMap text in the page's language: RootMap has its own Chinese for each one.
+function rootmapText(activity) {
+  return LANG === "zh" ? { ...activity.rootmap, ...activity.rootmap.zh } : activity.rootmap;
+}
+
+// A category as a word inside a sentence: "nature places", "自然地点".
+function interestWord(key) {
+  return LANG === "zh" ? tr(CATEGORIES[key].label) : CATEGORIES[key].label.toLowerCase();
+}
+
+// [emoji, label] for a WMO code, with the label in the page's language.
+function weatherOf(code) {
+  const [icon, label] = WEATHER[code] || ["🌡️", tr("Unknown")];
+  return [icon, tr(label)];
+}
 
 // One sentence per weather condition from recommend.js (PRD.md 7.4).
 const WARNINGS = {
-  storm: () => "Thunderstorms are forecast. Stay indoors while there is thunder or lightning.",
-  heavyRain: () => "Heavy rain is forecast.",
-  freezingRain: () => "Freezing rain is forecast, so paths may be icy.",
-  heavySnow: () => "Heavy snow is forecast.",
-  extremeHeat: (d) => `It may feel like ${temp(d.feelsMax)} at the hottest part of the day. That's too hot for outdoor play.`,
-  extremeCold: (d) => `It may feel like ${temp(d.feelsMax)} at the warmest part of the day. That's too cold for outdoor play.`,
-  dangerousWind: (d) => `Gusts may reach ${wind(d.gusts)}. That's too windy to play outside, especially near trees.`,
-  rain: (d) => `Rain is possible${d.rainChance == null ? "" : ` (${d.rainChance}%)`}. Any outdoor idea today works in rain gear; skip it if the rain gets heavy.`,
-  snow: () => "Light snow is forecast. Dress warmly and keep outdoor time short.",
-  cold: (d) => `It may feel like ${temp(d.feelsMax)} at the warmest part of the day. Keep outdoor time short and dress warmly.`,
-  hot: (d) => `It may feel like ${temp(d.feelsMax)}. Play outside early or late, in the shade, with water and sun protection.`,
-  wind: (d) => `Gusts may reach ${wind(d.gusts)}. Stay clear of trees and loose branches.`,
-  fog: () => "Fog is forecast. Stay close together near roads.",
+  storm: () => tr("Thunderstorms are forecast. Stay indoors while there is thunder or lightning."),
+  heavyRain: () => tr("Heavy rain is forecast."),
+  freezingRain: () => tr("Freezing rain is forecast, so paths may be icy."),
+  heavySnow: () => tr("Heavy snow is forecast."),
+  extremeHeat: (d) => tr("It may feel like {temp} at the hottest part of the day. That's too hot for outdoor play.", { temp: temp(d.feelsMax) }),
+  extremeCold: (d) => tr("It may feel like {temp} at the warmest part of the day. That's too cold for outdoor play.", { temp: temp(d.feelsMax) }),
+  dangerousWind: (d) => tr("Gusts may reach {wind}. That's too windy to play outside, especially near trees.", { wind: wind(d.gusts) }),
+  rain: (d) => d.rainChance == null
+    ? tr("Rain is possible. Any outdoor idea today works in rain gear; skip it if the rain gets heavy.")
+    : tr("Rain is possible ({chance}%). Any outdoor idea today works in rain gear; skip it if the rain gets heavy.", { chance: d.rainChance }),
+  snow: () => tr("Light snow is forecast. Dress warmly and keep outdoor time short."),
+  cold: (d) => tr("It may feel like {temp} at the warmest part of the day. Keep outdoor time short and dress warmly.", { temp: temp(d.feelsMax) }),
+  hot: (d) => tr("It may feel like {temp}. Play outside early or late, in the shade, with water and sun protection.", { temp: temp(d.feelsMax) }),
+  wind: (d) => tr("Gusts may reach {wind}. Stay clear of trees and loose branches.", { wind: wind(d.gusts) }),
+  fog: () => tr("Fog is forecast. Stay close together near roads."),
 };
 
 // localStorage can be missing or blocked; the page then works without saving.
@@ -120,6 +138,10 @@ try {
 const config = window.LITTLE_DAYS_CONFIG || {};
 const ACTIVITY_IDS = ACTIVITIES.map((a) => a.id);
 const settings = loadSettings(storage); // PRD.md 7.18
+// The page's language (PRD.md 7.19): the saved choice, or else the browser's.
+const LANG = settings.lang || deviceLanguage(navigator.languages || [navigator.language]);
+const LOCALE = LANG === "zh" ? "zh-CN" : "en-US";
+const tr = (text, vars) => translate(LANG, text, vars);
 let plan = loadPlan(storage, isoToday(), ACTIVITY_IDS);
 // Saved Google place IDs and the adult's own data only (PRD.md 7.17).
 let savedPlaces = loadPlaces(storage);
@@ -230,7 +252,7 @@ function chooseLocation(location) {
   place = location;
   clearInvalid();
   locationStatus.textContent = "";
-  const example = location.kind === "example" ? " · Example address" : "";
+  const example = location.kind === "example" ? ` · ${tr("Example address")}` : "";
   locationLine.textContent = `📍 ${location.label}${example}`;
   locationLine.hidden = false;
   resetExplore();
@@ -273,7 +295,7 @@ async function loadWeather(location) {
 // The weather-only fallback: Open-Meteo geocoding, then the weather.
 async function searchCity(city) {
   cityButton.disabled = true;
-  cityButton.textContent = "Searching…";
+  cityButton.textContent = tr("Searching…");
   weatherRequest++;
   showWeatherLoading(city);
   try {
@@ -296,7 +318,7 @@ async function searchCity(city) {
     showWeatherError(() => searchCity(city));
   } finally {
     cityButton.disabled = false;
-    cityButton.textContent = "Show weather";
+    cityButton.textContent = tr("Show weather");
   }
 }
 
@@ -307,13 +329,13 @@ function locate() {
     return;
   }
   locateButton.disabled = true;
-  locateButton.textContent = "Finding you…";
+  locateButton.textContent = tr("Finding you…");
   navigator.geolocation.getCurrentPosition(
     (position) => {
       resetLocateButton();
       chooseLocation({
         kind: "device",
-        label: "Your current location",
+        label: tr("Your current location"),
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
         countryCode: null,
@@ -330,7 +352,7 @@ function locate() {
 
 function resetLocateButton() {
   locateButton.disabled = false;
-  locateButton.innerHTML = `<span aria-hidden="true">📍</span> Use my location`;
+  locateButton.innerHTML = `<span aria-hidden="true">📍</span> ${tr("Use my location")}`;
 }
 
 // A saved location comes back on a return visit: weather only, never a place search.
@@ -346,7 +368,7 @@ async function restoreLocation(saved) {
     await chooseLocation(await placeLocation(saved.placeId));
   } catch (error) {
     console.error(error);
-    showStatus(locationStatus, "", "We couldn't load your saved address. Enter it again.");
+    showStatus(locationStatus, "", tr("We couldn't load your saved address. Enter it again."));
   }
 }
 
@@ -355,7 +377,7 @@ async function restoreLocation(saved) {
 async function startGoogle() {
   googleLocation.hidden = false;
   try {
-    await loadGoogleMaps(config.googleMapsKey, () => useFallback(new Error("Google refused the Maps key (gm_authFailure)")));
+    await loadGoogleMaps(config.googleMapsKey, () => useFallback(new Error("Google refused the Maps key (gm_authFailure)")), LOCALE);
     await setupAutocomplete(addressSlot, "address-label", (location) => {
       pickedLabel = location.label;
       chooseLocation(location);
@@ -400,7 +422,7 @@ async function useExample() {
     await chooseLocation(location);
   } catch (error) {
     console.error(error);
-    showStatus(locationStatus, "", "We couldn't load the example address right now.");
+    showStatus(locationStatus, "", tr("We couldn't load the example address right now."));
   } finally {
     exampleButton.disabled = false;
   }
@@ -440,15 +462,15 @@ form.addEventListener("submit", (event) => {
     // Google's field: only a picked suggestion counts as a location (PRD.md 8.4).
     const field = document.querySelector("#address");
     if (field && field.value && field.value !== pickedLabel) {
-      showInvalid(field, "Pick an address from the suggestions.");
+      showInvalid(field, tr("Pick an address from the suggestions."));
     }
     return;
   }
   const city = cityInput.value.trim();
   if (city.length === 0) {
-    showInvalid(cityInput, "Type a city name first.");
+    showInvalid(cityInput, tr("Type a city name first."));
   } else if (city.length < 2) {
-    showInvalid(cityInput, "Type at least 2 letters.");
+    showInvalid(cityInput, tr("Type at least 2 letters."));
   } else {
     searchCity(city);
   }
@@ -542,7 +564,7 @@ document.querySelector("#export-data").addEventListener("click", () => {
   link.download = `little-days-data-${isoToday()}.json`;
   link.click();
   URL.revokeObjectURL(link.href);
-  dataStatus.textContent = "Your data was saved to a file. It contains your journal, so keep it somewhere private.";
+  dataStatus.textContent = tr("Your data was saved to a file. It contains your journal, so keep it somewhere private.");
 });
 
 document.querySelector("#import-data").addEventListener("click", () => importFile.click());
@@ -553,23 +575,25 @@ importFile.addEventListener("change", async () => {
   if (!file) return;
   const { data, error } = readImport(await file.text(), isoToday(), ACTIVITY_IDS);
   if (error) {
-    dataStatus.textContent = `${error} Your saved data hasn't changed.`;
+    dataStatus.textContent = `${tr(error)} ${tr("Your saved data hasn't changed.")}`;
     return;
   }
   const count = Object.keys(data.places).length;
-  if (!confirm(`Replace everything Little Days has saved in this browser with this backup (${count} ${count === 1 ? "place" : "places"})? This can't be undone.`)) {
-    dataStatus.textContent = "Import cancelled. Your saved data hasn't changed.";
+  if (!confirm(count === 1
+    ? tr("Replace everything Little Days has saved in this browser with this backup ({count} place)? This can't be undone.", { count })
+    : tr("Replace everything Little Days has saved in this browser with this backup ({count} places)? This can't be undone.", { count }))) {
+    dataStatus.textContent = tr("Import cancelled. Your saved data hasn't changed.");
     return;
   }
   if (!replaceSavedData(storage, data)) {
-    dataStatus.textContent = "The backup couldn't be saved in this browser (storage may be full or blocked). Your saved data hasn't changed.";
+    dataStatus.textContent = tr("The backup couldn't be saved in this browser (storage may be full or blocked). Your saved data hasn't changed.");
     return;
   }
   location.reload();
 });
 
 document.querySelector("#delete-data").addEventListener("click", () => {
-  if (!confirm("Delete your saved places, journal entries, plan and choices from this browser? This can't be undone.")) return;
+  if (!confirm(tr("Delete your saved places, journal entries, plan and choices from this browser? This can't be undone."))) return;
   deleteSavedData(storage);
   location.reload();
 });
@@ -664,11 +688,11 @@ let selectedPlace = null;
 let placeOpener = null;
 
 function interestChipsHtml(name) {
-  const options = [...CATEGORY_KEYS.map((key) => [key, CATEGORIES[key]]), ["all", { label: "All", emoji: "✨" }]];
+  const options = [...CATEGORY_KEYS.map((key) => [key, CATEGORIES[key]]), ["all", { label: tr("All"), emoji: "✨" }]];
   return options.map(([key, { label, emoji }]) => `
     <label class="chip">
       <input type="radio" name="${name}" value="${key}">
-      <span><span aria-hidden="true">${emoji}</span><span>${label}</span><span class="chip-loaded" hidden>✓<span class="visually-hidden"> (loaded)</span></span></span>
+      <span><span aria-hidden="true">${emoji}</span><span>${tr(label)}</span><span class="chip-loaded" hidden>✓<span class="visually-hidden"> ${tr("(loaded)")}</span></span></span>
     </label>`).join("");
 }
 
@@ -691,7 +715,7 @@ function showChoices() {
 }
 
 function placeLabel() {
-  return place.kind === "device" ? "your location" : place.label;
+  return place.kind === "device" ? tr("your location") : place.label;
 }
 
 function exploreKey() {
@@ -715,7 +739,7 @@ async function findAdventures() {
   clearInvalid();
   if (!place) {
     const field = cityLocation.hidden ? document.querySelector("#address") : cityInput;
-    showInvalid(field || locateButton, "Enter an address or use your location first.");
+    showInvalid(field || locateButton, tr("Enter an address or use your location first."));
     return;
   }
   if (!settings.interest) {
@@ -738,12 +762,12 @@ async function findAdventures() {
   const keys = categoriesToSearch(settings.interest, run.loaded);
   if (keys.length) {
     findButton.disabled = true;
-    findButton.textContent = "Searching…";
+    findButton.textContent = tr("Searching…");
     exploreResults.hidden = true;
-    showStatus(exploreStatus, "loading", `Finding little adventures near ${placeLabel()}…`);
+    showStatus(exploreStatus, "loading", tr("Finding little adventures near {place}…", { place: placeLabel() }));
     const results = await Promise.allSettled(keys.map((key) =>
       searchNearbyPlaces(run.origin, searchRadius(settings.minutes), CATEGORIES[key].types)));
-    findButton.textContent = "Find Little Adventures";
+    findButton.textContent = tr("Find Little Adventures");
     findButton.disabled = false;
     if (run !== explore) return; // the location or walking time changed meanwhile
     results.forEach((result, i) => {
@@ -752,7 +776,7 @@ async function findAdventures() {
     });
     const failed = results.filter((result) => result.status === "rejected").length;
     if (failed === results.length) {
-      showStatus(exploreStatus, "error", "We couldn't load nearby places right now. Check your connection and try again.", findAdventures);
+      showStatus(exploreStatus, "error", tr("We couldn't load nearby places right now. Check your connection and try again."), findAdventures);
       return;
     }
     run.partial = failed > 0;
@@ -770,8 +794,10 @@ async function showResults(checkRoutes) {
   exploreTabs.hidden = false;
   if (!explore.shortlist.length) {
     exploreResults.hidden = true;
-    const interest = settings.interest === "all" ? "" : `${CATEGORIES[settings.interest].label.toLowerCase()} `;
-    showStatus(exploreStatus, "", `We didn't find ${interest}places within about a ${settings.minutes}-minute walk. Try a longer walk or another interest.`);
+    showStatus(exploreStatus, "", settings.interest === "all"
+      ? tr("We didn't find places within about a {minutes}-minute walk. Try a longer walk or another interest.", { minutes: settings.minutes })
+      : tr("We didn't find {interest} places within about a {minutes}-minute walk. Try a longer walk or another interest.",
+        { interest: interestWord(settings.interest), minutes: settings.minutes }));
     return;
   }
   showStatus(exploreStatus, "", "");
@@ -796,7 +822,7 @@ async function checkWalkingTimes(targets) {
   }
   if (run !== explore) return;
   await renderPlaces();
-  announce("Walking times are ready.");
+  announce(tr("Walking times are ready."));
 }
 
 function settingFilter() {
@@ -816,22 +842,24 @@ async function renderPlaces() {
   const shown = [...orderForWeather(within, weather, settingFor), ...orderForWeather(unknown, weather, settingFor)];
   shown.forEach((p, i) => { p.number = i + 1; });
 
-  const notes = [`${shown.length} ${shown.length === 1 ? "place" : "places"} near ${escapeHtml(placeLabel())} · walking times from Google`];
-  if (over) notes.push(`${over} ${over === 1 ? "place is" : "places are"} more than a ${settings.minutes}-minute walk.`);
-  if (explore.partial) notes.push("Some kinds of places couldn't be loaded right now.");
-  if (explore.routesFailed) notes.push("Walking times couldn't be checked right now, so the walking-time filter is off for those places.");
+  const notes = [tr(shown.length === 1 ? "{count} place near {place} · walking times from Google" : "{count} places near {place} · walking times from Google",
+    { count: shown.length, place: escapeHtml(placeLabel()) })];
+  if (over) notes.push(tr(over === 1 ? "{count} place is more than a {minutes}-minute walk." : "{count} places are more than a {minutes}-minute walk.",
+    { count: over, minutes: settings.minutes }));
+  if (explore.partial) notes.push(tr("Some kinds of places couldn't be loaded right now."));
+  if (explore.routesFailed) notes.push(tr("Walking times couldn't be checked right now, so the walking-time filter is off for those places."));
   exploreNotes.innerHTML = `
     ${notes.map((note) => `<p>${note}</p>`).join("")}
-    <p>These notes use the forecast for the whole area and fixed temperature levels. They're a starting point, not a safety check. Use your own judgement and your setting's rules.</p>
+    <p>${tr("These notes use the forecast for the whole area and fixed temperature levels. They're a starting point, not a safety check. Use your own judgement and your setting's rules.")}</p>
     ${settings.mode === "classroom" ? `<p class="classroom-line">${CLASSROOM_WALKING}</p>` : ""}`;
 
   if (!shown.length) {
-    placeList.innerHTML = `<div class="status"><p>No places match these filters.</p>
-      <button type="button" class="button-secondary" data-clear-filters>Clear filters</button></div>`;
+    placeList.innerHTML = `<div class="status"><p>${tr("No places match these filters.")}</p>
+      <button type="button" class="button-secondary" data-clear-filters>${tr("Clear filters")}</button></div>`;
   } else {
     placeList.innerHTML = shown.map((p, i) => {
       const heading = i === within.length && within.length && unknown.length
-        ? `<h3 class="list-divider">No Google walking time yet</h3>` : "";
+        ? `<h3 class="list-divider">${tr("No Google walking time yet")}</h3>` : "";
       return heading + placeCardHtml(p, day);
     }).join("");
   }
@@ -847,43 +875,43 @@ async function renderPlaces() {
   }
 }
 
-const CLASSROOM_WALKING = "Google walking estimates may not reflect the time needed when accompanying young children. Check crossings and the route before visiting.";
+const CLASSROOM_WALKING = tr("Google walking estimates may not reflect the time needed when accompanying young children. Check crossings and the route before visiting.");
 
 function walkHtml(placeItem) {
   const route = explore.routes[placeItem.id];
   if (!route) {
-    return `Walking time not checked yet
-      <button type="button" class="link-button" data-walk="${placeItem.id}">Check walking time</button>`;
+    return `${tr("Walking time not checked yet")}
+      <button type="button" class="link-button" data-walk="${placeItem.id}">${tr("Check walking time")}</button>`;
   }
-  if (route.status === "pending") return `<span class="walk-pending">Checking walking time…</span>`;
-  if (route.status !== "ok") return "Walking time unavailable";
-  return `<span aria-hidden="true">🚶</span> ${walkingMinutes(route.durationMillis)} min walk · ${formatDistance(route.distanceMeters, settings.unit)}
-    <span class="walk-source">Google walking estimate</span>`;
+  if (route.status === "pending") return `<span class="walk-pending">${tr("Checking walking time…")}</span>`;
+  if (route.status !== "ok") return tr("Walking time unavailable");
+  return `<span aria-hidden="true">🚶</span> ${tr("{minutes} min walk", { minutes: walkingMinutes(route.durationMillis) })} · ${formatDistance(route.distanceMeters, settings.unit)}
+    <span class="walk-source">${tr("Google walking estimate")}</span>`;
 }
 
 function accessHtml(placeItem) {
   const access = accessFor(placeItem);
   const contact = access.contact || settings.mode === "classroom";
-  return `${access.estimate ? `${access.estimate} (Little Days estimate). ` : ""}Access not verified.` +
-    `${access.note ? ` ${access.note}` : ""}${contact ? ` <strong>Contact before a classroom visit.</strong>` : ""}`;
+  return `${access.estimate ? `${tr("{estimate} (Little Days estimate).", { estimate: tr(access.estimate) })} ` : ""}${tr("Access not verified.")}` +
+    `${access.note ? ` ${tr(access.note)}` : ""}${contact ? ` <strong>${tr("Contact before a classroom visit.")}</strong>` : ""}`;
 }
 
 // Weather notes for a place on the selected day (PRD.md 7.15). Never says "safe".
 function placeWeatherLines(placeItem, day) {
-  if (!day) return ["Weather unavailable. Check the forecast before you go."];
+  if (!day) return [tr("Weather unavailable. Check the forecast before you go.")];
   const outdoors = settingFor(placeItem) === "outdoors";
   const { hazards, cautions, notes } = day.weather;
   const warnings = [...hazards, ...cautions, ...notes].map((key) => WARNINGS[key](day));
   const lines = [];
   if (warnings.length) {
-    if (!outdoors) lines.push(`For the walk there: ${warnings[0]}`, ...warnings.slice(1));
+    if (!outdoors) lines.push(tr("For the walk there: {warning}", { warning: warnings[0] }), ...warnings.slice(1));
     else lines.push(...warnings);
-    if (hazards.length && outdoors) lines.push("Outdoor places are better left for another day.");
+    if (hazards.length && outdoors) lines.push(tr("Outdoor places are better left for another day."));
   } else if (outdoors) {
-    lines.push("The forecast looks good for time outdoors.");
+    lines.push(tr("The forecast looks good for time outdoors."));
   }
   const soon = selectedDay === 0 && outdoors ? rainSoon(current.hours) : null;
-  if (soon) lines.push(`Rain is likely in the next few hours (${soon}%).`);
+  if (soon) lines.push(tr("Rain is likely in the next few hours ({chance}%).", { chance: soon }));
   return lines;
 }
 
@@ -891,8 +919,8 @@ function placeCardHtml(placeItem, day) {
   const category = CATEGORIES[placeItem.category];
   const guide = guideFor(placeType(placeItem), placeItem.category);
   const visits = visitCount(savedPlaces, placeItem.id);
-  const idea = guide.sets[perspectiveFor(guide, visits)].notice[0];
-  const name = escapeHtml(placeItem.name || "Unnamed place");
+  const idea = tr(guide.sets[perspectiveFor(guide, visits)].notice[0]);
+  const name = escapeHtml(placeItem.name || tr("Unnamed place"));
   return `
     <article class="place-card${placeItem.id === selectedPlace ? " is-selected" : ""}" data-place="${placeItem.id}">
       <div class="place-google">
@@ -905,18 +933,18 @@ function placeCardHtml(placeItem, day) {
         </div>
       </div>
       <div class="place-notes">
-        <p class="notes-label">Little Days notes</p>
-        <p class="place-tags"><span class="tag tag-soft"><span aria-hidden="true">${category.emoji}</span> ${category.label}</span>
-          <span class="tag tag-soft">${settingFor(placeItem) === "outdoors" ? "Outdoors" : "Indoors"} (estimate)</span></p>
+        <p class="notes-label">${tr("Little Days notes")}</p>
+        <p class="place-tags"><span class="tag tag-soft"><span aria-hidden="true">${category.emoji}</span> ${tr(category.label)}</span>
+          <span class="tag tag-soft">${tr("{setting} (estimate)", { setting: settingFor(placeItem) === "outdoors" ? tr("Outdoors") : tr("Indoors") })}</span></p>
         <p>${accessHtml(placeItem)}</p>
         <ul class="place-weather">${placeWeatherLines(placeItem, day).map((line) => `<li>${line}</li>`).join("")}</ul>
-        <p>${ageNotes(settings.ages).join(" ")}</p>
-        <p class="place-idea"><strong>${visits ? "Next visit:" : "Notice:"}</strong> ${escapeHtml(idea)}</p>
+        <p>${ageNotes(settings.ages).map((note) => tr(note)).join(" ")}</p>
+        <p class="place-idea"><strong>${visits ? tr("Next visit:") : tr("Notice:")}</strong> ${escapeHtml(idea)}</p>
       </div>
       <div class="place-actions">
         ${savedPlaces[placeItem.id] ? statusTagHtml(placeItem.id)
-          : `<button type="button" class="button-secondary" data-save="${placeItem.id}" aria-label="Save ${name}">Save</button>`}
-        <button type="button" class="button-secondary" data-place-open="${placeItem.id}" aria-label="Details for ${name}">Details</button>
+          : `<button type="button" class="button-secondary" data-save="${placeItem.id}" aria-label="${tr("Save {name}", { name })}">${tr("Save")}</button>`}
+        <button type="button" class="button-secondary" data-place-open="${placeItem.id}" aria-label="${tr("Details for {name}", { name })}">${tr("Details")}</button>
       </div>
     </article>`;
 }
@@ -933,7 +961,7 @@ function selectPlace(id) {
   mapPeek.innerHTML = `
     <p class="peek-title"><span class="place-number" aria-hidden="true">${placeItem.number}</span> ${escapeHtml(placeItem.name || "")}</p>
     <p class="peek-walk">${walkHtml(placeItem)}</p>
-    <button type="button" data-place-open="${id}">Details</button>`;
+    <button type="button" data-place-open="${id}">${tr("Details")}</button>`;
   mapPeek.hidden = false;
   if (!isPhone()) placeList.querySelector(`[data-place="${id}"]`)?.scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
 }
@@ -989,8 +1017,8 @@ async function openPlace(id, opener) {
   const origin = routeOrigin();
   renderPlaceDetails(placeItem);
   routeBox.innerHTML = origin
-    ? `<p class="walk-pending">Checking the walking route…</p>`
-    : `<p>Choose a starting point at the top of the page to see the walking route.</p>`;
+    ? `<p class="walk-pending">${tr("Checking the walking route…")}</p>`
+    : `<p>${tr("Choose a starting point at the top of the page to see the walking route.")}</p>`;
   if (!placeDialog.open) placeDialog.showModal();
   document.querySelector("#place-title").focus();
 
@@ -1033,43 +1061,43 @@ function renderPlaceDetails(placeItem, perspective) {
   const visits = visitCount(savedPlaces, id);
   const suggested = perspectiveFor(guide, visits);
   const shown = perspective == null ? suggested : perspective;
-  const name = escapeHtml(placeItem.name || "Unnamed place");
+  const name = escapeHtml(placeItem.name || tr("Unnamed place"));
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeItem.name || "")}&query_place_id=${encodeURIComponent(id)}`;
 
   placeHead.innerHTML = `
     <div>
       <h2 id="place-title" tabindex="-1">${name}</h2>
       <p class="place-address">${escapeHtml(placeItem.address || "")}</p>
-      <p><span class="tag tag-soft"><span aria-hidden="true">${category.emoji}</span> ${category.label}</span> ${statusTagHtml(id)}</p>
+      <p><span class="tag tag-soft"><span aria-hidden="true">${category.emoji}</span> ${tr(category.label)}</span> ${statusTagHtml(id)}</p>
     </div>
-    <button type="button" class="button-secondary" data-place-close>Close</button>`;
-  routeReminder.innerHTML = `A Google walking route isn't a check that the way suits young children. Before you go, look for busy road crossings, water, construction, closed or restricted areas, and the weather, and plan enough adults to supervise.
-    ${settings.mode === "classroom" ? `<br>${CLASSROOM_WALKING} Walk the route yourself before taking a group.` : ""}`;
+    <button type="button" class="button-secondary" data-place-close>${tr("Close")}</button>`;
+  routeReminder.innerHTML = `${tr("A Google walking route isn't a check that the way suits young children. Before you go, look for busy road crossings, water, construction, closed or restricted areas, and the weather, and plan enough adults to supervise.")}
+    ${settings.mode === "classroom" ? `<br>${CLASSROOM_WALKING} ${tr("Walk the route yourself before taking a group.")}` : ""}`;
 
   placeBody.innerHTML = `
     <section class="place-section" aria-labelledby="weather-detail-heading">
-      <h3 id="weather-detail-heading">Weather${day ? ` on ${formatDay(day.date)}` : ""}</h3>
-      ${day ? `<p>${(WEATHER[day.code] || ["🌡️", "Unknown"]).map((part, i) => i ? part : `<span aria-hidden="true">${part}</span>`).join(" ")} ·
-        ${temp(day.high)} / ${temp(day.low)} · ${day.rainChance == null ? "Rain –" : `Rain ${day.rainChance}%`}</p>` : ""}
+      <h3 id="weather-detail-heading">${day ? tr("Weather on {day}", { day: formatDay(day.date) }) : tr("Weather")}</h3>
+      ${day ? `<p>${(weatherOf(day.code)).map((part, i) => i ? part : `<span aria-hidden="true">${part}</span>`).join(" ")} ·
+        ${temp(day.high)} / ${temp(day.low)} · ${day.rainChance == null ? tr("Rain –") : `Rain ${day.rainChance}%`}</p>` : ""}
       <ul class="place-weather">${placeWeatherLines(placeItem, day).map((line) => `<li>${line}</li>`).join("")}</ul>
     </section>
 
     <section class="place-section" aria-labelledby="before-heading">
-      <h3 id="before-heading">Before you set off</h3>
+      <h3 id="before-heading">${tr("Before you set off")}</h3>
       <p>${accessHtml(placeItem)}</p>
-      <p>${ageNotes(settings.ages).join(" ")}</p>
-      <p><a href="${mapsUrl}" target="_blank" rel="noopener">Check hours and details on Google Maps<span aria-hidden="true"> ↗</span></a></p>
+      <p>${ageNotes(settings.ages).map((note) => tr(note)).join(" ")}</p>
+      <p><a href="${mapsUrl}" target="_blank" rel="noopener">${tr("Check hours and details on Google Maps")}<span aria-hidden="true"> ↗</span></a></p>
     </section>
 
     <section class="place-section ideas-panel" aria-labelledby="ideas-detail-heading">
-      <p class="notes-label">Little Days ideas</p>
-      <h3 id="ideas-detail-heading">Why explore this place?</h3>
-      <p>${escapeHtml(guide.why)}</p>
-      <p class="guide-note">${GUIDE_NOTE}</p>
-      ${visits ? `<p class="perspective-note">You've recorded ${visits} ${visits === 1 ? "visit" : "visits"}, so a new perspective comes first.</p>` : ""}
-      <div class="perspectives" role="group" aria-label="Visit">
+      <p class="notes-label">${tr("Little Days ideas")}</p>
+      <h3 id="ideas-detail-heading">${tr("Why explore this place?")}</h3>
+      <p>${escapeHtml(tr(guide.why))}</p>
+      <p class="guide-note">${tr(GUIDE_NOTE)}</p>
+      ${visits ? `<p class="perspective-note">${tr(visits === 1 ? "You've recorded {count} visit, so a new perspective comes first." : "You've recorded {count} visits, so a new perspective comes first.", { count: visits })}</p>` : ""}
+      <div class="perspectives" role="group" aria-label="${tr("Visit")}">
         ${guide.sets.map((set, i) => `<button type="button" class="perspective" data-perspective="${i}" data-place-id="${id}"
-          aria-pressed="${i === shown}">${["First", "Second", "Third"][i]} visit</button>`).join("")}
+          aria-pressed="${i === shown}">${tr(["First visit", "Second visit", "Third visit"][i])}</button>`).join("")}
       </div>
       <div id="guide-set">${guideSetHtml(guide.sets[shown])}</div>
       ${atHomeHtml(guide, day)}
@@ -1078,16 +1106,16 @@ function renderPlaceDetails(placeItem, perspective) {
     ${visitsHtml(placeItem)}
     ${planFormHtml(placeItem, guide.sets[suggested].focus, day)}
 
-    <div class="place-actions"><button type="button" class="button-secondary" data-place-close>Close</button></div>`;
+    <div class="place-actions"><button type="button" class="button-secondary" data-place-close>${tr("Close")}</button></div>`;
 }
 
 function statusTagHtml(id) {
   const entry = savedPlaces[id];
   if (!entry) return "";
   const visits = entry.visits.length;
-  const count = visits ? ` · ${visits} ${visits === 1 ? "visit" : "visits"}` : "";
-  const label = { want: "Want to explore", explored: "Explored", revisit: "Revisit" }[entry.status];
-  return `<span class="tag tag-saved">${label}${entry.status === "want" ? "" : count}</span>`;
+  const label = { want: tr("Want to explore"), explored: tr("Explored"), revisit: tr("Revisit") }[entry.status];
+  const text = entry.status === "want" || !visits ? label : tr(visits === 1 ? "{label} · {count} visit" : "{label} · {count} visits", { label, count: visits });
+  return `<span class="tag tag-saved">${text}</span>`;
 }
 
 // My Places status, the journal, and the form to record a visit (PRD.md 7.17).
@@ -1097,23 +1125,23 @@ function visitsHtml(placeItem) {
   const pressed = (status) => String(Boolean(entry && entry.status === status));
   return `
     <section class="place-section" aria-labelledby="visits-heading">
-      <h3 id="visits-heading">Your visits</h3>
+      <h3 id="visits-heading">${tr("Your visits")}</h3>
       <div class="status-buttons">
-        <button type="button" class="toggle" data-status="want" data-place-id="${id}" aria-pressed="${pressed("want")}">Want to explore</button>
-        <button type="button" class="toggle" data-status="revisit" data-place-id="${id}" aria-pressed="${pressed("revisit")}">Visit again</button>
-        ${entry ? `<button type="button" class="link-button remove-button" data-remove-place="${id}">Remove from My Places</button>` : ""}
+        <button type="button" class="toggle" data-status="want" data-place-id="${id}" aria-pressed="${pressed("want")}">${tr("Want to explore")}</button>
+        <button type="button" class="toggle" data-status="revisit" data-place-id="${id}" aria-pressed="${pressed("revisit")}">${tr("Visit again")}</button>
+        ${entry ? `<button type="button" class="link-button remove-button" data-remove-place="${id}">${tr("Remove from My Places")}</button>` : ""}
       </div>
       ${journalHtml(entry)}
       <form class="visit-form" data-visit-form="${id}" novalidate>
-        <h4>Record a visit</h4>
-        <label>Date <input type="date" name="date" value="${isoToday()}" max="${isoToday()}" required></label>
-        <label>What did you notice? <span class="optional">(optional)</span>
-          <textarea name="observation" rows="2" maxlength="500" placeholder="The children noticed different leaf shapes."></textarea></label>
-        <label>An idea for next time <span class="optional">(optional)</span>
-          <input type="text" name="next" maxlength="200" placeholder="Look for changes in the trees."></label>
-        <p class="hint">Saved only in this browser. Please don't write children's names.</p>
+        <h4>${tr("Record a visit")}</h4>
+        <label>${tr("Date")} <input type="date" name="date" value="${isoToday()}" max="${isoToday()}" required></label>
+        <label>${tr("What did you notice?")} <span class="optional">${tr("(optional)")}</span>
+          <textarea name="observation" rows="2" maxlength="500" placeholder="${tr("The children noticed different leaf shapes.")}"></textarea></label>
+        <label>${tr("An idea for next time")} <span class="optional">${tr("(optional)")}</span>
+          <input type="text" name="next" maxlength="200" placeholder="${tr("Look for changes in the trees.")}"></label>
+        <p class="hint">${tr("Saved only in this browser. Please don't write children's names.")}</p>
         <p class="field-message" data-form-message hidden></p>
-        <button type="submit">Mark as explored</button>
+        <button type="submit">${tr("Mark as explored")}</button>
       </form>
     </section>`;
 }
@@ -1125,9 +1153,9 @@ function journalHtml(entry) {
     <li>
       <p class="journal-date">${formatDay(visit.date)}</p>
       ${visit.observation ? `<p>${escapeHtml(visit.observation)}</p>` : ""}
-      ${visit.next ? `<p><strong>Next time:</strong> ${escapeHtml(visit.next)}</p>` : ""}
+      ${visit.next ? `<p><strong>${tr("Next time:")}</strong> ${escapeHtml(visit.next)}</p>` : ""}
     </li>`).join("")}</ol>
-    ${entry.note ? `<p class="journal-note"><strong>Note:</strong> ${escapeHtml(entry.note)}</p>` : ""}`;
+    ${entry.note ? `<p class="journal-note"><strong>${tr("Note:")}</strong> ${escapeHtml(entry.note)}</p>` : ""}`;
 }
 
 // Planning a visit never marks it explored (PRD.md 7.9).
@@ -1136,17 +1164,17 @@ function planFormHtml(placeItem, focus, day) {
   return `
     <section class="place-section" aria-labelledby="plan-form-heading">
       <form class="plan-form" data-plan-form="${placeItem.id}" novalidate>
-        <h3 id="plan-form-heading">Add to my week</h3>
+        <h3 id="plan-form-heading">${tr("Add to my week")}</h3>
         <div class="form-row">
-          <label>Date <input type="date" name="date" value="${date}" min="${isoToday()}" required></label>
-          <label>Time <span class="optional">(optional)</span> <input type="time" name="time"></label>
+          <label>${tr("Date")} <input type="date" name="date" value="${date}" min="${isoToday()}" required></label>
+          <label>${tr("Time")} <span class="optional">${tr("(optional)")}</span> <input type="time" name="time"></label>
         </div>
-        <label>Exploration theme <span class="optional">(optional)</span>
+        <label>${tr("Exploration theme")} <span class="optional">${tr("(optional)")}</span>
           <input type="text" name="theme" maxlength="80" placeholder="${escapeHtml(focus)}"></label>
-        <label>Preparation notes <span class="optional">(optional)</span>
-          <textarea name="notes" rows="2" maxlength="500" placeholder="Bring a bag for treasures."></textarea></label>
+        <label>${tr("Preparation notes")} <span class="optional">${tr("(optional)")}</span>
+          <textarea name="notes" rows="2" maxlength="500" placeholder="${tr("Bring a bag for treasures.")}"></textarea></label>
         <p class="field-message" data-form-message hidden></p>
-        <button type="submit">Add to my week</button>
+        <button type="submit">${tr("Add to my week")}</button>
         <p class="form-done" data-form-done role="status"></p>
       </form>
     </section>`;
@@ -1163,14 +1191,14 @@ function showPerspective(id, perspective) {
 }
 
 function guideSetHtml(set) {
-  const list = (items) => `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+  const list = (items) => `<ul>${items.map((item) => `<li>${escapeHtml(tr(item))}</li>`).join("")}</ul>`;
   return `
-    <p class="perspective-focus">Focus: ${escapeHtml(set.focus)}</p>
-    <h4>What children might notice</h4>${list(set.notice)}
-    <h4>Before you go</h4>${list(set.before)}
-    <h4>During the visit</h4>${list(set.during)}
-    <h4>After the visit</h4>${list(set.after)}
-    <h4>Practical life</h4><p>${escapeHtml(set.practical)}</p>`;
+    <p class="perspective-focus">${escapeHtml(tr("Focus: {focus}", { focus: tr(set.focus) }))}</p>
+    <h4>${tr("What children might notice")}</h4>${list(set.notice)}
+    <h4>${tr("Before you go")}</h4>${list(set.before)}
+    <h4>${tr("During the visit")}</h4>${list(set.during)}
+    <h4>${tr("After the visit")}</h4>${list(set.after)}
+    <h4>${tr("Practical life")}</h4><p>${escapeHtml(tr(set.practical))}</p>`;
 }
 
 // RootMap activities for afterwards, for the chosen ages and the day's weather (PRD.md 7.5).
@@ -1180,22 +1208,22 @@ function atHomeHtml(guide, day) {
     activity.littleDays.minAge <= range[1] && activity.littleDays.maxAge >= range[0] &&
     (!day || canDo(activity, day.weather, day.season)));
   if (!ideas.length) {
-    return settings.ages === "under-2" ? `<h4>At home afterwards</h4><p>Little Days doesn't have at-home ideas for children under 2 yet.</p>` : "";
+    return settings.ages === "under-2" ? `<h4>${tr("At home afterwards")}</h4><p>${tr("Little Days doesn't have at-home ideas for children under 2 yet.")}</p>` : "";
   }
   const date = day ? day.date : isoToday();
-  return `<h4>At home afterwards</h4>
+  return `<h4>${tr("At home afterwards")}</h4>
     <ul>${ideas.slice(0, 2).map((activity) => `<li><button type="button" class="link-button" data-open="${activity.id}" data-date="${date}">
-      ${escapeHtml(activity.rootmap.title)}</button> <span class="source-note">from RootMap</span></li>`).join("")}</ul>`;
+      ${escapeHtml(rootmapText(activity).title)}</button> <span class="source-note">${tr("from RootMap")}</span></li>`).join("")}</ul>`;
 }
 
 function renderRoute(route) {
   if (!route) {
-    routeBox.innerHTML = `<p>Walking route unavailable.</p>`;
+    routeBox.innerHTML = `<p>${tr("Walking route unavailable.")}</p>`;
     return;
   }
   routeBox.innerHTML = `
     <p class="place-walk"><span aria-hidden="true">🚶</span> ${walkingMinutes(route.durationMillis)} min walk · ${formatDistance(route.distanceMeters, settings.unit)}
-      <span class="walk-source">Google walking estimate</span></p>
+      <span class="walk-source">${tr("Google walking estimate")}</span></p>
     ${route.warnings.length ? `<p class="route-warnings">From Google: ${route.warnings.map(escapeHtml).join(" ")}</p>` : ""}`;
 }
 
@@ -1214,22 +1242,22 @@ function placesChanged(id, message) {
 function savePlaceId(id) {
   const placeItem = findPlace(id);
   savedPlaces = savePlace(savedPlaces, id, placeItem && placeItem.category, isoToday());
-  placesChanged(id, `Saved ${placeItem ? placeItem.name : "the place"} to Want to explore.`);
+  placesChanged(id, tr("Saved {name} to Want to explore.", { name: placeItem ? placeItem.name : tr("the place") }));
 }
 
 function setStatus(id, status) {
   const placeItem = findPlace(id);
   savedPlaces = setPlaceStatus(savedPlaces, id, status, placeItem && placeItem.category, isoToday());
-  placesChanged(id, status === "revisit" ? "Marked to visit again." : "Marked as want to explore.");
+  placesChanged(id, status === "revisit" ? tr("Marked to visit again.") : tr("Marked as want to explore."));
   placeDialog.querySelector(`[data-status="${status}"]`)?.focus();
 }
 
 function removeSavedPlace(id) {
   const placeItem = findPlace(id);
-  const name = placeItem ? placeItem.name : "this place";
-  if (!confirm(`Remove ${name} from My Places? Its journal entries will be removed too.`)) return;
+  const name = placeItem ? placeItem.name : tr("this place");
+  if (!confirm(tr("Remove {name} from My Places? Its journal entries will be removed too.", { name }))) return;
   savedPlaces = removePlace(savedPlaces, id);
-  placesChanged(id, `Removed ${name} from My Places.`);
+  placesChanged(id, tr("Removed {name} from My Places.", { name }));
 }
 
 function formMessage(form, text) {
@@ -1243,7 +1271,7 @@ function submitVisit(form) {
   const id = form.dataset.visitForm;
   const date = form.elements.date.value;
   if (!date || date > isoToday()) {
-    formMessage(form, "Choose today or an earlier date.");
+    formMessage(form, tr("Choose today or an earlier date."));
     form.elements.date.focus();
     return;
   }
@@ -1251,7 +1279,7 @@ function submitVisit(form) {
   savedPlaces = recordVisit(savedPlaces, id, placeItem && placeItem.category, isoToday(), {
     date, observation: form.elements.observation.value, next: form.elements.next.value,
   });
-  placesChanged(id, `Recorded a visit on ${formatDay(date)}.`);
+  placesChanged(id, tr("Recorded a visit on {day}.", { day: formatDay(date) }));
   document.querySelector("#visits-heading")?.focus();
 }
 
@@ -1263,12 +1291,12 @@ function submitPlanForm(form) {
   const id = form.dataset.planForm;
   const date = form.elements.date.value;
   if (!date || date < isoToday()) {
-    formMessage(form, "Choose today or a later date.");
+    formMessage(form, tr("Choose today or a later date."));
     form.elements.date.focus();
     return;
   }
   if (isPlacePlanned(plan, date, id)) {
-    formMessage(form, `This place is already in your week for ${formatDay(date)}.`);
+    formMessage(form, tr("This place is already in your week for {day}.", { day: formatDay(date) }));
     return;
   }
   formMessage(form, "");
@@ -1282,7 +1310,7 @@ function submitPlanForm(form) {
   }, newEntryId());
   savePlan(storage, plan);
   renderPlan();
-  form.querySelector("[data-form-done]").textContent = `Added to ${formatDay(date)} ✓`;
+  form.querySelector("[data-form-done]").textContent = tr("Added to {day} ✓", { day: formatDay(date) });
 }
 
 // --- My Places (PRD.md 7.17) ---
@@ -1328,9 +1356,9 @@ function renderMyPlaces() {
     .sort((a, b) => (lastActivity(savedPlaces[a]) < lastActivity(savedPlaces[b]) ? 1 : -1));
   if (!shown.length) {
     placesList.innerHTML = `<p class="status">${{
-      want: "No places here yet. Save places from Explore to plan your next walk.",
-      explored: "No explored places yet. Record a visit from a place's details after you go.",
-      revisit: "Places you'd like to visit again, with fresh ideas, appear here.",
+      want: tr("No places here yet. Save places from Explore to plan your next walk."),
+      explored: tr("No explored places yet. Record a visit from a place's details after you go."),
+      revisit: tr("Places you'd like to visit again, with fresh ideas, appear here."),
     }[tab]}</p>`;
     return;
   }
@@ -1342,22 +1370,22 @@ function savedPlaceHtml(id) {
   const entry = savedPlaces[id];
   const info = findPlace(id);
   const visits = entry.visits.length;
-  const title = info ? escapeHtml(info.name || "Unnamed place")
+  const title = info ? escapeHtml(info.name || tr("Unnamed place"))
     : placeInfoState[id] === "failed" || mapsState === "missing" || mapsState === "failed"
-      ? "Place details unavailable right now" : "Loading place details…";
+      ? tr("Place details unavailable right now") : tr("Loading place details…");
   const latest = entry.visits[visits - 1];
   return `
     <article class="saved-place">
       <h3${info ? "" : ` class="unavailable"`}>${title}</h3>
       ${info ? `<p class="place-address">${escapeHtml(info.address || "")}</p>` : ""}
-      <p class="saved-meta">${visits ? `Last explored ${formatDay(latest.date)} · ${visits} ${visits === 1 ? "visit" : "visits"}`
-        : entry.saved ? `Saved ${formatDay(entry.saved)}` : "Saved"}</p>
-      ${latest && latest.next ? `<p><strong>Next time:</strong> ${escapeHtml(latest.next)}</p>` : ""}
-      ${visits ? `<details class="history"><summary>Exploration history (${visits})</summary>${journalHtml(entry)}</details>` : ""}
+      <p class="saved-meta">${visits ? tr(visits === 1 ? "Last explored {day} · {count} visit" : "Last explored {day} · {count} visits", { day: formatDay(latest.date), count: visits })
+        : entry.saved ? tr("Saved {day}", { day: formatDay(entry.saved) }) : tr("Saved")}</p>
+      ${latest && latest.next ? `<p><strong>${tr("Next time:")}</strong> ${escapeHtml(latest.next)}</p>` : ""}
+      ${visits ? `<details class="history"><summary>${tr("Exploration history ({count})", { count: visits })}</summary>${journalHtml(entry)}</details>` : ""}
       <div class="place-actions">
         <button type="button" class="button-secondary" data-place-open="${id}" ${info ? "" : "disabled"}
-          aria-label="Open ${info ? escapeHtml(info.name || "") : "place"}">Open</button>
-        <button type="button" class="link-button remove-button" data-remove-place="${id}">Remove</button>
+          aria-label="${tr("Open {name}", { name: info ? escapeHtml(info.name || "") : "" })}">${tr("Open")}</button>
+        <button type="button" class="link-button remove-button" data-remove-place="${id}">${tr("Remove")}</button>
       </div>
     </article>`;
 }
@@ -1375,8 +1403,10 @@ function chooseInterest(value) {
     showResults(false);
   } else {
     exploreResults.hidden = true;
-    const label = value === "all" ? "" : `${CATEGORIES[value].label.toLowerCase()} `;
-    showStatus(exploreStatus, "", `Press Find Little Adventures to see ${label}places near ${placeLabel()}.`, findAdventures, "Find Little Adventures");
+    showStatus(exploreStatus, "", value === "all"
+      ? tr("Press Find Little Adventures to see places near {place}.", { place: placeLabel() })
+      : tr("Press Find Little Adventures to see {interest} places near {place}.", { interest: interestWord(value), place: placeLabel() }),
+      findAdventures, tr("Find Little Adventures"));
   }
 }
 
@@ -1387,7 +1417,7 @@ function addActivity(id, date) {
   savePlan(storage, plan);
   if (current) render();
   else renderPlan();
-  announce(`Added ${activityById(id).rootmap.title} to ${formatDay(date)}.`);
+  announce(tr("Added {title} to {day}.", { title: rootmapText(activityById(id)).title, day: formatDay(date) }));
   // The card was re-drawn, so put focus back on the same activity's title.
   document.querySelector(`#idea-list [data-open="${id}"][data-date="${date}"]`)?.focus();
 }
@@ -1397,7 +1427,7 @@ function removeActivity(id, date) {
   savePlan(storage, plan);
   if (current) render();
   else renderPlan();
-  announce(`Removed ${activityById(id).rootmap.title} from ${formatDay(date)}.`);
+  announce(tr("Removed {title} from {day}.", { title: rootmapText(activityById(id)).title, day: formatDay(date) }));
   planHeading.focus();
 }
 
@@ -1419,7 +1449,7 @@ let editingEntry = null;
 function renderPlan() {
   const dates = planDates();
   if (!dates.length) {
-    planBox.innerHTML = `<p class="status">Your week is empty. Add activities or places to plan your week.</p>`;
+    planBox.innerHTML = `<p class="status">${tr("Your week is empty. Add activities or places to plan your week.")}</p>`;
     return;
   }
   const placeIds = Object.values(plan).flat().filter((x) => typeof x === "object").map((x) => x.placeId);
@@ -1439,7 +1469,7 @@ function renderPlan() {
             <h3 class="plan-day">${formatDay(date)}</h3>
             ${planWeatherHtml(date)}
           </div>
-          ${entries.length ? `<ul class="plan-items">${items}</ul>` : `<p class="plan-empty">Nothing planned</p>`}
+          ${entries.length ? `<ul class="plan-items">${items}</ul>` : `<p class="plan-empty">${tr("Nothing planned")}</p>`}
         </li>`;
     }).join("")}</ul>`;
   const newForm = planBox.querySelector("[data-edit-form]");
@@ -1452,43 +1482,43 @@ function renderPlan() {
 function planWeatherHtml(date) {
   if (!current) return "";
   const day = current.days.find((d) => d.date === date);
-  if (!day) return `<p class="plan-weather">Forecast not available yet for this date.</p>`;
-  const [icon, label] = WEATHER[day.code] || ["🌡️", "Unknown"];
+  if (!day) return `<p class="plan-weather">${tr("Forecast not available yet for this date.")}</p>`;
+  const [icon, label] = weatherOf(day.code);
   const words = [...day.weather.hazards, ...day.weather.cautions].length ? " · Check the warnings" : "";
   return `<p class="plan-weather"><span aria-hidden="true">${icon}</span> ${label} · ${temp(day.high)} / ${temp(day.low)} ·
-    ${day.rainChance == null ? "Rain –" : `Rain ${day.rainChance}%`}${words}</p>`;
+    ${day.rainChance == null ? tr("Rain –") : `Rain ${day.rainChance}%`}${words}</p>`;
 }
 
 function activityItemHtml(id, date) {
-  const title = escapeHtml(activityById(id).rootmap.title);
+  const title = escapeHtml(rootmapText(activityById(id)).title);
   return `
     <li>
       <button type="button" class="link-button" data-open="${id}" data-date="${date}">${title}</button>
       <button type="button" class="link-button remove-button" data-remove="${id}" data-date="${date}"
-        aria-label="Remove ${title} from ${formatDay(date)}">Remove</button>
+        aria-label="${tr("Remove {title} from {day}", { title, day: formatDay(date) })}">${tr("Remove")}</button>
     </li>`;
 }
 
 function placeItemHtml(visit, date) {
   const info = findPlace(visit.placeId);
-  const name = info ? escapeHtml(info.name || "Unnamed place") : "Saved place (details unavailable right now)";
+  const name = info ? escapeHtml(info.name || tr("Unnamed place")) : tr("Saved place (details unavailable right now)");
   if (editingEntry === visit.entry) {
     return `
       <li class="plan-place">
         <form class="edit-visit-form" data-edit-form="${visit.entry}" novalidate>
           <p class="plan-place-name"><span aria-hidden="true">📍</span> ${name}</p>
           <div class="form-row">
-            <label>Date <input type="date" name="date" value="${date}" min="${isoToday()}" required></label>
-            <label>Time <span class="optional">(optional)</span> <input type="time" name="time" value="${visit.time}"></label>
+            <label>${tr("Date")} <input type="date" name="date" value="${date}" min="${isoToday()}" required></label>
+            <label>${tr("Time")} <span class="optional">${tr("(optional)")}</span> <input type="time" name="time" value="${visit.time}"></label>
           </div>
-          <label>Exploration theme <span class="optional">(optional)</span>
+          <label>${tr("Exploration theme")} <span class="optional">${tr("(optional)")}</span>
             <input type="text" name="theme" maxlength="80" value="${escapeHtml(visit.theme)}"></label>
-          <label>Preparation notes <span class="optional">(optional)</span>
+          <label>${tr("Preparation notes")} <span class="optional">${tr("(optional)")}</span>
             <textarea name="notes" rows="2" maxlength="500">${escapeHtml(visit.notes)}</textarea></label>
           <p class="field-message" data-form-message hidden></p>
           <div class="place-actions">
-            <button type="submit">Save changes</button>
-            <button type="button" class="button-secondary" data-cancel-edit>Cancel</button>
+            <button type="submit">${tr("Save changes")}</button>
+            <button type="button" class="button-secondary" data-cancel-edit>${tr("Cancel")}</button>
           </div>
         </form>
       </li>`;
@@ -1503,9 +1533,9 @@ function placeItemHtml(visit, date) {
         ${visit.notes ? `<p class="plan-notes">${escapeHtml(visit.notes)}</p>` : ""}
       </div>
       <div class="plan-place-actions">
-        <button type="button" class="link-button" data-edit-visit="${visit.entry}" aria-label="Edit the visit to ${name}">Edit</button>
+        <button type="button" class="link-button" data-edit-visit="${visit.entry}" aria-label="${tr("Edit the visit to {name}", { name })}">${tr("Edit")}</button>
         <button type="button" class="link-button remove-button" data-remove-visit="${visit.entry}"
-          aria-label="Remove the visit to ${name} from ${formatDay(date)}">Remove</button>
+          aria-label="${tr("Remove the visit to {name} from {day}", { name, day: formatDay(date) })}">${tr("Remove")}</button>
       </div>
     </li>`;
 }
@@ -1514,7 +1544,7 @@ function submitEditVisit(form) {
   const entry = form.dataset.editForm;
   const date = form.elements.date.value;
   if (!date || date < isoToday()) {
-    formMessage(form, "Choose today or a later date.");
+    formMessage(form, tr("Choose today or a later date."));
     form.elements.date.focus();
     return;
   }
@@ -1523,13 +1553,13 @@ function submitEditVisit(form) {
     date, time: form.elements.time.value, theme: form.elements.theme.value, notes: form.elements.notes.value,
   });
   if (plan === before) {
-    formMessage(form, `This place is already in your week for ${formatDay(date)}.`);
+    formMessage(form, tr("This place is already in your week for {day}.", { day: formatDay(date) }));
     return;
   }
   savePlan(storage, plan);
   editingEntry = null;
   renderPlan();
-  announce("Saved the changes to your visit.");
+  announce(tr("Saved the changes to your visit."));
   planHeading.focus();
 }
 
@@ -1538,32 +1568,32 @@ function removeVisit(entry) {
   savePlan(storage, plan);
   if (editingEntry === entry) editingEntry = null;
   renderPlan();
-  announce("Removed the visit from your week.");
+  announce(tr("Removed the visit from your week."));
   planHeading.focus();
 }
 
 // --- Activity details ---
 
 function openDetails(id, date, opener) {
-  const details = activityDetails(activityById(id));
+  const details = activityDetails(activityById(id), LANG);
   dialogOpener = { id, date, element: opener };
   dialogBody.innerHTML = `
     ${photoHtml(activityById(id), "(max-width: 719px) 100vw, 520px")}
     <h2 id="details-title" tabindex="-1">${escapeHtml(details.title)}</h2>
-    <p class="meta">Ages ${escapeHtml(details.ages.replace(" years", ""))} · ${details.duration}</p>
+    <p class="meta">${tr("Ages {ages}", { ages: escapeHtml(details.ages.replace(" years", "")) })} · ${details.duration}</p>
     <p>${escapeHtml(details.description)}</p>
     <div class="details-box">
-      <h3>What you'll need</h3>
+      <h3>${tr("What you'll need")}</h3>
       ${details.materials.length
         ? `<ul>${details.materials.map((m) => `<li>${escapeHtml(m)}</li>`).join("")}</ul>`
-        : `<p>Nothing to prepare.</p>`}
+        : `<p>${tr("Nothing to prepare.")}</p>`}
     </div>
-    <h3>Steps</h3>
+    <h3>${tr("Steps")}</h3>
     <ol>${details.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ol>
-    <h3>What your child practices</h3>
+    <h3>${tr("What your child practices")}</h3>
     <ul>${details.practices.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ul>
-    ${details.safety ? `<h3>Safety</h3><p>${escapeHtml(details.safety)}</p>` : ""}
-    <p class="source-note">From the RootMap activity collection.</p>`;
+    ${details.safety ? `<h3>${tr("Safety")}</h3><p>${escapeHtml(details.safety)}</p>` : ""}
+    <p class="source-note">${tr("From the RootMap activity collection.")}</p>`;
   dialogAdd.dataset.id = id;
   dialogAdd.dataset.date = date;
   dialogStatus.textContent = "";
@@ -1576,7 +1606,7 @@ function updateDialogAdd() {
   const { id, date } = dialogAdd.dataset;
   const added = isPlanned(plan, date, id);
   dialogAdd.disabled = added;
-  dialogAdd.textContent = added ? "Added ✓" : `Add to ${formatDay(date)}`;
+  dialogAdd.textContent = added ? tr("Added ✓") : tr("Add to {day}", { day: formatDay(date) });
   dialogAdd.classList.toggle("button-added", added);
 }
 
@@ -1587,7 +1617,7 @@ dialogAdd.addEventListener("click", () => {
   if (current) render();
   else renderPlan();
   updateDialogAdd();
-  dialogStatus.textContent = `Added to ${formatDay(date)}.`;
+  dialogStatus.textContent = tr("Added to {day}.", { day: formatDay(date) });
   document.querySelector("#details-close").focus();
 });
 
@@ -1606,7 +1636,7 @@ dialog.addEventListener("close", () => {
 // --- Page states (PRD.md section 8) ---
 
 // Shows one message (and optionally a Try again button) in a status area.
-function showStatus(area, className, text, retry, retryLabel = "Try again") {
+function showStatus(area, className, text, retry, retryLabel = tr("Try again")) {
   area.className = `${area.classList.contains("hint") ? "hint" : "status"} ${className}`.trim();
   area.innerHTML = "";
   if (!text) return;
@@ -1626,21 +1656,21 @@ function showStatus(area, className, text, retry, retryLabel = "Try again") {
 function renderFirstVisit() {
   if (place || settings.location) return;
   showStatus(locationStatus, "", cityLocation.hidden
-    ? "Enter an address or use your location to see the weather and find places to explore nearby."
-    : "Enter your city or use your location to see the weather.");
+    ? tr("Enter an address or use your location to see the weather and find places to explore nearby.")
+    : tr("Enter your city or use your location to see the weather."));
 }
 
 function renderExploreStatus() {
   if (mapsState === "loading") {
     showStatus(exploreStatus, "", "");
   } else if (mapsState === "missing") {
-    showStatus(exploreStatus, "", "Maps and places aren't set up on this copy of Little Days yet.");
+    showStatus(exploreStatus, "", tr("Maps and places aren't set up on this copy of Little Days yet."));
   } else if (mapsState === "failed") {
-    showStatus(exploreStatus, "", "Google Maps isn't available right now, so places and walking times can't be shown.");
+    showStatus(exploreStatus, "", tr("Google Maps isn't available right now, so places and walking times can't be shown."));
   } else if (place && settings.interest) {
-    showStatus(exploreStatus, "", `Press Find Little Adventures to see places near ${placeLabel()}.`);
+    showStatus(exploreStatus, "", tr("Press Find Little Adventures to see places near {place}.", { place: placeLabel() }));
   } else {
-    showStatus(exploreStatus, "", "Choose a location and what you'd like to explore, then press Find Little Adventures.");
+    showStatus(exploreStatus, "", tr("Choose a location and what you'd like to explore, then press Find Little Adventures."));
   }
 }
 
@@ -1662,15 +1692,15 @@ function showWeatherLoading(label) {
   clearWeather();
   weatherSection.hidden = false;
   weatherEmpty.hidden = true;
-  showStatus(weatherStatus, "loading", `Getting the weather for ${label}…`);
-  nowLine.innerHTML = `<p class="now-loading">Getting the weather…</p>`;
+  showStatus(weatherStatus, "loading", tr("Getting the weather for {place}…", { place: label }));
+  nowLine.innerHTML = `<p class="now-loading">${tr("Getting the weather…")}</p>`;
   nowLine.hidden = false;
 }
 
 function showWeatherError(retry) {
   clearWeather();
-  showStatus(weatherStatus, "error", "We couldn't load the weather right now. Check your internet connection and try again.", retry);
-  nowLine.innerHTML = `<p class="now-loading">Weather unavailable right now.</p>`;
+  showStatus(weatherStatus, "error", tr("We couldn't load the weather right now. Check your internet connection and try again."), retry);
+  nowLine.innerHTML = `<p class="now-loading">${tr("Weather unavailable right now.")}</p>`;
   nowLine.hidden = false;
 }
 
@@ -1680,15 +1710,15 @@ function showNotFound(city) {
   clearWeather();
   weatherSection.hidden = true;
   weatherEmpty.hidden = false;
-  showStatus(locationStatus, "", `We couldn't find "${city}". Check the spelling, or add the state or country, like "Portland, Maine".`);
+  showStatus(locationStatus, "", tr("We couldn't find \"{city}\". Check the spelling, or add the state or country, like \"Portland, Maine\".", { city }));
   cityInput.focus();
 }
 
 function showLocationProblem(code) {
-  const instead = cityLocation.hidden ? "an address" : "a city";
+  const address = cityLocation.hidden;
   showStatus(locationStatus, "", code === 1
-    ? `Location access is off, so type ${instead} instead.`
-    : `We couldn't find your location. Type ${instead} instead.`);
+    ? tr(address ? "Location access is off, so type an address instead." : "Location access is off, so type a city instead.")
+    : tr(address ? "We couldn't find your location. Type an address instead." : "We couldn't find your location. Type a city instead."));
   (cityLocation.hidden ? document.querySelector("#address") : cityInput)?.focus();
 }
 
@@ -1724,38 +1754,38 @@ function render() {
 // The compact line in the controls card and the Now / Next hours panel (PRD.md 7.15).
 function renderNow() {
   const { now, hours, days } = current;
-  const [icon, label] = WEATHER[now.weather_code] || ["🌡️", "Unknown"];
+  const [icon, label] = weatherOf(now.weather_code);
   const rainChance = hours.length && hours[0].rainChance != null ? `${hours[0].rainChance}%` : "–";
   const today = days[0].weather;
   const firstWarning = [...today.hazards, ...today.cautions, ...today.notes][0];
   nowLine.innerHTML = `
-    <p><span aria-hidden="true">${icon}</span> ${label} · Now ${temp(now.temperature_2m)} ·
-      feels like ${temp(now.apparent_temperature)} · Rain ${rainChance} · Wind ${wind(now.wind_speed_10m)}</p>
+    <p><span aria-hidden="true">${icon}</span> ${tr("{label} · Now {temp} · feels like {feels} · Rain {rain} · Wind {wind}",
+      { label, temp: temp(now.temperature_2m), feels: temp(now.apparent_temperature), rain: rainChance, wind: wind(now.wind_speed_10m) })}</p>
     ${firstWarning ? `<p class="now-warning">${WARNINGS[firstWarning](days[0])}</p>` : ""}
-    <a href="#weather">More weather</a>`;
+    <a href="#weather">${tr("More weather")}</a>`;
   nowLine.hidden = false;
 
   weatherNow.innerHTML = `
     <div class="now-card">
-      <h3>Now</h3>
+      <h3>${tr("Now")}</h3>
       <p class="now-temp">${temp(now.temperature_2m)}</p>
       <p><span aria-hidden="true">${icon}</span> ${label}</p>
-      <p>Feels like ${temp(now.apparent_temperature)}</p>
-      <p>Wind ${wind(now.wind_speed_10m)}, gusts ${wind(now.wind_gusts_10m)}</p>
-      <p>Rain ${rainChance} this hour</p>
-      ${now.precipitation > 0 ? `<p>${formatRain(now.precipitation, settings.unit)} rain in the last 15 minutes</p>` : ""}
+      <p>${tr("Feels like {temp}", { temp: temp(now.apparent_temperature) })}</p>
+      <p>${tr("Wind {wind}, gusts {gusts}", { wind: wind(now.wind_speed_10m), gusts: wind(now.wind_gusts_10m) })}</p>
+      <p>${tr("Rain {rain} this hour", { rain: rainChance })}</p>
+      ${now.precipitation > 0 ? `<p>${tr("{amount} rain in the last 15 minutes", { amount: formatRain(now.precipitation, settings.unit) })}</p>` : ""}
     </div>
     <div class="hours">
-      <h3>Next hours</h3>
+      <h3>${tr("Next hours")}</h3>
       <ol class="hour-list">${hours.map((hour) => {
-        const [hourIcon, hourLabel] = WEATHER[hour.code] || ["🌡️", "Unknown"];
+        const [hourIcon, hourLabel] = weatherOf(hour.code);
         return `
           <li>
             <span class="hour-time">${formatHour(hour.time)}</span>
             <span class="hour-icon" aria-hidden="true">${hourIcon}</span>
             <span class="visually-hidden">${hourLabel}</span>
             <span class="hour-temp">${temp(hour.temperature)}</span>
-            <span class="hour-rain">${hour.rainChance == null ? "Rain –" : `Rain ${hour.rainChance}%`}</span>
+            <span class="hour-rain">${hour.rainChance == null ? tr("Rain –") : tr("Rain {chance}%", { chance: hour.rainChance })}</span>
           </li>`;
       }).join("")}</ol>
     </div>`;
@@ -1767,34 +1797,34 @@ function renderWeek(weekPlan) {
   placeLine.textContent = `${location.label} · ${formatDay(days[0].date)} – ${formatDay(days[days.length - 1].date)}`;
   placeLine.hidden = false;
   holidayNote.textContent = {
-    "no-country": "Holidays show when you search an address or city.",
-    unsupported: "Nager.Date doesn't list public holidays for this country, so none are shown.",
-    failed: "Public holidays couldn't be loaded, so they aren't shown.",
+    "no-country": tr("Holidays show when you search an address or city."),
+    unsupported: tr("Nager.Date doesn't list public holidays for this country, so none are shown."),
+    failed: tr("Public holidays couldn't be loaded, so they aren't shown."),
   }[current.holidayProblem] || "";
   holidayNote.hidden = !current.holidayProblem;
 
   week.innerHTML = days.map((day, i) => {
-    const [icon, label] = WEATHER[day.code] || ["🌡️", "Unknown"];
+    const [icon, label] = weatherOf(day.code);
     const featured = weekPlan[i][0];
     const date = toDate(day.date);
     return `
       <li>
         <button class="day" type="button" data-index="${i}" aria-pressed="${i === selectedDay}">
-          <span class="day-name">${date.toLocaleDateString("en-US", { weekday: "short" })}</span>
-          <span class="day-date">${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+          <span class="day-name">${date.toLocaleDateString(LOCALE, { weekday: "short" })}</span>
+          <span class="day-date">${date.toLocaleDateString(LOCALE, { month: "short", day: "numeric" })}</span>
           <span class="day-icon" aria-hidden="true">${icon}</span>
           <span class="day-temps">
-            <span class="visually-hidden">High</span> ${temp(day.high)}
-            <span class="day-low"><span class="visually-hidden">Low</span> ${temp(day.low)}</span>
+            <span class="visually-hidden">${tr("High")}</span> ${temp(day.high)}
+            <span class="day-low"><span class="visually-hidden">${tr("Low")}</span> ${temp(day.low)}</span>
           </span>
           <span class="day-condition">${label}</span>
-          <span class="day-rain">${day.rainChance == null ? "Rain –" : `Rain ${day.rainChance}%`}</span>
-          ${day.holidays.map((h) => `<span class="tag tag-holiday">${escapeHtml(h)}</span>`).join("")}
-          ${day.weather.hazards.length ? `<span class="tag tag-warning">Indoor day</span>` : ""}
+          <span class="day-rain">${day.rainChance == null ? tr("Rain –") : tr("Rain {chance}%", { chance: day.rainChance })}</span>
+          ${day.holidays.map((h) => `<span class="tag tag-holiday">${escapeHtml(tr(h))}</span>`).join("")}
+          ${day.weather.hazards.length ? `<span class="tag tag-warning">${tr("Indoor day")}</span>` : ""}
           <span class="day-pick">
             ${featured ? `${photoHtml(featured.activity, "112px")}
-              <span class="day-pick-title">${escapeHtml(featured.activity.rootmap.title)}</span>`
-              : "No idea yet"}
+              <span class="day-pick-title">${escapeHtml(rootmapText(featured.activity).title)}</span>`
+              : tr("No idea yet")}
           </span>
         </button>
       </li>`;
@@ -1806,34 +1836,34 @@ function renderWeek(weekPlan) {
 function renderDayWeather(day) {
   const { hazards, cautions, notes } = day.weather;
   const lines = [...hazards, ...cautions, ...notes].map((key) => WARNINGS[key](day));
-  if (hazards.length) lines.push("Outdoor ideas are left out today.");
+  if (hazards.length) lines.push(tr("Outdoor ideas are left out today."));
   warningsBox.innerHTML = `
     ${lines.length ? `<ul>${lines.map((line) => `<li>${line}</li>`).join("")}</ul>` : ""}
-    <p class="warnings-footnote">These ideas use the daily forecast for the whole area. Check the weather before you go out, and come inside if it changes.</p>`;
+    <p class="warnings-footnote">${tr("These ideas use the daily forecast for the whole area. Check the weather before you go out, and come inside if it changes.")}</p>`;
   warningsBox.classList.toggle("has-warnings", lines.length > 0);
 
   const wear = whatToWear(day);
   wearBox.innerHTML = `
     <h3><span aria-hidden="true">🧥</span> What to wear</h3>
-    ${wear.wear.length ? `<ul>${wear.wear.map((w) => `<li>${w}</li>`).join("")}</ul>` : ""}
-    ${wear.bring.length ? `<p class="panel-label">Bring</p><ul>${wear.bring.map((b) => `<li>${b}</li>`).join("")}</ul>` : ""}
-    ${wear.notes.map((n) => `<p>${n}</p>`).join("")}
-    <p class="panel-footnote">These tips are for comfort. They don't make outdoor play safe in bad weather.</p>`;
+    ${wear.wear.length ? `<ul>${wear.wear.map((w) => `<li>${tr(w)}</li>`).join("")}</ul>` : ""}
+    ${wear.bring.length ? `<p class="panel-label">${tr("Bring")}</p><ul>${wear.bring.map((b) => `<li>${tr(b)}</li>`).join("")}</ul>` : ""}
+    ${wear.notes.map((n) => `<p>${tr(n)}</p>`).join("")}
+    <p class="panel-footnote">${tr("These tips are for comfort. They don't make outdoor play safe in bad weather.")}</p>`;
   dayWeather.hidden = false;
 }
 
 function renderIdeas(day, ideas) {
-  const [, label] = WEATHER[day.code] || ["", "Unknown"];
-  ideasHeading.textContent = `Ideas for ${toDate(day.date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}`;
-  ideasSubtitle.textContent = [`${temp(day.high)} and ${label.toLowerCase()}`, ...day.holidays].join(" · ");
+  const [, label] = weatherOf(day.code);
+  ideasHeading.textContent = tr("Ideas for {day}", { day: toDate(day.date).toLocaleDateString(LOCALE, { weekday: "long", month: "short", day: "numeric" }) });
+  ideasSubtitle.textContent = [tr("{temp} and {condition}", { temp: temp(day.high), condition: LANG === "zh" ? label : label.toLowerCase() }), ...day.holidays.map((h) => tr(h))].join(" · ");
 
   ideaList.innerHTML = ideas.length
     ? ideas.map((idea) => ideaHtml(idea, day.date)).join("")
-    : `<p class="status">No ideas for this day yet.</p>`;
+    : `<p class="status">${tr("No ideas for this day yet.")}</p>`;
 
-  const why = explainDay(day, label, ideas, settings.unit);
+  const why = explainDay(day, label, ideas, settings.unit, LANG);
   whyBox.innerHTML = `
-    <h3><span aria-hidden="true">💡</span> Why these activities?</h3>
+    <h3><span aria-hidden="true">💡</span> ${tr("Why these activities?")}</h3>
     <p>${why.map(escapeHtml).join(" ")}</p>`;
   whyBox.hidden = why.length === 0;
 
@@ -1841,11 +1871,11 @@ function renderIdeas(day, ideas) {
 }
 
 function ideaHtml({ activity, outside, holiday }, date) {
-  const original = activity.rootmap;
+  const original = rootmapText(activity);
   const meta = activity.littleDays;
-  const where = meta.place === "outdoor" ? "Outdoor"
-    : meta.place === "indoor" || !outside ? "Indoor"
-    : "Outdoor or indoor";
+  const where = meta.place === "outdoor" ? tr("Outdoor")
+    : meta.place === "indoor" || !outside ? tr("Indoor")
+    : tr("Outdoor or indoor");
   const added = isPlanned(plan, date, activity.id);
   const title = escapeHtml(original.title);
   return `
@@ -1853,14 +1883,14 @@ function ideaHtml({ activity, outside, holiday }, date) {
       ${photoHtml(activity, "(max-width: 719px) 96px, 320px")}
       <div class="idea-body">
         <h3><button type="button" class="idea-title" data-open="${activity.id}" data-date="${date}">${title}</button></h3>
-        <p class="meta">${where} · ${original.minutes} min · Ages ${meta.minAge}–${meta.maxAge}</p>
-        ${holiday ? `<p><span class="tag tag-holiday">${escapeHtml(meta.holidays[0])}-inspired idea</span></p>` : ""}
+        <p class="meta">${tr("{where} · {minutes} min · Ages {min}–{max}", { where, minutes: original.minutes, min: meta.minAge, max: meta.maxAge })}</p>
+        ${holiday ? `<p><span class="tag tag-holiday">${escapeHtml(tr("{holiday}-inspired idea", { holiday: tr(meta.holidays[0]) }))}</span></p>` : ""}
         <p class="idea-description">${escapeHtml(original.description)}</p>
         <ul class="tags">${original.domains.slice(0, 3).map((d) => `<li class="tag tag-soft">${escapeHtml(d)}</li>`).join("")}</ul>
-        ${original.safety ? `<p class="safety"><strong>Safety:</strong> ${escapeHtml(original.safety)}</p>` : ""}
+        ${original.safety ? `<p class="safety"><strong>${tr("Safety:")}</strong> ${escapeHtml(original.safety)}</p>` : ""}
         ${added
-          ? `<button type="button" class="button-added" disabled>Added ✓</button>`
-          : `<button type="button" data-add="${activity.id}" data-date="${date}" aria-label="Add ${title} to my week">Add to my week</button>`}
+          ? `<button type="button" class="button-added" disabled>${tr("Added ✓")}</button>`
+          : `<button type="button" data-add="${activity.id}" data-date="${date}" aria-label="${tr("Add {title} to my week", { title })}">${tr("Add to my week")}</button>`}
       </div>
     </article>`;
 }
@@ -1868,7 +1898,7 @@ function ideaHtml({ activity, outside, holiday }, date) {
 // The photo, or a plain tile with the title's first letter if there isn't one.
 function photoHtml(activity, sizes) {
   const photo = activity.littleDays.photo;
-  const initial = escapeHtml(activity.rootmap.title[0]);
+  const initial = escapeHtml(rootmapText(activity).title[0]);
   if (!photo) return `<span class="art art-missing" data-initial="${initial}"></span>`;
   const base = `images/activities/${activity.id}`;
   return `
@@ -1900,13 +1930,13 @@ function toDate(isoDate) {
 }
 
 function formatDay(isoDate) {
-  return toDate(isoDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  return toDate(isoDate).toLocaleDateString(LOCALE, { weekday: "short", month: "short", day: "numeric" });
 }
 
 // "2026-11-04T19:00" (the place's local time) → "7 PM". Read and shown as local time,
 // so the visitor's own time zone doesn't shift it.
 function formatHour(isoTime) {
-  return new Date(isoTime).toLocaleTimeString("en-US", { hour: "numeric" });
+  return new Date(isoTime).toLocaleTimeString(LOCALE, { hour: "numeric" });
 }
 
 // Today's date in the visitor's time zone, as YYYY-MM-DD.
@@ -1927,6 +1957,37 @@ function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
+
+// --- Language (PRD.md 7.19) ---
+
+// index.html is written in English; in Chinese its text and labels are swapped in place.
+// Text with no entry in ZH (the brand, "Google Maps", numbers) stays as it is.
+function translatePage() {
+  document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en";
+  const switchButton = document.querySelector("#lang-switch");
+  switchButton.textContent = LANG === "zh" ? "EN" : "中文";
+  switchButton.lang = LANG === "zh" ? "en" : "zh-CN";
+  if (LANG !== "zh") return;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const text = node.nodeValue.trim();
+    if (text && ZH[text] !== undefined) node.nodeValue = node.nodeValue.replace(text, ZH[text]);
+  }
+  for (const element of document.querySelectorAll("[placeholder], [aria-label]")) {
+    for (const attribute of ["placeholder", "aria-label"]) {
+      const value = element.getAttribute(attribute);
+      if (value && ZH[value] !== undefined) element.setAttribute(attribute, ZH[value]);
+    }
+  }
+}
+
+// Switching reloads the page, so Google's map, places and addresses come back in the new
+// language too (its language is set when its script loads).
+document.querySelector("#lang-switch").addEventListener("click", () => {
+  settings.lang = LANG === "zh" ? "en" : "zh";
+  saveSettings(storage, settings);
+  location.reload();
+});
 
 // --- Views (DESIGN.md 5) ---
 // Explore, Weather, My Places and My week are shown one at a time, chosen by the URL hash,
@@ -1950,6 +2011,7 @@ window.addEventListener("hashchange", () => {
 
 // --- Start ---
 
+translatePage();
 for (const input of unitInputs) input.checked = input.value === settings.unit;
 document.querySelector("#interest-chips").innerHTML = interestChipsHtml("interest");
 document.querySelector("#explore-chips").innerHTML = interestChipsHtml("explore-interest");

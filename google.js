@@ -9,13 +9,14 @@ const LOCATION_FIELDS = ["location", "formattedAddress", "addressComponents"];
 // Loads the API once. Resolves when it's ready; rejects if the script can't load.
 // Google reports a refused key (wrong key, address not allowed, API not enabled,
 // billing off) later, by calling window.gm_authFailure, so that's passed in too.
-function loadGoogleMaps(key, onAuthFailure) {
+// language ("en-US" or "zh-CN") sets the map labels, place names and addresses Google returns.
+function loadGoogleMaps(key, onAuthFailure, language) {
   return new Promise((resolve, reject) => {
     window.littleDaysMapsReady = resolve;
     window.gm_authFailure = onAuthFailure;
     const script = document.createElement("script");
     script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}` +
-      "&loading=async&callback=littleDaysMapsReady";
+      `&language=${encodeURIComponent(language)}&loading=async&callback=littleDaysMapsReady`;
     script.async = true;
     script.addEventListener("error", () => reject(new Error("The Maps JavaScript API script failed to load")));
     document.head.append(script);
@@ -49,7 +50,7 @@ async function setupAutocomplete(slot, labelId, onPick, onError) {
   const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
   const field = new PlaceAutocompleteElement();
   field.id = "address";
-  field.placeholder = "Start typing an address";
+  field.placeholder = tr("Start typing an address");
   // The real input is inside Google's shadow DOM, so a <label for> can't reach it.
   field.setAttribute("aria-labelledby", labelId);
   field.addEventListener("gmp-select", async ({ placePrediction }) => {

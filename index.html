@@ -17,6 +17,7 @@
         <a href="#my-places"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5a5.5 5.5 0 0 0 1-8.9z"/></svg> My Places</a>
         <a href="#my-week"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg> My week</a>
       </nav>
+      <button id="lang-switch" type="button" class="lang-switch" aria-label="Language">中文</button>
     </div>
   </header>
 
@@ -224,7 +225,7 @@
           <li>Weather comes from Open-Meteo, and public holidays from Nager.Date.</li>
           <li>Please don't write children's names in notes or journal entries.</li>
         </ul>
-        <p>Back up your places, journal, plan and choices to a file, or move them to another browser. Importing a backup <strong>replaces</strong> what's saved here; it doesn't merge.</p>
+        <p>Back up your places, journal, plan and choices to a file, or move them to another browser. Importing a backup replaces what's saved here; it doesn't merge.</p>
         <div class="data-actions">
           <button id="export-data" type="button" class="button-secondary">Export my data</button>
           <button id="import-data" type="button" class="button-secondary">Import my data</button>
@@ -262,6 +263,7 @@
 
   <!-- config.js is gitignored (PRD.md 9.2). Without it, the page runs without Google. -->
   <script src="config.js"></script>
+  <script src="i18n.js"></script>
   <script src="activities.js"></script>
   <script src="celebrations.js"></script>
   <script src="recommend.js"></script>

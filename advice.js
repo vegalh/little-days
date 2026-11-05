@@ -119,10 +119,12 @@ function listWords(words) {
   return words.length <= 1 ? words.join("") : `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
 }
 
-// day: { high, weather, holidays, celebrations, season }, conditionLabel: "Clear",
-// ideas: from pickIdeas(), unit: "F" or "C". Returns a list of sentences.
-function explainDay(day, conditionLabel, ideas, unit) {
+// day: { high, weather, holidays, celebrations, season }, conditionLabel: "Clear" (already
+// in the page's language), ideas: from pickIdeas(), unit: "F" or "C", lang: "en" or "zh".
+// Returns a list of sentences.
+function explainDay(day, conditionLabel, ideas, unit, lang = "en") {
   if (!ideas.length) return [];
+  if (lang === "zh") return explainDayZh(day, conditionLabel, ideas, unit);
   const sentences = [];
   const title = (idea) => idea.activity.rootmap.title;
 
@@ -166,16 +168,76 @@ function explainDay(day, conditionLabel, ideas, unit) {
   return sentences;
 }
 
+// Chinese grammar doesn't fit the English sentence pieces, so it has its own sentences,
+// built from the same facts.
+const CAUTION_WORDS_ZH = { rain: "雨", snow: "小雪", cold: "冷空气", hot: "高温", wind: "阵风" };
+const HAZARD_WORDS_ZH = {
+  storm: "雷暴", heavyRain: "大雨", freezingRain: "冻雨", heavySnow: "大雪",
+  extremeHeat: "极端高温", extremeCold: "极端低温", dangerousWind: "强风",
+};
+const SEASONS_ZH = { spring: "春天", summer: "夏天", autumn: "秋天", winter: "冬天" };
+
+// "a", "a和b", "a、b和c"
+function listWordsZh(words) {
+  return words.length <= 1 ? words.join("") : `${words.slice(0, -1).join("、")}和${words[words.length - 1]}`;
+}
+
+// Holiday names in Chinese, from i18n.js (a global in the page, required in Node).
+function holidayZh(name) {
+  const translateText = typeof translate === "function" ? translate : require("./i18n.js").translate;
+  return translateText("zh", name);
+}
+
+function explainDayZh(day, conditionLabel, ideas, unit) {
+  const sentences = [];
+  const title = (idea) => `“${idea.activity.rootmap.zh.title}”`;
+
+  const holidayIdea = ideas.find((i) => i.holiday);
+  if (holidayIdea) {
+    const tag = holidayIdea.activity.littleDays.holidays[0];
+    const isCelebration = (day.celebrations || []).some((name) => name.toLowerCase().includes(tag.toLowerCase()));
+    sentences.push(isCelebration
+      ? `如果你家过${holidayZh(tag)}，今天可以试试${title(holidayIdea)}，这是一个${holidayZh(tag)}灵感活动。`
+      : `今天是${holidayZh(tag)}，所以先推荐${title(holidayIdea)}，这是一个${holidayZh(tag)}灵感活动。`);
+  }
+
+  const { hazards, cautions } = day.weather;
+  const others = ideas.filter((i) => i !== holidayIdea);
+  const outdoor = others.filter((i) => i.outside).map(title);
+  const indoor = others.filter((i) => !i.outside).map(title);
+  if (hazards.length) {
+    const all = ideas.length === 3 ? "这三个活动" : ideas.length === 2 ? "这两个活动" : "这个活动";
+    sentences.push(`预报有${HAZARD_WORDS_ZH[hazards[0]]}，今天不适合户外玩耍，所以${all}都在室内进行。`);
+  } else if (cautions.length) {
+    const words = listWordsZh(cautions.map((c) => CAUTION_WORDS_ZH[c]));
+    let sentence = indoor.length ? `预报有${words}，所以先推荐${listWordsZh(indoor)}` : `预报有${words}，所以先推荐室内活动`;
+    sentence += outdoor.length ? `；穿好衣服的话，${listWordsZh(outdoor)}也可以在户外进行。` : "。";
+    sentences.push(sentence);
+  } else {
+    const weatherWords = day.high == null ? `今天${conditionLabel}` : `今天${conditionLabel}，${formatTemp(day.high, unit)}`;
+    if (outdoor.length) {
+      sentences.push(`${weatherWords}，${listWordsZh(outdoor)}可以带孩子出门玩` + (indoor.length ? `，${listWordsZh(indoor)}适合在室内进行。` : "。"));
+    } else {
+      sentences.push(`${weatherWords}，这些活动都适合在室内进行。`);
+    }
+  }
+
+  const seasonal = ideas.find((i) => i !== holidayIdea && i.activity.littleDays.seasons);
+  if (seasonal) sentences.push(`${title(seasonal)}是适合${SEASONS_ZH[day.season] || day.season}的季节性活动。`);
+  return sentences;
+}
+
 // --- Activity details ---
 
-// Everything shown in the details dialog, taken from the original RootMap record.
-function activityDetails(activity) {
-  const original = activity.rootmap;
+// Everything shown in the details dialog, taken from the original RootMap record (its own
+// Chinese text when lang is "zh").
+function activityDetails(activity, lang = "en") {
+  const original = lang === "zh" ? { ...activity.rootmap, ...activity.rootmap.zh } : activity.rootmap;
   return {
     id: activity.id,
     title: original.title,
     ages: original.age,
-    duration: `About ${original.minutes} minutes`,
+    duration: lang === "zh" ? `约 ${original.minutes} 分钟` : `About ${original.minutes} minutes`,
     description: original.description,
     materials: original.materials,
     steps: original.steps,

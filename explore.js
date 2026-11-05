@@ -154,6 +154,9 @@ function ageNotes(ages) {
   return AGE_NOTES[ages] || AGE_NOTES["2-6"];
 }
 
+// Every access sentence the page can show, for the translation check.
+const ACCESS_TEXT = Object.values(ACCESS).flatMap((kind) => [kind.label, kind.note].filter(Boolean));
+
 function settingFor(place) {
   return OUTDOOR_TYPES.includes(placeType(place)) ? "outdoors" : "indoors";
 }
@@ -174,6 +177,6 @@ function filterBySetting(places, setting) {
 if (typeof module !== "undefined") {
   module.exports = {
     CATEGORIES, CATEGORY_KEYS, MAX_RESULTS, ROUTE_BATCH, searchRadius, categoriesToSearch, straightLine,
-    shortlist, routeTargets, byWalkingTime, walkingMinutes, placeType, accessFor, settingFor, filterBySetting, ageNotes, categoryOf,
+    shortlist, routeTargets, byWalkingTime, walkingMinutes, placeType, accessFor, settingFor, filterBySetting, ageNotes, categoryOf, ACCESS_TEXT,
   };
 }

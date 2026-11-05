@@ -74,7 +74,7 @@ const GUIDES = {
         focus: "Colors and shapes",
         notice: ["Flowers and leaves of many colors", "Round, pointed and feathery shapes", "Big plants and tiny ones"],
         before: ["Talk about looking with eyes and gentle hands, and leaving flowers where they grow."],
-        during: ["Choose one color and find it in three places.", "Crouch down to see plants at your child's height.", "Name what you see with simple, exact words."],
+        during: ["Crouch down to see plants at your child's height.", "Wonder together where else a favorite color appears.", "Name what you see with simple, exact words."],
         after: ["Paint or draw a favorite flower from memory."],
         practical: "Let your child water a plant at home.",
       },

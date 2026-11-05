@@ -28,7 +28,7 @@ const blockedStorage = {
   setItem() { throw new Error("blocked"); },
   removeItem() { throw new Error("blocked"); },
 };
-const DEFAULTS = { unit: "F", mode: "family", ages: "2-6", minutes: 15, interest: null, location: null };
+const DEFAULTS = { unit: "F", mode: "family", ages: "2-6", minutes: 15, interest: null, lang: null, location: null };
 
 test("add: saves an activity to a date", () => {
   const plan = addToPlan({}, "2026-10-31", "washing-pumpkin");
@@ -107,12 +107,12 @@ test("settings: saved and loaded, with defaults for bad values", () => {
   const storage = fakeStorage();
   assert.deepEqual(loadSettings(storage), DEFAULTS);
   const chosen = {
-    unit: "C", mode: "classroom", ages: "4-6", minutes: 30, interest: "nature",
+    unit: "C", mode: "classroom", ages: "4-6", minutes: 30, interest: "nature", lang: "zh",
     location: { kind: "place", placeId: "ChIJexample" },
   };
   saveSettings(storage, chosen);
   assert.deepEqual(loadSettings(storage), chosen);
-  storage.data[SETTINGS_KEY] = JSON.stringify({ unit: "K", mode: "school", ages: "7-9", minutes: 45, interest: "zoo", location: 42 });
+  storage.data[SETTINGS_KEY] = JSON.stringify({ unit: "K", mode: "school", ages: "7-9", minutes: 45, interest: "zoo", lang: "fr", location: 42 });
   assert.deepEqual(loadSettings(storage), DEFAULTS);
 });
 
