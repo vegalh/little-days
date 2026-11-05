@@ -26,7 +26,7 @@ test("missing Google configuration: weather by city only, and Explore says maps 
   const api = await open(page, testInfo);
   await expect(page.locator("#explore-status")).toHaveText("Maps and places aren't set up on this copy of Little Days yet.");
   await expect(page.getByLabel("City (for weather)")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Try an example address" })).toBeHidden();
+  await expect(page.getByRole("button", { name: "Try an example" })).toBeHidden();
   await expect(page.locator("#location-status")).toHaveText("Enter your city or use your location to see the weather.");
   await expect(page.locator("#weather")).toBeHidden();
   expect(api.requests.filter((url) => url.includes("googleapis"))).toEqual([]);
@@ -74,7 +74,7 @@ test("°F/°C changes the weather shown without a new request", async ({ page },
   await page.getByRole("button", { name: "Show weather" }).click();
   await expect(page.locator(".now-temp")).toHaveText(fahrenheit(FORECAST.current.temperature_2m));
   await openFilters(page);
-  await page.locator("label", { hasText: "°C" }).click();
+  await page.locator("#filters-panel label", { hasText: "°C" }).click();
   await expect(page.locator(".now-temp")).toHaveText(`${Math.round(FORECAST.current.temperature_2m)}°`);
   expect(api.requests.filter((url) => url.includes("/v1/forecast"))).toHaveLength(1);
 });
@@ -130,8 +130,8 @@ test("weather API failure: the error and Try again, with nothing made up", async
   await expect(page.locator("#now-line")).toHaveText("Weather unavailable right now.");
   await expect(page.locator("#week")).toBeHidden();
   await expect(page.locator(".now-temp")).toHaveCount(0);
-  // A failed load doesn't save the city.
-  expect((await savedSettings(page)).v2.location).toBeNull();
+  // A weather problem can't lose the starting point (PRD.md 7.18).
+  expect((await savedSettings(page)).v2.location).toEqual({ kind: "city", name: NEWTON_MA });
 
   await showView(page, "weather");
   await page.getByRole("button", { name: "Try again" }).click();
@@ -167,7 +167,7 @@ test("saved v2 settings survive a reload", async ({ page }, testInfo) => {
   await page.getByLabel("City (for weather)").fill(NEWTON_MA);
   await page.getByRole("button", { name: "Show weather" }).click();
   await openFilters(page);
-  await page.locator("label", { hasText: "°C" }).click();
+  await page.locator("#filters-panel label", { hasText: "°C" }).click();
   await expect(page.locator(".now-temp")).toBeAttached();
   await page.reload();
   await expect(page.locator("#location-line")).toHaveText(`📍 ${NEWTON_MA}`);
@@ -175,11 +175,10 @@ test("saved v2 settings survive a reload", async ({ page }, testInfo) => {
 });
 
 test.describe("with Google configured (fake Maps library)", () => {
-  test("picking an address loads its weather and saves only the place ID; no place search", async ({ page }, testInfo) => {
+  test("picking an address loads its weather and saves only the place ID", async ({ page }, testInfo) => {
     const api = await open(page, testInfo, { config: GOOGLE_CONFIG });
-    await expect(page.locator("#explore-status")).toHaveText("Enter an address or use your location, then press Explore nearby.");
     await expect(page.getByLabel("City (for weather)")).toBeHidden();
-    await expect(page.locator("#address-label")).toHaveText("Address or place");
+    await expect(page.locator("#address-label")).toHaveText("Where's home?");
     await page.evaluate(() => window.fakePickAddress());
 
     await expect(page.locator("#location-line")).toHaveText("📍 221 Washington St, Newton, MA 02458, USA");
@@ -188,7 +187,6 @@ test.describe("with Google configured (fake Maps library)", () => {
     expect(api.requests.some((url) => url.endsWith("/2026/US"))).toBe(true);
     expect((await savedSettings(page)).v2.location).toEqual({ kind: "place", placeId: "ChIJfakeNewtonPlaceId" });
     const calls = await page.evaluate(() => window.fakeGoogleCalls.map((c) => c.call));
-    expect(calls).not.toContain("searchNearby");
     expect(calls.filter((c) => c === "fetchFields")).toHaveLength(1);
     // The key goes only to Google's script URL.
     expect(api.requests.filter((url) => url.includes("fake-test-key")).every((url) => url.startsWith("https://maps.googleapis.com/"))).toBe(true);
@@ -196,21 +194,23 @@ test.describe("with Google configured (fake Maps library)", () => {
 
   test("the example address is labelled, loads weather, and is never saved", async ({ page }, testInfo) => {
     await open(page, testInfo, { config: GOOGLE_CONFIG });
-    await page.getByRole("button", { name: "Try an example address" }).click();
+    await page.getByRole("button", { name: "Try an example" }).click();
     await expect(page.locator("#location-line")).toHaveText("📍 221 Washington St, Newton, MA 02458, USA · Example address");
     await expect(page.locator(".now-temp")).toBeAttached();
     expect((await savedSettings(page)).v2.location).toBeNull();
   });
 
-  test("returning with a saved address: the weather refreshes, but no place search starts", async ({ page }, testInfo) => {
+  test("returning with a saved address: the weather refreshes and places load by themselves", async ({ page }, testInfo) => {
     await open(page, testInfo, {
       config: GOOGLE_CONFIG,
       storage: { "littleDays.settings.v2": JSON.stringify({ unit: "F", location: { kind: "place", placeId: "ChIJfakeNewtonPlaceId" } }) },
     });
     await expect(page.locator(".now-temp")).toBeAttached();
     await expect(page.locator("#location-line")).toHaveText("📍 221 Washington St, Newton, MA 02458, USA");
+    await expect(page.locator(".place-card").first()).toBeVisible();
+    await expect(page.locator("#setup")).toBeHidden();
     const calls = await page.evaluate(() => window.fakeGoogleCalls.map((c) => c.call));
-    expect(calls).toEqual(["importLibrary", "importLibrary", "fetchFields"]);
+    expect(calls.filter((c) => c === "searchNearby")).toHaveLength(6);
   });
 
   test("a saved address that can't be loaded asks to enter it again", async ({ page }, testInfo) => {
@@ -227,7 +227,7 @@ test.describe("with Google configured (fake Maps library)", () => {
     await open(page, testInfo, { config: GOOGLE_CONFIG, google: { authFailure: true } });
     await expect(page.locator("#explore-status")).toHaveText("Google Maps isn't available right now, so places and walking times can't be shown.");
     await expect(page.getByLabel("City (for weather)")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Try an example address" })).toBeHidden();
+    await expect(page.getByRole("button", { name: "Try an example" })).toBeHidden();
   });
 
   test("Google's script can't load: the same fallback", async ({ page }, testInfo) => {
@@ -276,12 +276,12 @@ test.describe("layout", () => {
     for (const link of await page.locator(".site-nav a").all()) {
       expect((await link.boundingBox()).height).toBeGreaterThanOrEqual(44);
     }
-    for (const button of await page.locator("#location-form button:visible").all()) {
+    for (const button of await page.locator(".explore-page button:visible").all()) {
       const box = await button.boundingBox();
       expect(box.height, await button.innerText()).toBeGreaterThanOrEqual(44);
     }
     // The location and the compact weather stack.
-    const location = await page.locator(".search-row").boundingBox();
+    const location = await page.locator(".explore-side .base-line").boundingBox();
     const nowLine = await page.locator("#now-line").boundingBox();
     expect(nowLine.y).toBeGreaterThan(location.y + location.height - 1);
     await showView(page, "weather");

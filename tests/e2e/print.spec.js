@@ -22,7 +22,7 @@ async function start(page, testInfo, { pick = true, ...options } = {}) {
     await page.evaluate(() => window.fakePickAddress());
     await expect(page.locator(".now-temp")).toBeAttached();
   } else {
-    await expect(page.getByRole("button", { name: /example address|示例地址/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Try an example|试试示例/ })).toBeVisible();
   }
 }
 
@@ -153,7 +153,6 @@ test("Print My Week: a long preparation note prints in full", async ({ page }, t
 test("Print Adventure Guide: place, weather for the selected day, and the chosen perspective", async ({ page }, testInfo) => {
   await start(page, testInfo);
   await chooseInterest(page, "Nature");
-  await page.getByRole("button", { name: "Explore nearby" }).click();
   await page.getByRole("button", { name: "Details for Test Park" }).click();
   await dialog(page).getByRole("button", { name: "Second visit" }).click();
 
@@ -190,7 +189,6 @@ test("Print Adventure Guide: no forecast loaded shows the required fallback text
   await expect(page.locator("#weather-status")).toContainText("We couldn't load the weather right now.");
 
   await chooseInterest(page, "Nature");
-  await page.getByRole("button", { name: "Explore nearby" }).click();
   await page.getByRole("button", { name: "Details for Test Park" }).click();
   await dialog(page).getByRole("button", { name: "Print Adventure Guide" }).click();
   await expect(printArea(page)).toContainText("Weather forecast not available yet.");
@@ -212,7 +210,6 @@ test("中文: Print My Week and Print Adventure Guide show the Chinese interface
 
   await showView(page, "explore");
   await chooseInterest(page, "自然");
-  await page.getByRole("button", { name: "探索附近" }).click();
   await page.getByRole("button", { name: "Test Park的详情" }).click();
   await dialog(page).getByRole("button", { name: "打印探索指南" }).click();
   await expect(printArea(page)).toContainText("为什么来这里探索");

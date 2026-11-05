@@ -90,9 +90,16 @@ async function openFilters(page) {
   if (await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
 }
 
+async function closeFilters(page) {
+  await page.locator("#filters-done").click();
+  // The dialog's close event comes a moment later, and that's what updates this.
+  await page.locator('#filters-toggle[aria-expanded="false"]').waitFor({ state: "attached" });
+}
+
 async function chooseInterest(page, label) {
   await openFilters(page);
   await page.locator("#interest-chips label", { hasText: label }).click();
+  await closeFilters(page);
 }
 
-module.exports = { mockApis, showView, openFilters, chooseInterest, FORECAST, NEWTON, GOOGLE_CONFIG };
+module.exports = { mockApis, showView, openFilters, closeFilters, chooseInterest, FORECAST, NEWTON, GOOGLE_CONFIG };

@@ -14,10 +14,10 @@ Never paste a key into this file, a test, or a commit.
 
 | # | Check | How to confirm it's real | Pass? |
 |---|---|---|---|
-| 1 | Maps JS loads | Network: `maps.googleapis.com/maps/api/js?key=…` is `200`. Console: no `Google Maps JavaScript API error`. the map slot says "Enter an address or use your location, then press Explore nearby." | |
+| 1 | Maps JS loads | Network: `maps.googleapis.com/maps/api/js?key=…` is `200`. Console: no `Google Maps JavaScript API error`. the one-time step shows the address field. | |
 | 2 | Autocomplete | Typing "221 Wash" shows Google suggestions including Newton, MA. Network shows Places requests (`places.googleapis.com` from Google's own code). | |
 | 3 | Picked place fields | Console: "Little Days: first Autocomplete place response". Check that `location`, `formattedAddress` and `addressComponents` exist, and that the country component has `shortText: "US"` and `types` including `"country"`. Note any difference here and in PRD.md 7.2. | |
-| 4 | Example address | "Try an example address" shows "… · Example address". Console: "first searchByText response". `localStorage` `littleDays.settings.v2` has `location: null`. | |
+| 4 | Example address | "Try an example" shows "… · Example address". Console: "first searchByText response". `localStorage` `littleDays.settings.v2` has `location: null`. | |
 | 5 | Saved address | Pick an address, reload. The weather comes back with no typing. Console: "first fetchFields response". Network: **no** `searchNearby` request. | |
 | 6 | Open-Meteo | Network: `api.open-meteo.com/v1/forecast?latitude=42.35&longitude=-71.21…` (2 decimals) is `200`. The Now temperature matches open-meteo.com for Newton within a degree or two. Next hours start at the current hour. | |
 | 7 | Holidays | Network: `date.nager.at/api/v3/PublicHolidays/2026/US` is `200`. | |
@@ -33,14 +33,14 @@ Never paste a key into this file, a test, or a commit.
 
 | # | Check | How to confirm it's real | Pass? |
 |---|---|---|---|
-| 15 | No search on load | Reload with a saved address: Network shows **no** `searchNearby` until you press Explore nearby. | |
-| 16 | Nearby search | Open Filters, choose Nature, press Explore nearby. Console: "first searchNearby response": check each place has `id`, `displayName`, `formattedAddress`, `location`, `primaryType`, `types`. Spot-check two places in Google Maps: they exist at their markers. If Google rejects a place type, the console shows the error; note it and fix PRD.md 7.10. | |
+| 15 | Search on open | Reload with a saved address on Explore: places load by themselves. Reload on `#my-week`: Network shows **no** `searchNearby` until you open Explore. | |
+| 16 | Nearby search | Open Filters, choose Nature, close Filters. Console: "first searchNearby response": check each place has `id`, `displayName`, `formattedAddress`, `location`, `primaryType`, `types`. Spot-check two places in Google Maps: they exist at their markers. If Google rejects a place type, the console shows the error; note it and fix PRD.md 7.10. | |
 | 17 | Map | A real Google map with the Start marker and numbered markers matching the list. Google's logo and terms are visible. If markers are missing, check the console for a map ID error (the map ID must allow vector/advanced markers). | |
 | 18 | Route matrix | Console: "first computeRouteMatrix response". At most 5 places show a walking time; check `matrix.rows[0].items[i]` has `durationMillis`, `distanceMeters`, `condition`. If Google rejects `travelMode: "WALKING"`, note the error: that's the one unconfirmed option (PRD.md 7.2). | |
 | 19 | Walking time vs Google Maps | For one place, compare the card's time with Google Maps' own walking directions from the same address. They should be close. | |
 | 20 | More walking times | "Check walking time" on a 6th+ place sends one more matrix request with one destination. | |
 | 21 | Route | Open a place. Console: "first computeRoutes response". The detail map draws a green route line; any Google warnings show under "From Google:". | |
-| 22 | All | With All chosen (the default), press Explore nearby: up to 6 `searchNearby` requests, then 1 matrix with at most 5 destinations. Switching to a loaded interest sends nothing. | |
+| 22 | All | With All chosen (the default), open Explore: up to 6 `searchNearby` requests, then 1 matrix with at most 5 destinations. Switching to a loaded interest sends nothing. | |
 | 23 | Storage | DevTools → Application → Local Storage: `littleDays.places.v1` holds only place IDs and `{ status, visits, note }`, no names or addresses. | |
 | 24 | Billing view | Metrics show Places API (New) and Routes API requests matching what you did, and nothing unexpected. | |
 

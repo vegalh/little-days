@@ -15,8 +15,8 @@ const read = (file) => fs.readFileSync(path.join(__dirname, "..", file), "utf8")
 const missing = (texts) => [...new Set(texts)].filter((text) => ZH[text] === undefined);
 
 test("translate: Chinese from the dictionary, English unchanged, values filled in", () => {
-  assert.equal(translate("zh", "Explore nearby"), "探索附近");
-  assert.equal(translate("en", "Explore nearby"), "Explore nearby");
+  assert.equal(translate("zh", "Explore"), "探索");
+  assert.equal(translate("en", "Explore"), "Explore");
   assert.equal(translate("zh", "{minutes} min walk", { minutes: 7 }), "步行 7 分钟");
   assert.equal(translate("en", "{minutes} min walk", { minutes: 7 }), "7 min walk");
   assert.equal(translate("zh", "Not in the dictionary"), "Not in the dictionary");

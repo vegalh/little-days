@@ -282,7 +282,7 @@ fieldset.field {
 .setup-ask:focus { outline: 0; }
 .setup-note { margin: 0; font-size: 14px; color: var(--ink-soft); overflow-wrap: anywhere; }
 .setup-actions { display: flex; flex-wrap: wrap; gap: 0 16px; }
-.setup-actions .link-button { display: inline-flex; gap: 4px; align-items: center; color: var(--accent); }
+.setup-actions .link-button { display: inline-flex; gap: 4px; align-items: center; font-weight: 700; color: var(--accent); text-decoration: none; }
 .setup.is-change .setup-intro,
 .setup.is-change .setup-mode { display: none; }
 .setup.is-change { padding-top: 24px; }
@@ -427,7 +427,8 @@ dialog.filters-panel[open] { display: flex; flex-direction: column; }
 .filters-body { flex: 1; min-height: 0; gap: 16px; padding: 0 16px 16px; overflow-y: auto; }
 .filters-foot { flex: none; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
 .filters-foot button { width: 100%; }
-.explore-tools { display: flex; gap: 8px; align-items: center; min-width: 0; margin-bottom: 8px; }
+.explore-tools { display: flex; gap: 8px; align-items: flex-start; min-width: 0; margin-bottom: 8px; }
+.explore-foot { margin: 8px 0 0; font-size: 13px; color: var(--ink-soft); }
 .filters-button { flex: none; }
 .link-as-button { display: inline-flex; align-items: center; min-height: 44px; margin-top: 8px; padding: 0 16px; font-weight: 600; text-decoration: none; }
 
@@ -1151,7 +1152,8 @@ dialog p { margin: 8px 0 0; }
 .segmented-wide { display: flex; }
 .segmented-wide label { flex: 1 1 auto; }
 .segmented-wide span { min-width: 0; padding: 0 8px; font-size: 14px; white-space: nowrap; }
-.segmented-small span { min-width: 0; padding: 0 12px; }
+.segmented-small label { flex: 1 1 auto; }
+.segmented-small span { min-width: 0; padding: 0 6px; font-size: 13px; white-space: nowrap; }
 
 .explore-notes {
   margin-bottom: 8px;
@@ -1294,7 +1296,7 @@ dialog p { margin: 8px 0 0; }
    the Explore status, so it stays small. */
 .map-box {
   position: relative;
-  height: clamp(240px, 40dvh, 440px);
+  height: clamp(208px, 30dvh, 280px);
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--line);

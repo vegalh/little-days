@@ -84,7 +84,7 @@ Don't add files beyond these without asking. Add each file only in the phase tha
 - The Google field names in PRD.md 7.2 haven't been checked against real responses yet. The first time each call runs with a real key, `console.log` the real response, tell me what you found, and update PRD.md 7.2. Until then, treat the names as a guess.
 - Store only Google place IDs. Never store a Google name, address, coordinate or walking time in `localStorage`; fetch them again each visit (PRD.md 9.4).
 - Keep Google's logo and attributions visible on every map. Where Google content is shown without a visible map (the phone List view, My Places, My week), show the "Google Maps" text attribution exactly as PRD.md 9.4 says. Never hide or cover it.
-- Only "Find Little Adventures" may start a Places search. Never search on page load, on a return visit, or when a location or interest changes (PRD.md 7.1).
+- Places search only while Explore is on screen with a starting point: when Explore opens, when a starting point is chosen, and when a walking time or interest not yet loaded is chosen (PRD.md 7.1). Other views never search, and a visit searches each interest once. Never search from Weather, My Places or My week.
 - Don't add a backend, a serverless function or a second key. If a feature seems to need one, stop and ask.
 
 **fetch rules** (Open-Meteo Forecast and Geocoding, Nager.Date)

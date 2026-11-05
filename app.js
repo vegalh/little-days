@@ -1036,7 +1036,6 @@ async function renderPlaces() {
 
   const notes = [tr(shown.length === 1 ? "{count} place · walking times from Google, ideas from Little Days" : "{count} places · walking times from Google, ideas from Little Days",
     { count: shown.length })];
-  notes.push(tr("Photos show RootMap activities, not these places."));
   if (!day) notes.push(tr("Weather unavailable. Check the forecast before you go."));
   for (const holiday of day ? day.publicHolidays : []) {
     notes.push(tr("{holiday} falls on this day. Many services close, so check hours before you go.", { holiday: escapeHtml(tr(holiday)) }));

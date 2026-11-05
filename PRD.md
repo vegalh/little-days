@@ -67,25 +67,24 @@ Version 1 is built first for ages 2–6. Children under 2 are supported with age
 
 ### 7.1 Inputs
 
-The first thing on the page is the location, a compact weather line and one button. Everything else sits in a collapsed **Filters** panel with working defaults, so nobody has to set anything to start exploring (DESIGN.md 5). Nothing about the child is collected beyond the broad age range, and the age range and mode are never sent to any API.
+**The starting point is set once.** On a first visit, Explore shows a one-time step: who's exploring (Family or Classroom) and the address ("Where's home?" or "Where's your school?"). A picked address is saved until the adult changes it, so every later visit opens on the neighborhood, with no search box on the main screen. A line with the address and "Change" sits on Explore and Weather, and "Change" returns to the same step, showing the current address and "Keep this address". Everything else sits in a **Filters** sheet with working defaults, so nobody has to set anything to start exploring (DESIGN.md 5). Nothing about the child is collected beyond the broad age range, and the age range and mode are never sent to any API.
 
 | Input | Control | Behavior |
 |---|---|---|
 | Address | Google Place Autocomplete (`PlaceAutocompleteElement`, 7.2), named "Address or place" for screen readers, with the placeholder as its visible prompt | Suggestions come from Google as the adult types. Picking one sets the location (its `location`, `formattedAddress`, and country code from `addressComponents`). Typed text that wasn't picked is not used (8.4). |
 | City (fallback) | Text field "City (for weather)" with the browser's suggestion list (`<datalist>`) and a "Show weather" button | Shown **only when Google Maps is unavailable** (not configured, refused, or failed to load, 8.3). Works exactly like the earlier city search: after a pause in typing (2+ letters, 300 ms) up to five Open-Meteo matches appear as "name, state/region, country"; a picked one is used as is, a typed one is geocoded and the first result is used and named. It gives **weather only**: no places and no walking routes. |
 | Use my location | Small icon `<button>` beside the field, named "Use my location" | Asks the browser for the position **only when pressed** (`navigator.geolocation.getCurrentPosition`, once, `timeout: 10000`, `maximumAge: 300000`). Never `watchPosition`, never on page load. The location line reads "Your current location". Works with or without Google. |
-| Example | Quiet text `<button>` "Try an example address" in the empty map slot | Shown only when Google Maps is available and no location is chosen yet. Looks up the demo address **221 Washington Street, Newton, MA 02458** with one Google text search (7.2). It's only an example: it is never saved (7.18) and never treated as the adult's location. |
+| Example | Quiet text `<button>` "Try an example" in the one-time step | Shown only when Google Maps is available and no location is chosen yet. Looks up the demo address **221 Washington Street, Newton, MA 02458** with one Google text search (7.2). It's only an example: it is never saved (7.18) and never treated as the adult's location. |
 | Who's exploring (Filters) | Two radio buttons: **Family** / **Classroom** | Changes wording and reminders (7.13). Default Family. Remembered, so a teacher picks Classroom once. Reset doesn't change it. |
 | Ages (Filters) | `<select>`: Under 2, 2–3, 4–6, Mixed 2–6 | Changes age notes (7.13) and at-home ideas (7.5). Default Mixed 2–6. |
 | Walking time (Filters) | Five radio buttons: 5, 10, 15, 20, 30 min | Sets the search area (7.10) and the walking-time filter (7.12). Default 15. |
 | Interests (Filters) | Seven radio buttons styled as chips: **All** and the six categories (7.10) | One is chosen at a time. **All is chosen at first**, so the first press shows the mix of places the neighborhood has. A category is one search; All is one search per category not yet loaded (7.10, cost in 9.3). |
 | Temperature (Filters) | °F / °C switch | Changes every temperature, wind speed (mph / km/h), rain amount (in / mm) and distance (mi / km). Doesn't refetch anything. Saved. |
-| Search | The one primary button, "Explore nearby" | Starts the place search (8.2). This is the **only** thing that starts a Google Places search. |
 | Day | Each day card in the seven-day strip (Weather) and in the day picker in Filters ("Which day are you planning for?", 7.16) is a button | Selects the day used for weather notes on places, What to wear, and at-home ideas. The chosen day is kept: it stays selected across a search and when moving between Weather and Explore; only choosing a new location resets it to today. |
 
-**Filters summary.** Under the button, a short line lists what differs from the defaults ("Classroom · 10 min walk · Nature"), and the Filters button shows the count. **Reset** puts ages, walking time, interest, day and the Setting and Explored filters back to their defaults. It sends no request, and it keeps the mode, so it can never quietly drop the Classroom reminders. Pressing "Explore nearby" closes the panel.
+**Filters summary.** Under the interest chips, a short line lists what differs from the defaults ("Classroom · 10 min walk · Nature"), and the Filters button shows the count. **Reset** puts ages, walking time, interest, day and the Setting and Explored filters back to their defaults. It keeps the mode, so it can never quietly drop the Classroom reminders.
 
-**Choosing a location fetches the weather right away** (Open-Meteo and Nager.Date, no Google request). **Places are fetched only when the adult presses "Explore nearby"**, never on page load, never on a return visit, and never just because a location or interest changed. Changing mode, ages, units, the day or filters never makes a request. Changing the location or walking time clears the places loaded so far; the next search starts fresh.
+**Choosing a location fetches the weather right away** (Open-Meteo and Nager.Date, no Google request). **Places load by themselves whenever Explore is on screen with a starting point**: on choosing one, on opening the page there, and on coming to Explore from another view. Opening straight on Weather, My Places or My week searches nothing. A visit searches each interest once; moving between views and interests already loaded sends nothing. Changing mode, ages, units, the day or filters never makes a request. Changing the location or walking time clears the places loaded so far and searches again, and from Filters that happens once, when the sheet closes.
 
 ### 7.2 Data sources
 
@@ -359,7 +358,7 @@ Saved in `localStorage` under `littleDays.plan.v2`. Activities stay exactly as i
 
 The category shown on a card comes from this table (the search that found it), so it is a **Little Days label**, not Google's.
 
-**Search.** Only when "Explore nearby" is pressed (7.1). A category means one `Place.searchNearby`; **All** means one per category not loaded yet, all at once. Each search:
+**Search.** Only while Explore is on screen with a starting point (7.1). A category means one `Place.searchNearby`; **All** means one per category not loaded yet, all at once. Each search:
 
 - `locationRestriction`: a circle around the search location with radius = walking minutes × 80 m (5 → 400 m, 10 → 800 m, 15 → 1200 m, 20 → 1600 m, 30 → 2400 m). 80 m a minute is an adult's walking pace. This only sets the search area; walking times come from routes (7.12).
 - `includedPrimaryTypes`: the category's types, sent as **primary** types so a place with several Google types (for example a supermarket that also lists "bakery") is matched only by its actual primary type, not shown under every category it merely mentions. `maxResultCount`: 10. `rankPreference`: distance.
@@ -503,15 +502,15 @@ Places use the same weather rules as 7.4, for the **selected day** — chosen ei
 
 The address, setting, access line, age note, weather notes and "Add to my week" are in the details.
 
-**Map:** a Google map with one marker for the search location ("Start") and one numbered marker per place in the filtered list, numbered like the list. It sits right under the search, about 40% of the screen height on phones. The map is created only by the first search (a map is a billed load, 9.3): until then, and whenever no results are showing, its slot holds the Explore status (8). It's a plain panel with a pin icon, never a picture of a map. A map is never created or fitted in a hidden or zero-height box: if another view is showing when results arrive, it's drawn when Explore comes back. The map keeps Google's logo and attributions visible. **Markers are reused:** a redraw (units, day, filters, walking times arriving) only adds markers for new places, removes those no longer listed, and updates a changed number; the map is refit only when the set of places changes.
+**Map:** a Google map with one marker for the search location ("Start") and one numbered marker per place in the filtered list, numbered like the list. It sits right under the starting point, about 30% of the screen height on phones. The map is created only by the first search (a map is a billed load, 9.3): until then, and whenever no results are showing, its slot holds the Explore status (8). It's a plain panel with a pin icon, never a picture of a map. A map is never created or fitted in a hidden or zero-height box: if another view is showing when results arrive, it's drawn when Explore comes back. The map keeps Google's logo and attributions visible. **Markers are reused:** a redraw (units, day, filters, walking times arriving) only adds markers for new places, removes those no longer listed, and updates a changed number; the map is refit only when the set of places changes.
 
 **Map and cards work together.** Choosing a marker highlights it and its card and shows a short preview on the map (number, name, walking time, "View details"). Tapping a card, or hovering or focusing it, highlights its marker. On wide screens choosing a marker also scrolls its card into view.
 
 **Detail map:** one Google map inside the details dialog, created the first time a place is opened and reused for every place after: it moves to the new place, replaces the place marker, clears the old route line and draws the new one. Routes are kept in page memory per starting point and place, so reopening a place doesn't ask Google again.
 
-**Layout:** one column of search, map, cards on phones and tablets, with no List/Map switch: the map and the cards are always shown together. From 960px the search and cards share the left column and the map stays in view on the right. Details are specified in DESIGN.md.
+**Layout:** one column of starting point, map, cards on phones and tablets, with no List/Map switch: the map and the cards are always shown together. From 960px the starting point and cards share the left column and the map stays in view on the right. Details are specified in DESIGN.md.
 
-**Interest tabs** (under the map, after the first search): the seven interests again, with the searched one chosen, as the one quick filter. Choosing one shows it from memory if it's loaded (7.10); otherwise it does nothing until "Explore nearby" (repeated in the map slot) is pressed. Loaded interests carry a "✓", except when everything is loaded.
+**Interest tabs** (under the map, beside Filters): the seven interests again, with the searched one chosen, as the one quick filter. Choosing one shows it from memory if it's loaded (7.10); otherwise it searches that interest. Loaded interests carry a "✓", except when everything is loaded.
 
 **Day picker** (in Filters, once there's a forecast): "Which day are you planning for?" with one button per forecast day — the same seven days and the same selection as the Weather strip (7.1, 7.15). Each button shows the day's icon, high temperature, an "Indoor day" tag on a hazard day, and any public holiday. Choosing a day changes the weather notes, the order on a hazard day and the date offered in the details, with no new request.
 
@@ -579,7 +578,7 @@ Everything is stored in `localStorage` on this device, and every read and write 
 | `littleDays.places.v2` | My Places and the journal (7.17) |
 | `littleDays.plan.v2` | My week (7.9) |
 
-- **Location.** Saved once its weather has loaded: a picked Google address as its place ID, or a fallback city as the name that was searched. On a return visit the page restores it, fetches its location again (one Google place-details request, or one Open-Meteo geocoding request), and **refreshes the weather only**. It never starts a place search (8.1). Device location and the example address are **never saved**. Device coordinates are kept in memory for this visit only.
+- **Location.** Saved as soon as it's chosen, so a weather problem can't lose it: a picked Google address as its place ID, or a fallback city as the name that was searched. On a return visit the page restores it, fetches its location again (one Google place-details request, or one Open-Meteo geocoding request), refreshes the weather, and loads places when Explore is on screen (7.1). It never starts a place search (8.1). Device location and the example address are **never saved**. Device coordinates are kept in memory for this visit only.
 - **Settings migration:** if `littleDays.settings.v2` doesn't exist, `littleDays.settings.v1` is read: its `unit` is kept and its `city` becomes `{ kind: "city", name: city }`, so a returning visitor still gets their weather. The rest takes the defaults (7.1). The result is saved as v2 and v1 is removed.
 - **What goes where:** Google gets the address text typed into Autocomplete and the search location (for nearby search and routes). Open-Meteo gets latitude and longitude **rounded to 2 decimals** (about 1 km), which is plenty for a forecast, and in the fallback the city name typed. Nager.Date gets the country code and year. The age range, mode, notes, themes and My Places never leave the device.
 - No analytics, no cookies set by Little Days, no backend.
@@ -635,11 +634,11 @@ Each part fails on its own: weather, holidays, nearby search and walking times a
 - No location. Filters are closed, with °F, mode Family, ages Mixed 2–6, walking 15 min, All.
 - Location status is empty. (In the fallback: "Enter your city or use your location to see the weather.")
 - The compact weather line and the Weather section are hidden.
-- Explore status, in the map slot: "Enter an address or use your location, then press Explore nearby." (or a setup message, 8.3), with "Try an example address" under it.
+- Explore shows the one-time step (7.1): Who's exploring, "Where's home?", "You only need to do this once.", "Use my location this time" and "Try an example". A setup message (8.3) shows in the map slot once there's a location.
 - My Places: "No saved places yet. Save places from your search to find them here." My week: "Your week is empty." (or saved dates, 7.9).
 
-**Returning visit.** Saved choices are restored. If a location is saved, its location is fetched again and the weather loads (8.2). **No place search starts.** Explore status: "Press Explore nearby to see places near {location}."
-- A saved Google address that can't be loaded (Google unavailable or the request fails): location status "We couldn't load your saved address. Enter it again." The saved place ID is kept.
+**Returning visit.** Saved choices are restored. If a location is saved, its location is fetched again and the weather loads (8.2). Explore opens on places (8.2), with no search box. While the address loads, the map slot says "Loading your starting point…". Another view opens with no search.
+- A saved Google address that can't be loaded (Google unavailable or the request fails): the one-time step comes back with "We couldn't load your saved address. Enter it again." The saved place ID is kept.
 - A saved city the geocoder no longer finds: the not-found message below. The saved city is kept.
 
 **City not found** (fallback): the geocoder answered with no `results`. Location status: "We couldn't find "{what they typed}". Check the spelling, or add the state or country, like "Portland, Maine"." The weather from an earlier location is removed, the field keeps its text and gets focus, and the saved location isn't replaced.
@@ -662,7 +661,7 @@ Each part fails on its own: weather, holidays, nearby search and walking times a
 - The fallback's "Show weather" button is disabled and says "Searching…" while the city is geocoded and its weather loads.
 - Weather and holidays load together. When the forecast arrives the Weather section fills in (8.5); holidays never hold it up.
 
-**Places.** Starts only with "Explore nearby".
+**Places.** Start by themselves when Explore is on screen with a starting point (7.1).
 - The button is disabled and says "Searching…".
 - Explore status: "Finding little adventures near {location}…" ({location} is the address, "your location", or the example address).
 - Results and the map from an earlier search leave the screen (loaded categories stay in memory, 7.10, and the map is reused).
@@ -676,8 +675,8 @@ Details always go to `console.error`. The adult never sees raw error text. Error
 
 | What failed | What the adult sees | What still works |
 |---|---|---|
-| **No Google key configured** (`config.js` missing, or its key is empty) | Explore status: "Maps and places aren't set up on this copy of Little Days yet." The fallback city field replaces the address field. No example button, and "Explore nearby" is hidden. | Weather by city or device location, the seven-day strip, at-home ideas, My week (place names show as unavailable) |
-| **Google refuses the key or fails to load** (wrong key, address not allowed, API not enabled, billing off, network: `gm_authFailure`, the script's `error` event, `gmp-error`, or a rejected library call) | Explore status: "Google Maps isn't available right now, so places and walking times can't be shown." The fallback city field replaces the address field and "Explore nearby" is hidden. Any Google location already chosen keeps its weather. | Same as above |
+| **No Google key configured** (`config.js` missing, or its key is empty) | Explore status: "Maps and places aren't set up on this copy of Little Days yet." The fallback city field replaces the address field. No example button. | Weather by city or device location, the seven-day strip, at-home ideas, My week (place names show as unavailable) |
+| **Google refuses the key or fails to load** (wrong key, address not allowed, API not enabled, billing off, network: `gm_authFailure`, the script's `error` event, `gmp-error`, or a rejected library call) | Explore status: "Google Maps isn't available right now, so places and walking times can't be shown." The fallback city field replaces the address field. Any Google location already chosen keeps its weather. | Same as above |
 | **Nearby search fails** (network, quota, other) | Explore status: "We couldn't load nearby places right now. Check your connection and try again." + **Try again** (repeats the search) | Weather |
 | **Walking times fail** (the matrix rejects) | Every card: "Walking time unavailable". One note above the list: "Walking times couldn't be checked right now, so the walking-time filter is off." | Places, map, weather |
 | **Detail route fails** | "Walking route unavailable." in the detail | Everything else in the detail |
@@ -701,7 +700,6 @@ Refused before any request. The message sits directly under its field, in `--ink
 
 | Input | Rule | Message |
 |---|---|---|
-| No location | "Explore nearby" with no location chosen | "Enter an address or use your location first." (under the address field) |
 | Address typed but not picked | Text in the field that doesn't match the last picked suggestion | "Pick an address from the suggestions." |
 | City empty (fallback) | trim, then length 0 | "Type a city name first." |
 | City 1 character (fallback) | trim, then length < 2 | "Type at least 2 letters." |
@@ -714,7 +712,7 @@ Theme and notes can't be too long (`maxlength`). Walking time, mode, ages and un
 From top to bottom (DESIGN.md sets the look):
 
 1. **Header**: the logo, the language switch, and links to Explore, Weather, My Places and My week (a bottom bar on phones).
-2. **Search:** "Little adventures, close to home.", the address field and location button, the location line, the **compact weather line** (7.15), "Explore nearby" and Filters (7.1).
+2. **Starting point:** the address line with "Change", the **compact weather line** (7.15), and below the map Filters and the interest chips (7.1).
 3. **Map, then places:** the map or the Explore status, the interest tabs, one short line of notes, then the cards (7.16).
 4. **Weather** (7.15): one line naming the place and dates ("221 Washington St, Newton, MA 02458, USA · Wed Nov 4 – Tue Nov 10"), Now, Next hours, and the seven-day strip. Day cards are unchanged from the earlier version: day and date, icon, condition, high/low, "Rain {n}%", holiday and celebration tags, "Indoor day" on a hazard day, and the featured at-home activity. Today is selected. Under the strip: the selected day's weather warnings and forecast reminder (7.4) and What to wear (7.6).
 5. **Ideas for {day}** (optional at-home ideas): three at-home ideas (7.5) and Why these activities? (7.7).
@@ -771,7 +769,7 @@ Requests Little Days makes (checked live on 2026-11-04, PRD 7.2):
 
 | When | Requests |
 |---|---|
-| Page load | The Maps API script only. No map is created until a search, so no map load is billed. |
+| Page load, first visit | The Maps API script only. No map is created until a search, so no map load is billed. |
 | Typing an address | Autocomplete requests: Google's widget sends one per typed character (39 for the full demo address, live). Little Days can't change this. They form one session that ends with the place-details request below. |
 | Picking an address | 1 place-details request |
 | Example address | 1 text search, once per visit |
@@ -779,12 +777,12 @@ Requests Little Days makes (checked live on 2026-11-04, PRD 7.2):
 | One search (All, **the default**) | 1 map load (first search of the visit only) + up to 6 nearby searches (only the categories not loaded yet) + 1 route matrix (up to 5 elements). Confirmed live on 2026-11-05: 6 `SearchNearby`, 1 `ComputeRouteMatrix`. |
 | "Check walking time" on another place | 1 route matrix with 1 element |
 | Showing an interest again in the same visit | Nothing (kept in page memory, 7.10) |
-| A return visit | 1 place-details request to restore a saved address. No search. Weather and holidays are free. |
+| A return visit | 1 place-details request to restore a saved address, then, **when Explore is on screen**, one search as above: with All, 1 map load + up to 6 nearby searches + 1 route matrix. This runs on every full page load, including a quick look. Opening on another view adds no search. Weather and holidays are free. |
 | Opening a place | 1 compute-routes request the first time per place and starting point (reused after that), and 1 map load the first time only: the one detail map is reused for every place |
 | Saved places not in the results | 1 place-details request each, only once My Places or My week is on screen (max 50 per visit) |
 | Changing units, mode, ages, the day or filters | Nothing: the list redraws and existing markers are reused (live-checked) |
 
-**A typical exploration** (type and pick an address, press Explore nearby with the defaults, open two places, one saved place in My Places): 1 Autocomplete session (~20–40 requests), 2 place details, 6 nearby searches, 1 route matrix (5 elements), 2 compute-routes, 2 map loads. Choosing one interest first in Filters makes that 1 nearby search. To make a single interest the default, move it to the front of `SETTING_CHOICES.interest` in `plan.js`.
+**A typical exploration** (type and pick an address, keep the defaults, open two places, one saved place in My Places): 1 Autocomplete session (~20–40 requests), 2 place details, 6 nearby searches, 1 route matrix (5 elements), 2 compute-routes, 2 map loads. Choosing one interest first in Filters makes that 1 nearby search. To make a single interest the default, move it to the front of `SETTING_CHOICES.interest` in `plan.js`.
 
 **Billable operations to watch:** map loads (Dynamic Maps), Autocomplete, Place Details, Nearby Search (the fields asked for put it in the Pro tier: `displayName` is a Pro field), Text Search, Compute Route Matrix (billed per element), Compute Routes.
 
@@ -879,12 +877,12 @@ One phase at a time. Each phase ends with: what changed, the tests run and their
 
 ## 12. Acceptance criteria
 
-- [ ] Picking "221 Washington Street, Newton, MA 02458" from suggestions and pressing Explore nearby shows real nearby places on a Google map and in a list, with weather for Newton.
+- [ ] Picking "221 Washington Street, Newton, MA 02458" from suggestions shows real nearby places on a Google map and in a list, with weather for Newton.
 - [ ] "Use my location" asks for permission only when pressed. Denying it shows "Location access is off, so type an address instead." and the address field still works.
 - [ ] Every card shows a Google walking time or "Walking time unavailable", never a guessed time.
 - [ ] With 10 minutes chosen, no place with a longer Google walking time is listed, and the count of hidden places is shown.
 - [ ] Classroom mode shows the group walking-time note, and every place says "Access not verified" unless verified, with "Contact before a classroom visit" on businesses and public-service buildings.
-- [ ] Opening the page, choosing a location, or returning to the page never sends a Google Places search; only "Explore nearby" does.
+- [ ] Places load by themselves only while Explore is on screen with a starting point. Weather, My Places and My week never search, and a visit searches each interest once.
 - [ ] Choosing a location shows real Open-Meteo weather right away: Now, the next six hours starting at the current hour (not midnight), and seven days.
 - [ ] Verified data and Little Days notes are visibly labelled apart on cards and in details.
 - [ ] On a hazard day, indoor places come first and outdoor places carry the hazard warning.
@@ -902,7 +900,7 @@ One phase at a time. Each phase ends with: what changed, the tests run and their
 - [ ] `node --test` and `npx playwright test` pass (mocked).
 - [ ] `tests/LIVE-CHECK.md` has a passing live run recorded for every API.
 - [ ] No page scrolls sideways from 360px up, and every control is at least 44 × 44px.
-- [ ] At 390 × 844 the header, the address field, "Explore nearby" and the top of the map slot are all visible without scrolling, and a search needs no setting changed first.
+- [ ] At 390 × 844 the one-time step fits without scrolling. Every later visit opens on the address line, the map and the first place, with no setting to change first.
 
 ## 13. Open questions
 

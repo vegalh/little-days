@@ -2,7 +2,7 @@
 // the place cards working together. Google is the fake and every other request is mocked,
 // so these show the page's behavior, not that the real APIs work.
 const { test, expect } = require("@playwright/test");
-const { mockApis, showView, openFilters, chooseInterest, FORECAST, GOOGLE_CONFIG } = require("./mock-apis.js");
+const { mockApis, showView, openFilters, closeFilters, chooseInterest, FORECAST, GOOGLE_CONFIG } = require("./mock-apis.js");
 
 test.afterEach(async ({}, testInfo) => {
   expect(testInfo.api?.unmocked ?? []).toEqual([]);
@@ -17,7 +17,9 @@ async function pickAddress(page) {
   await page.evaluate(() => window.fakePickAddress());
   await expect(page.locator(".now-temp")).toBeAttached();
 }
-const explore = (page) => page.locator("#find").click();
+const explore = (page) => expect(page.locator(".place-card").first()).toBeVisible();
+const calledTimes = (page, name) => page.evaluate((n) => window.fakeGoogleCalls.filter((c) => c.call === n).length, name);
+const SAVED = { "littleDays.settings.v2": JSON.stringify({ location: { kind: "place", placeId: "ChIJfakeNewtonPlaceId" } }) };
 const googleCalls = (page) => page.evaluate(() => window.fakeGoogleCalls.map((c) => c.call).filter((c) => c !== "importLibrary"));
 const settings = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("littleDays.settings.v2")));
 const noSideways = async (page) => {
@@ -38,12 +40,12 @@ for (const lang of ["en", "zh"]) {
       await page.setViewportSize({ width, height });
       await open(page, testInfo, { storage: { "littleDays.settings.v2": JSON.stringify({ lang }) } });
 
-      // Header, search, the one primary action and the top of the map slot, all in view.
+      // The one-time step fits on one screen, with nothing else competing with it.
       expect((await page.locator(".site-header").boundingBox()).height).toBeLessThanOrEqual(64);
-      const map = await page.locator("#place-map-box").boundingBox();
-      expect(map.y).toBeLessThan(height / 2);
-      await expect(page.locator(".find-button")).toBeInViewport();
-      await expect(page.locator("#filters-panel")).toBeHidden();
+      await expect(page.locator("#setup-heading")).toBeInViewport();
+      await expect(page.locator(".setup-actions")).toBeInViewport();
+      expect((await page.locator("gmp-place-autocomplete").boundingBox()).height).toBe(52);
+      await expect(page.locator("#explore")).toBeHidden();
       await noSideways(page);
 
       await pickAddress(page);
@@ -51,12 +53,13 @@ for (const lang of ["en", "zh"]) {
       await explore(page);
       await expect(page.locator(".place-card").first()).toBeVisible();
       const box = await page.locator("#explore-map").boundingBox();
-      expect(box.height / height).toBeGreaterThanOrEqual(.3);
-      expect(box.height / height).toBeLessThanOrEqual(.5);
+      expect(box.height / height).toBeGreaterThanOrEqual(.25);
+      expect(box.height / height).toBeLessThanOrEqual(.4);
       await expect(page.locator(".place-card").first()).toBeInViewport();
       await noSideways(page);
       await openFilters(page);
       await noSideways(page);
+      await closeFilters(page);
 
       // Every control in the search and on the cards is a full touch target.
       for (const control of await page.locator(".explore-page button:visible, .explore-page .segmented span:visible, .explore-page .chip > span:visible").all()) {
@@ -83,29 +86,27 @@ test("desktop 1280px: search and places on the left, a map that stays in view on
   await noSideways(page);
 });
 
-test("no paid request on load, on choosing an address, or on changing any filter", async ({ page }, testInfo) => {
+test("nothing is sent to Google before there's an address, and settings that don't need a search send nothing", async ({ page }, testInfo) => {
   await open(page, testInfo);
   expect(await googleCalls(page)).toEqual([]);
   await pickAddress(page);
-  expect(await googleCalls(page)).toEqual(["fetchFields"]);
+  await explore(page);
+  await expect.poll(() => calledTimes(page, "computeRouteMatrix")).toBe(1);
+  const before = await googleCalls(page);
 
   await openFilters(page);
-  await page.locator("label", { hasText: "Classroom" }).click();
+  await page.locator("#filters-panel label", { hasText: "Classroom" }).click();
   await page.locator("#ages-button").click();
   await page.locator("#ages-listbox [data-value='4-6']").click();
-  await page.locator("label", { hasText: /^10$/ }).click();
   await page.locator("#interest-chips label", { hasText: "Nature" }).click();
-  await page.locator("label", { hasText: /^Indoors$/ }).click();
-  await page.locator("label", { hasText: "°C" }).click();
+  await page.locator("#filters-panel label", { hasText: /^Indoors$/ }).click();
+  await page.locator("#filters-panel label", { hasText: "°C" }).click();
   await page.locator("[data-explore-day='1']").click();
-  expect(await googleCalls(page)).toEqual(["fetchFields"]);
-  // No map is created before a search: a map is a billed load.
-  expect(await page.evaluate(() => window.fakeMapCount)).toBe(0);
-  await expect(page.locator("#explore-map")).toBeHidden();
-  await expect(page.locator("#map-empty")).toBeVisible();
+  await closeFilters(page);
+  expect(await googleCalls(page)).toEqual(before);
 });
 
-test("one press with the defaults is 6 searches, 1 route matrix and 1 map; pressing again adds none", async ({ page }, testInfo) => {
+test("a visit searches once: 6 searches, 1 route matrix and 1 map, and a return visit does the same", async ({ page }, testInfo) => {
   await open(page, testInfo);
   await pickAddress(page);
   await explore(page);
@@ -115,48 +116,153 @@ test("one press with the defaults is 6 searches, 1 route matrix and 1 map; press
   expect(await googleCalls(page)).toEqual(expected);
   expect(await page.evaluate(() => window.fakeMapCount)).toBe(1);
 
-  await explore(page);
-  await expect(page.locator(".place-card")).toHaveCount(6);
+  // Moving around the app and between interests sends nothing.
+  await showView(page, "weather");
+  await showView(page, "my-week");
+  await showView(page, "explore");
   await page.locator("#explore-chips label", { hasText: "Nature" }).click();
   await expect(page.locator(".place-card")).toHaveCount(2);
+  await page.locator("#explore-chips label", { hasText: "All" }).click();
+  await expect(page.locator(".place-card")).toHaveCount(6);
+  expect(await googleCalls(page)).toEqual(expected);
+
   await page.reload();
-  await expect(page.locator(".now-temp")).toBeAttached();
-  expect(await googleCalls(page)).toEqual(["fetchFields"]);
+  await explore(page);
+  await expect.poll(() => calledTimes(page, "computeRouteMatrix")).toBe(1);
+  expect(await googleCalls(page)).toEqual(expected);
+});
+
+test("opening straight on another page never searches; Explore searches when it's opened", async ({ page }, testInfo) => {
+  testInfo.api = await mockApis(page, { config: GOOGLE_CONFIG, storage: SAVED });
+  await page.goto("/#my-week");
+  await expect(page.locator("#plan-weather, .plan-weather").first()).toBeAttached();
+  expect(await calledTimes(page, "searchNearby")).toBe(0);
+  expect(await page.evaluate(() => window.fakeMapCount)).toBe(0);
+  await showView(page, "weather");
+  await expect(page.locator(".now-temp")).toBeVisible();
+  expect(await calledTimes(page, "searchNearby")).toBe(0);
+
+  await showView(page, "explore");
+  await explore(page);
+  expect(await calledTimes(page, "searchNearby")).toBe(6);
+  await expect.poll(() => page.evaluate(() => window.fakeMapCount)).toBe(1);
+  expect((await page.locator("#explore-map").boundingBox()).height).toBeGreaterThan(200);
+});
+
+test("the starting point is asked for once, and then saved until it's changed", async ({ page }, testInfo) => {
+  await open(page, testInfo);
+  await expect(page.locator("#setup")).toBeVisible();
+  await expect(page.locator("#address-label")).toHaveText("Where's home?");
+  await page.locator("#location-form label", { hasText: "Classroom" }).click();
+  await expect(page.locator("#address-label")).toHaveText("Where's your school?");
+  await pickAddress(page);
+  await explore(page);
+  await expect(page.locator("#setup")).toBeHidden();
+  await expect(page.locator("gmp-place-autocomplete")).toBeHidden();
+  expect(await settings(page)).toMatchObject({ mode: "classroom", location: { kind: "place", placeId: "ChIJfakeNewtonPlaceId" } });
+
+  await page.reload();
+  await explore(page);
+  await expect(page.locator("#setup")).toBeHidden();
+  await expect(page.locator("#location-line")).toContainText("221 Washington St");
+
+  // Keeping the address changes nothing and sends nothing.
+  const before = await googleCalls(page);
+  await page.locator(".explore-side [data-change-base]").click();
+  await expect(page.locator("#setup")).toBeVisible();
+  await expect(page.locator(".setup-photos")).toBeHidden();
+  await expect(page.locator("#setup-current")).toContainText("221 Washington St");
+  await page.getByRole("button", { name: "Keep this address" }).click();
+  await expect(page.locator("#setup")).toBeHidden();
+  await expect(page.locator(".place-card").first()).toBeVisible();
+  await expect(page.locator(".explore-side [data-change-base]")).toBeFocused();
+  expect(await googleCalls(page)).toEqual(before);
+
+  // Picking another one searches from there.
+  await page.locator(".explore-side [data-change-base]").click();
+  await page.evaluate(() => window.fakePickAddress());
+  await expect(page.locator("#setup")).toBeHidden();
+  await explore(page);
+  expect(await calledTimes(page, "searchNearby")).toBe(12);
+});
+
+test("Change works from the Weather page, and the example and device position are for this visit only", async ({ page, context }, testInfo) => {
+  await context.grantPermissions(["geolocation"]);
+  await context.setGeolocation({ latitude: 42.35, longitude: -71.21 });
+  await open(page, testInfo, { storage: SAVED });
+  await explore(page);
+  await showView(page, "weather");
+  await page.locator("#weather [data-change-base]").click();
+  await expect(page.locator("#setup")).toBeVisible();
+  await expect(page.locator('.view[data-view="explore"]')).toBeVisible();
+
+  await page.getByRole("button", { name: "Use my location this time" }).click();
+  await expect(page.locator("#location-line")).toHaveText("📍 Your current location");
+  await explore(page);
+  await page.reload();
+  await expect(page.locator("#location-line")).toContainText("221 Washington St");
+
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await page.getByRole("button", { name: "Try an example" }).click();
+  await explore(page);
+  await page.reload();
+  await expect(page.locator("#setup")).toBeVisible();
+});
+
+test("each page speaks to whoever is exploring", async ({ page }, testInfo) => {
+  await open(page, testInfo, { storage: SAVED });
+  await explore(page);
+  await showView(page, "weather");
+  await expect(page.locator("#weather-subtitle")).toHaveText("What to expect before you head out.");
+  await showView(page, "my-places");
+  await expect(page.locator("#places-subtitle")).toHaveText("Places to explore together.");
+  await expect(page.locator("#places-list")).toContainText("to plan your next walk.");
+  await showView(page, "my-week");
+  await expect(page.locator("#plan-subtitle")).toHaveText("The week ahead.");
+
+  await showView(page, "explore");
+  await openFilters(page);
+  await page.locator("#filters-panel label", { hasText: "Classroom" }).click();
+  await closeFilters(page);
+  await showView(page, "weather");
+  await expect(page.locator("#weather-subtitle")).toHaveText("What to expect before taking the class out.");
+  await showView(page, "my-places");
+  await expect(page.locator("#places-subtitle")).toHaveText("Places for class walks.");
+  await expect(page.locator("#places-list")).toContainText("to plan your next class walk.");
+  await page.locator("#places-list").getByRole("link", { name: "Find places" }).click();
+  await expect(page.locator(".place-card").first()).toBeVisible();
+  await showView(page, "my-week");
+  await expect(page.locator("#plan-subtitle")).toHaveText("School days in the week ahead.");
+});
+
+test("Weather with no starting point offers a way to set one", async ({ page }, testInfo) => {
+  await open(page, testInfo);
+  await showView(page, "weather");
+  await page.locator("#weather-empty").getByRole("link", { name: "Set your starting point" }).click();
+  await expect(page.locator("#setup")).toBeVisible();
 });
 
 test("the map appears with the results, and an earlier search's map doesn't outlive them", async ({ page }, testInfo) => {
   await open(page, testInfo);
-  await expect(page.locator("#explore-status")).toContainText("Enter an address or use your location");
-  await expect(page.locator("#map-empty").getByRole("button", { name: "Try an example address" })).toBeVisible();
+  await expect(page.locator("#setup").getByRole("button", { name: "Try an example" })).toBeVisible();
   await pickAddress(page);
-  await expect(page.locator("#map-empty").getByRole("button", { name: "Try an example address" })).toBeHidden();
-  await expect(page.locator("#explore-status")).toContainText("Press Explore nearby to see places near 221 Washington St");
   await explore(page);
   await expect(page.locator("#explore-map")).toBeVisible();
   await expect(page.locator("#map-empty")).toBeHidden();
   const size = await page.locator("#explore-map").boundingBox();
   expect(size.height).toBeGreaterThan(200);
-  expect(await page.evaluate(() => window.fakeMarkers.filter((m) => m.map).length)).toBe(7);
+  await expect.poll(() => page.evaluate(() => window.fakeMarkers.filter((m) => m.map).length)).toBe(7);
 
-  // A new walking time starts over: the map goes until the next search.
+  // A new walking time starts over: the map goes until that search is back.
   await openFilters(page);
-  await page.locator("label", { hasText: /^20$/ }).click();
+  await page.locator("#filters-panel label", { hasText: /^20$/ }).click();
   await expect(page.locator("#explore-map")).toBeHidden();
-  await expect(page.locator("#map-empty")).toBeVisible();
   await expect(page.locator(".place-card")).toHaveCount(0);
-});
-
-test("a map is never created in a hidden box: leaving Explore mid-search draws it on return", async ({ page }, testInfo) => {
-  await open(page, testInfo);
-  await pickAddress(page);
-  await showView(page, "weather");
-  await page.evaluate(() => document.querySelector("#find").click());
-  await expect.poll(() => page.evaluate(() => window.fakeGoogleCalls.filter((c) => c.call === "computeRouteMatrix").length)).toBe(1);
-  expect(await page.evaluate(() => window.fakeMapCount)).toBe(0);
-  await showView(page, "explore");
-  await expect(page.locator(".place-card").first()).toBeVisible();
-  await expect.poll(() => page.evaluate(() => window.fakeMapCount)).toBe(1);
-  expect((await page.locator("#explore-map").boundingBox()).height).toBeGreaterThan(200);
+  await closeFilters(page);
+  await explore(page);
+  await expect(page.locator("#explore-map")).toBeVisible();
+  expect(await page.evaluate(() => window.fakeMapCount)).toBe(1);
 });
 
 test("a marker selects its card and shows a preview; a card selects its marker", async ({ page }, testInfo) => {
@@ -206,7 +312,7 @@ test("a card is short: name, walk, category, one idea, and two actions", async (
   await expect(dialog.getByRole("button", { name: "Add to my week" })).toBeVisible();
 });
 
-test("filters: a summary of what changed, and Reset puts back the defaults without any search", async ({ page }, testInfo) => {
+test("filters: a summary of what changed, and Reset puts back the defaults", async ({ page }, testInfo) => {
   await open(page, testInfo);
   await pickAddress(page);
   await expect(page.locator("#filters-summary")).toBeHidden();
@@ -214,25 +320,28 @@ test("filters: a summary of what changed, and Reset puts back the defaults witho
   await expect(page.locator("#filters-toggle")).toHaveAttribute("aria-expanded", "true");
   await page.locator("#ages-button").click();
   await page.locator("#ages-listbox [data-value='2-3']").click();
-  await page.locator("label", { hasText: /^10$/ }).click();
+  await page.locator("#filters-panel label", { hasText: /^10$/ }).click();
   await page.locator("#interest-chips label", { hasText: "Nature" }).click();
   await expect(page.locator("#filters-active")).toHaveText("2–3 · 10 min walk · Nature");
   await expect(page.locator("#filters-count")).toHaveText("3");
+  await closeFilters(page);
+  await explore(page);
 
   await page.getByRole("button", { name: "Reset" }).click();
   await expect(page.locator("#filters-summary")).toBeHidden();
   await expect(page.locator("#filters-count")).toBeHidden();
   expect(await settings(page)).toMatchObject({ ages: "2-6", minutes: 15, interest: "all" });
-  expect(await googleCalls(page)).toEqual(["fetchFields"]);
+  await explore(page);
 });
 
 test("Classroom: remembered across a reload, kept by Reset, with its reminders in place", async ({ page }, testInfo) => {
   await open(page, testInfo);
   await pickAddress(page);
   await openFilters(page);
-  await page.locator("label", { hasText: "Classroom" }).click();
-  await page.locator("label", { hasText: /^10$/ }).click();
+  await page.locator("#filters-panel label", { hasText: "Classroom" }).click();
+  await page.locator("#filters-panel label", { hasText: /^10$/ }).click();
   await expect(page.locator("#filters-active")).toHaveText("Classroom · 10 min walk");
+  await closeFilters(page);
 
   await page.getByRole("button", { name: "Reset" }).click();
   await expect(page.locator("#filters-active")).toHaveText("Classroom");
@@ -279,19 +388,20 @@ test("a hazard day: the short warning, outdoor cards say so, and the full warnin
   await expect(page.locator("#wear")).toContainText("What to wear");
 });
 
-test("a refresh keeps every saved setting and searches nothing", async ({ page }, testInfo) => {
+test("a refresh keeps every saved setting and opens on places", async ({ page }, testInfo) => {
   await open(page, testInfo);
   await pickAddress(page);
   await openFilters(page);
-  await page.locator("label", { hasText: /^20$/ }).click();
+  await page.locator("#filters-panel label", { hasText: /^20$/ }).click();
   await page.locator("#interest-chips label", { hasText: "Movement" }).click();
-  await page.locator("label", { hasText: "°C" }).click();
+  await page.locator("#filters-panel label", { hasText: "°C" }).click();
   await page.reload();
   await expect(page.locator(".now-temp")).toBeAttached();
   await expect(page.locator("#location-line")).toContainText("221 Washington St");
   await expect(page.locator("#filters-active")).toHaveText("20 min walk · Movement");
   await expect(page.locator("input[name=unit][value=C]")).toBeChecked();
-  expect(await googleCalls(page)).toEqual(["fetchFields"]);
+  await explore(page);
+  expect(await calledTimes(page, "searchNearby")).toBe(1);
 });
 
 test("an old setting with no interest gets the new default, and the rest is kept", async ({ page }, testInfo) => {
@@ -301,29 +411,31 @@ test("an old setting with no interest gets the new default, and the rest is kept
   expect(await settings(page)).toMatchObject({ unit: "C", mode: "classroom", interest: "all" });
 });
 
-test("keyboard: Filters, its controls and the search all work without a pointer", async ({ page }, testInfo) => {
+test("keyboard: Filters, its controls and the places all work without a pointer", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "keyboard");
   await open(page, testInfo);
   await pickAddress(page);
-  await page.locator("#locate").focus();
+  await explore(page);
+  await page.locator(".explore-side [data-change-base]").focus();
   await page.keyboard.press("Tab");
   await expect(page.locator(".now-line a")).toBeFocused();
-  await page.keyboard.press("Tab");
-  await expect(page.locator("#find")).toBeFocused();
-  await page.keyboard.press("Tab");
-  await expect(page.locator("#filters-toggle")).toBeFocused();
+  await page.locator("#filters-toggle").focus();
   await page.keyboard.press("Enter");
   await expect(page.locator("#filters-panel")).toBeVisible();
+  await expect(page.locator("#filters-toggle")).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("Tab");
-  await expect(page.locator("input[name=mode]:checked")).toBeFocused();
+  await expect(page.locator("#filters-close")).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.locator("#filters-panel input[name=mode]:checked")).toBeFocused();
   await page.keyboard.press("ArrowRight");
-  await expect(page.locator("input[name=mode][value=classroom]")).toBeChecked();
-  const outline = await page.locator("input[name=mode]:checked + span").evaluate((el) => getComputedStyle(el).outlineStyle);
+  await expect(page.locator("#filters-panel input[name=mode][value=classroom]")).toBeChecked();
+  const outline = await page.locator("#filters-panel input[name=mode]:checked + span").evaluate((el) => getComputedStyle(el).outlineStyle);
   expect(outline).toBe("solid");
-  await page.locator("#find").focus();
-  await page.keyboard.press("Enter");
-  await expect(page.locator(".place-card").first()).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(page.locator("#filters-panel")).toBeHidden();
+  await expect(page.locator("#filters-toggle")).toBeFocused();
+  // Walking times arriving redraw the list, so this waits for them.
+  await expect(page.locator(".place-card", { hasText: "min walk" }).first()).toBeVisible();
   await page.locator(".place-card .place-title").first().focus();
   await page.keyboard.press("Enter");
   await expect(page.locator("#place-dialog")).toBeVisible();
@@ -332,15 +444,12 @@ test("keyboard: Filters, its controls and the search all work without a pointer"
   await expect(page.locator(".place-card .place-title").first()).toBeFocused();
 });
 
-test("use my location: a small button with a real name, that says when it's working", async ({ page, context }, testInfo) => {
+test("use my location: a button with a real name, that says when it's working", async ({ page, context }, testInfo) => {
   await context.grantPermissions(["geolocation"]);
   await context.setGeolocation({ latitude: 42.35, longitude: -71.21 });
   await open(page, testInfo);
-  const locate = page.getByRole("button", { name: "Use my location" });
-  await expect(locate).toHaveAttribute("title", "Use my location");
-  await locate.click();
+  await page.getByRole("button", { name: "Use my location this time" }).click();
   await expect(page.locator("#location-line")).toHaveText("📍 Your current location");
-  await expect(locate).toBeEnabled();
   await expect(page.locator("#location-status")).toBeEmpty();
 });
 

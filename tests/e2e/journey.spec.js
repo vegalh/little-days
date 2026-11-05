@@ -2,7 +2,7 @@
 // deleting saved data (PRD.md 7.9, 7.16–7.18). Google is the fake and every other
 // request is mocked: these show the page's behavior, not that the real APIs work.
 const { test, expect } = require("@playwright/test");
-const { mockApis, showView, openFilters, chooseInterest, GOOGLE_CONFIG } = require("./mock-apis.js");
+const { mockApis, showView, openFilters, closeFilters, chooseInterest, GOOGLE_CONFIG } = require("./mock-apis.js");
 
 test.afterEach(async ({}, testInfo) => {
   expect(testInfo.api?.unmocked ?? []).toEqual([]);
@@ -17,7 +17,6 @@ async function start(page, testInfo, storage = {}) {
 }
 async function search(page, label) {
   await chooseInterest(page, label);
-  await page.getByRole("button", { name: "Explore nearby" }).click();
   await expect(page.locator(".place-card").first()).toBeVisible();
 }
 const count = (page, name) => page.evaluate((n) => window.fakeGoogleCalls.filter((c) => c.call === n).length, name);
@@ -51,7 +50,8 @@ test("one detail map is reused; routes and markers aren't redone for small chang
   // Changing units or the day updates the list without rebuilding the markers.
   const markersBefore = await page.evaluate(() => window.fakeMarkers.length);
   await openFilters(page);
-  await page.locator("label", { hasText: "°C" }).click();
+  await page.locator("#filters-panel label", { hasText: "°C" }).click();
+  await closeFilters(page);
   await showView(page, "weather");
   await page.locator("#week .day").nth(1).click();
   await showView(page, "explore");
@@ -92,7 +92,7 @@ test("journal: each visit is kept, the card shows Explored, and the next perspec
 
   // Explored places stay in results, and the Explored filter finds them.
   await openFilters(page);
-  await page.locator("label", { hasText: "Not explored yet" }).click();
+  await page.locator("#filters-panel label", { hasText: "Not explored yet" }).click();
   await expect(page.locator(".place-card")).toHaveCount(0);
   await page.locator("#filters-panel label", { hasText: /^Explored$/ }).click();
   await expect(page.locator(".place-card")).toHaveCount(1);
@@ -149,6 +149,7 @@ test("My Places: tabs with counts, history, visit again, and remove", async ({ p
 test("a saved place not in the results is fetched from Google once its section is on screen", async ({ page }, testInfo) => {
   await start(page, testInfo, {
     "littleDays.places.v2": JSON.stringify({ "fake-library-1": { status: "want", category: "art-culture", saved: "2026-11-01", visits: [] } }),
+    "littleDays.settings.v2": JSON.stringify({ interest: "nature" }), // so it isn't in the results
   });
   expect(await count(page, "fetchFields")).toBe(1); // the picked address only
   await showView(page, "my-places");
@@ -214,7 +215,7 @@ test("Delete my saved data removes everything Little Days stored", async ({ page
   await expect(page.locator(".your-data")).toContainText("never stores your device's position");
   await page.locator("#delete-data").click();
   await page.waitForLoadState("load");
-  await expect(page.locator("#explore-status")).toContainText("Enter an address or use your location");
+  await expect(page.locator("#setup")).toBeVisible();
   const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("littleDays.")));
   // After the reload only defaults may be written again: no places, journal, plan or location.
   expect(keys.filter((k) => !/settings|plan|places/.test(k))).toEqual([]);
@@ -228,8 +229,8 @@ test("one results map for the whole visit", async ({ page }, testInfo) => {
   await search(page, "Nature");
   // A new walking time starts a new search, but the map stays the same one.
   await openFilters(page);
-  await page.locator("label", { hasText: /^20$/ }).click();
-  await page.getByRole("button", { name: "Explore nearby" }).click();
+  await page.locator("#filters-panel label", { hasText: /^20$/ }).click();
+  await closeFilters(page);
   await expect(page.locator(".place-card").first()).toBeVisible();
   expect(await page.evaluate(() => window.fakeMapCount)).toBe(1);
 });

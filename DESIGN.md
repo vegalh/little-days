@@ -18,24 +18,24 @@ A neighborhood field guide: like a well-made nature journal with a real map tuck
 
 ## 2. Color
 
-A clean, warm, modern palette: primarily white with subtle warm-neutral accents and a soft olive green for selected states and primary actions. Minimal, mobile-first, and restrained — no decorative gradients, illustrations, or ornamental lines. The fonts, shapes and icons still broadly follow RootMap (sections 3–4).
+A clean, warm, modern palette: a warm paper page with white cards, subtle warm-neutral accents and a deep olive green for selected states and primary actions. Minimal, mobile-first, and restrained — no decorative gradients, illustrations, or ornamental lines. The fonts, shapes and icons still broadly follow RootMap (sections 3–4).
 
 Defined as CSS custom properties on `:root` in `style.css`. **`style.css` is the source of truth**: this table lists exactly what it defines. Component styles use the tokens, never raw hex values. Don't rename a token that's in use; add a new one only when a component needs it, and add it here.
 
 | Token | Value | Use |
 |---|---|---|
-| `--bg` | `#FFFFFF` | Page background |
+| `--bg` | `#FBF8F1` | Page background (warm paper) |
 | `--surface` | `#FFFFFF` | Cards, controls, status areas |
-| `--tint` | `#FAFAF8` | Soft off-white panels: Little Days notes, What to wear, the segmented-control track |
+| `--tint` | `#F3EFE4` | Soft off-white panels: Little Days notes, What to wear, the segmented-control track |
 | `--apricot` | `#FBEFD9` | Warm boxes: weather warnings, the route reminder |
 | `--peach` | `#F6D9A8` | Warm highlight (defined for accents) |
 | `--selected` | `#EAF0D8` | Selected pill and day, selected place card, "Use my location" fill |
 | `--ink` | `#26251F` | Main text |
-| `--ink-soft` | `#77766F` | Secondary text, labels, unselected controls |
+| `--ink-soft` | `#66655C` | Secondary text, labels, unselected controls |
 | `--heading` | `#26251F` | Headings, logo, place and activity titles (same as body ink — headings get hierarchy from size and weight, not color) |
-| `--accent` | `#718C43` | Olive green: buttons, selected text, focus ring, markers, route line |
+| `--accent` | `#4B6B2E` | Deep olive, dark enough for AA as text and under white text: buttons, selected text, focus ring, markers, route line |
 | `--accent-ink` | `#FFFFFF` | Text on accent |
-| `--line` | `#EAE8E2` | Borders, dividers |
+| `--line` | `#E8E2D3` | Borders, dividers |
 | `--sky` | `#7FA7C9` | Rain/cool details (defined, not used yet) |
 | `--leaf-ink` | `#4B6B2E` | "Added ✓", status tags |
 | `--holiday` | `#96421A` | Holiday tags |
@@ -97,7 +97,7 @@ English sizes were rescaled down from the earlier (Caveat) sizes to line up with
 
 Little Days is **four views, one shown at a time**: **Explore** (with the search and the map), **Weather** (with the at-home ideas), **My Places** and **My week**. The URL hash chooses the view (`#explore`, `#weather`, `#my-places`, `#my-week`), so links like "More weather" and the browser's back button work without a router. The current tab has `aria-current="page"`: olive-green text with an olive-green underline in the top bar, bold olive-green in the phone's bottom bar. Switching views scrolls to the top. The footer (Your data) shows under every view.
 
-Explore has three parts, in this order in the page: search, map, places. Below 960px they stack in one column. From 960px the search and places share the left column (`minmax(360px, 5fr)`) and the map fills the right (`7fr`), sticky so it stays in view while the cards scroll. The search doesn't take a column of its own.
+Explore has three parts, in this order in the page: starting point, map, places. Below 960px they stack in one column. From 960px the starting point and places share the left column (`minmax(360px, 5fr)`) and the map fills the right (`7fr`), sticky so it stays in view while the cards scroll. The starting point doesn't take a column of its own.
 
 The section table below lists where each part lives.
 
@@ -115,13 +115,13 @@ The section table below lists where each part lives.
 ### Page order
 
 1. **Header**
-2. **Search** (Explore): the title "Little adventures, close to home.", then:
+2. **One-time step** (Explore, first visit and "Change"): three RootMap photos, the title "Let's find places to explore with children.", Who's exploring, the address question and field, "Use my location this time", "Try an example". "Change" shows only the address part, the current address and "Keep this address". Then every other visit, the **starting point**:
    1. Address field and location button, in one row
    2. Location line (once chosen)
    3. Compact weather line (once chosen)
-   4. "Explore nearby" and Filters, in one row
+   4. Filters and the interest chips, in one row under the map
    5. Filter summary (when something differs from the defaults)
-   6. Filters panel (collapsed)
+   6. Filters sheet (closed)
 3. **Map** (Explore): the map, or the Explore status in its slot.
 4. **Places** (Explore): interest tabs, one short line of notes, then the cards.
 5. **Weather** (`#weather`): Now, Next hours, the seven-day strip, then warnings and "What to wear" for the selected day.
@@ -140,10 +140,10 @@ The section table below lists where each part lives.
 
 ### Phone (under 720px): designed on its own
 
-- **First screen** (390 × 844): header, one-line title, search row, "Explore nearby" with Filters, and the map slot, with no scrolling. No supporting paragraph, and no controls card around the search.
+- **First screen** (390 × 844): on a first visit the one-time step, with no scrolling. After that: header, address line with "Change", weather line, map, and the first place in view. No search box and no supporting paragraph.
 - **Weather:** Now on top, Next hours as a sideways-swiping row of six columns, then the seven-day strip as a sideways-swiping row of compact day cards (112px wide, `scroll-snap-type: x mandatory`, the next card peeking in). Neither wraps into a tall grid, and the page itself never scrolls sideways. Warnings and "What to wear" follow, stacked.
 - **Explore:** map first, cards right below it, always together. There's no List/Map switch.
-  - **Map:** full width, `height: clamp(240px, 40dvh, 440px)`. Before a search the slot is smaller (`clamp(160px, 24dvh, 220px)`), with a pin icon and the Explore status on `--tint`. It's never a picture of a map. After a search it comes to the top of the screen, with the first card in view under it. It isn't sticky on phones: that would leave too little room for the cards.
+  - **Map:** full width, `height: clamp(208px, 30dvh, 280px)`. While places load the slot is smaller (`clamp(160px, 24dvh, 220px)`), with a pin icon and the Explore status on `--tint`. It's never a picture of a map. It isn't sticky on phones: that would leave too little room for the cards.
   - **Peek card:** tapping a marker shows a card pinned to the bottom of the map: number, name, walking time and "View details". Google's zoom control sits at the top right so it's never covered.
   - **Cards:** full width, 12px apart.
 - **Compact day cards** show day, date, icon, high/low, rain %, holiday and "Indoor day" tags, and the featured activity's photo, but not the condition text or activity name.
@@ -156,18 +156,18 @@ The section table below lists where each part lives.
 
 ### Controls
 
-The search has no card around it: it sits on the page, 8px between its rows. Labels in the Filters panel are above their fields, 14px / 600, 8px apart. Inputs are 44px tall on `--tint` with a `--line` border and 14px radius; the search row and its buttons are 48px.
+The one-time step has no card around it: it sits on the page, 8px between its rows, max 560px wide. Labels in the Filters sheet are above their fields, 14px / 600, 8px apart. Inputs are 44px tall on `--tint` with a `--line` border and 14px radius; the address field is 52px.
 
 **Location**
-- **One field.** Google's `<gmp-place-autocomplete>` draws its own border and background on the element, so that's where they're set: `background-color: --tint`, `border: 1px solid --line`, `border-radius: --radius-small`, `font-family`, `color-scheme: light`. `::part(input)` is left plain (`background: transparent`, `border: 0`, `text-overflow: ellipsis`, `!important` to win over Google's part styles). Putting a border on the part as well gives a box in a box. Google's icon and clear button stay in their own 48px slots, which keeps them vertically centered and 12px from the text. `::part(focus-ring)` gets `--accent` as a `border-color` (not `outline-color`, which the part doesn't expose); `::part(prediction-list)` gets `--surface`, a `--line` border and 14px radius; `::part(prediction-item-selected)` gets `--selected`. Google's suggestion attribution is left as it is. Chromium only applies `::part()` rules from a `<link>` stylesheet once that stylesheet is toggled after the custom element upgrades, so `google.js` briefly disables and re-enables the stylesheet (`refreshPartStyles()`) once the Autocomplete element is ready. The label "Address or place" is visually hidden; the placeholder is the visible prompt.
-- **"Use my location"**: a 48px secondary icon button beside the field, with its name as `aria-label` and `title`. While asking: disabled, and the location status says "Finding you…".
-- **"Try an example address"**: a quiet text button under the Explore status in the empty map slot, only while Google Maps is available and no location is chosen. It fills the field with "221 Washington Street, Newton, MA 02458", sets the location with one Google text search (PRD.md 7.1), and marks the location line "Example address" so it's never mistaken for the adult's own location.
+- **One field.** Google's `<gmp-place-autocomplete>` draws its default box on the element (`border: 1px solid black`, 3px radius), so the one edge belongs there: `border: 0`, `height: 52px`, 16px radius, `--surface`, `font-family`, `color-scheme: light`, and a `box-shadow` as the resting edge. On `:focus-within` that edge gives way to `::part(focus-ring)` (`--accent` as a `border-color`), so two lines never show. `::part(input)` stays plain (`background: transparent`, `border: 0`, `text-overflow: ellipsis`, `!important` to win over Google's part styles). A border on the part as well gives a box in a box. `::part(prediction-list)` gets `--surface`, a `--line` border and 14px radius; `::part(prediction-item-selected)` gets `--selected`. Google's suggestion attribution is left as it is. At 450px and under, the first typed character opens Google's own full-window dialog, with suggestions above the keyboard; it's left as it is. `google.js` still runs `refreshPartStyles()` once the element is ready. The question above it ("Where's home?" or "Where's your school?") is the field's visible label.
+- **"Use my location this time"**: a text button under the field, for this visit only: the device's position is never saved. While asking: disabled, and the location status says "Finding you…".
+- **"Try an example"**: a quiet text button in the one-time step, only while Google Maps is available and no location is chosen. It fills the field with "221 Washington Street, Newton, MA 02458", sets the location with one Google text search (PRD.md 7.1), and marks the location line "Example address" so it's never mistaken for the adult's own location.
 - **Location chosen**: one line under the field, "📍 {address}" in 14px `--ink-soft`, cut short with an ellipsis (the full address is its `title`). "· Example address" stays visible after the ellipsis.
-- **If Google Maps is unavailable** (not configured, refused or failed), the Autocomplete is replaced by the earlier city search: a text field named "City (for weather)", placeholder "e.g. Boston", with the browser's suggestion list (`<datalist>`, Open-Meteo geocoding) and a secondary "Show weather" button in the same row. A note under it in 14px: "Maps aren't available right now, so you can check the weather by city." "Explore nearby" is hidden, and nothing in the fallback looks like place discovery: no example button, no map, and the map slot shows the setup or unavailable message.
+- **If Google Maps is unavailable** (not configured, refused or failed), the Autocomplete is replaced by the earlier city search: a text field named "City (for weather)", placeholder "e.g. Boston", with the browser's suggestion list (`<datalist>`, Open-Meteo geocoding) and a secondary "Show weather" button in the same row. A note under it in 14px: "Maps aren't available right now, so you can check the weather by city." Nothing in the fallback looks like place discovery: no example button, no map, and the map slot shows the setup or unavailable message.
 
 **Compact weather line**: one line, with no box on an ordinary day: "☀️ 73° · Nice for exploring", or the day's first warning in a few words after a `--warning` "⚠︎" ("🌧️ 52° · ⚠︎ Rain possible"), and "More weather" at the right, linking to `#weather`. On a hazard day it gets an `--apricot` box, 14px radius, with 600-weight text so it can't be missed. The friendly words only appear when today has no hazard, caution or note. While loading: "Getting the weather…" in `--ink-soft`.
 
-**Filters**: a secondary button beside "Explore nearby" (`aria-expanded`, `aria-controls`), with a small `--accent` count badge when something differs from the defaults. It opens a panel in the page, not a dialog, between two `--line` rules, with no background or card, 16px between groups, in this order: Who's exploring, Ages, Walking time, interests, the day, Setting, Explored, Temperature. Pressing "Explore nearby" closes it. Under the buttons, when anything differs: the summary line ("Classroom · 10 min walk · Nature") in 14px `--ink-soft`, and "Reset" as a text button at its right. Classroom alone shows in the summary with no Reset, because Reset keeps the mode.
+**Filters**: a secondary button beside the interest chips (`aria-expanded`, `aria-controls`), with a small `--accent` count badge when something differs from the defaults. It opens a `<dialog>`: a bottom sheet on phones, 16px between groups, in this order: Who's exploring, Ages, Walking time, interests, the day, Setting, Explored, Temperature, with "Show places" at the foot. Under the chips, when anything differs: the summary line ("Classroom · 10 min walk · Nature") in 14px `--ink-soft`, and "Reset" as a text button at its right. Classroom alone shows in the summary with no Reset, because Reset keeps the mode.
 
 **Ages**: a custom dropdown ("collapsible listbox" pattern) with label "Ages": a button showing the current value with a caret, opening a themed `--surface` listbox (`--line` border, 12px radius, the one soft shadow) below it; the selected option is `--selected`. Arrow keys, Home/End, Enter/Space, Escape and outside clicks work as expected. A real `<select id="ages">` is kept `hidden` for state and fires its native `change` event when an option is picked, so the rest of the app reads Ages the same way it always has.
 
@@ -179,7 +179,7 @@ The search has no card around it: it sits on the page, 8px between its rows. Lab
 
 **°F / °C switch**: two radio buttons styled as a segmented control inside a `<fieldset>` with the legend "Temperature", in Filters.
 
-**Primary button**: "Explore nearby" with the compass icon, 48px tall, filling the row beside Filters. The only filled button in the search. While searching: disabled, "Searching…".
+**Place cards and photos**: each card is an entry with a rule between entries, not a box: a 104 × 128 RootMap activity photo chosen by category (`photos` in `explore.js`) beside the words. The photos are never of the place, and a line under the list says so.
 
 ### Weather
 

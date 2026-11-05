@@ -16,15 +16,14 @@ test("中文: the switch saves the choice, and the whole page comes back in Chin
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
   await expect(page.locator("#lang-switch")).toHaveText("EN");
   await expect(page.locator(".site-nav")).toContainText("探索");
-  await expect(page.locator("h1")).toHaveText("发现身边的小小冒险");
-  await expect(page.getByRole("button", { name: "探索附近" })).toBeVisible();
+  await expect(page.locator("#setup-heading")).toHaveText("找找带孩子探索的好地方。");
+  await expect(page.locator("#address-label")).toHaveText("你家在哪里？");
   expect(await page.evaluate(() => window.fakeGoogleLanguage)).toBe("zh-CN");
   expect(JSON.parse(await page.evaluate(() => localStorage.getItem("littleDays.settings.v2"))).lang).toBe("zh");
 
   await page.evaluate(() => window.fakePickAddress());
   await expect(page.locator("#now-line")).toContainText("预报有雾");
   await chooseInterest(page, "自然");
-  await page.getByRole("button", { name: "探索附近" }).click();
   await expect(page.locator(".place-card").first()).toContainText("步行");
   await page.getByRole("button", { name: "Test Park的详情" }).click();
   await expect(page.locator("#place-dialog")).toContainText("孩子们可能会注意到");
