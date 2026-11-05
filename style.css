@@ -806,6 +806,8 @@ dialog p { margin: 8px 0 0; }
 .data-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .data-status { margin: 8px 0 0; color: var(--ink); }
 .data-status:empty { display: none; }
+.delete-data { margin: 24px 0 0; padding-top: 16px; border-top: 1px solid var(--line); }
+.delete-data button { display: block; margin-top: 8px; }
 
 /* More controls: ages, who's exploring, walking time, interests, Find */
 

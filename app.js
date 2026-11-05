@@ -484,9 +484,10 @@ document.addEventListener("change", (event) => {
   if (name === "places-tab") renderMyPlaces();
   if (name === "explore-view") {
     applyView();
-    // Moving between the list and the map keeps the keyboard in the same place.
-    if (value === "map") document.querySelector("#map-heading").focus();
-    else placeList.querySelector("button")?.focus();
+    // Bring the chosen view up under the switch, and keep the keyboard in the same place.
+    document.querySelector(".view-switch").scrollIntoView({ block: "start", behavior: reducedMotion() ? "auto" : "smooth" });
+    if (value === "map") document.querySelector("#map-heading").focus({ preventScroll: true });
+    else placeList.querySelector("button")?.focus({ preventScroll: true });
   }
 });
 
