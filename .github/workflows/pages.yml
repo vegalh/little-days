@@ -1,0 +1,59 @@
+# Deploys Little Days to GitHub Pages (PRD.md 9.5). PROPOSED: it runs only when started
+# by hand (Actions → "Deploy to GitHub Pages" → Run workflow), never on push.
+# config.js is written here from repository secrets; it is never committed.
+# The browser key ends up in the published config.js, as every browser key does in its
+# page: what protects it is the website and API restrictions in Google Cloud.
+name: Deploy to GitHub Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer run waits instead of cancelling one in progress.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run the logic tests
+        run: node --test
+
+      # Only the site itself: no tests, tools, design files, docs or package files.
+      - name: Copy the site files
+        run: |
+          mkdir _site
+          cp index.html style.css app.js google.js explore.js recommend.js advice.js plan.js guides.js celebrations.js activities.js _site/
+          cp -R images _site/
+
+      - name: Write config.js from secrets
+        env:
+          GOOGLE_MAPS_BROWSER_KEY: ${{ secrets.GOOGLE_MAPS_BROWSER_KEY }}
+          GOOGLE_MAPS_MAP_ID: ${{ secrets.GOOGLE_MAPS_MAP_ID }}
+        run: |
+          if [ -z "$GOOGLE_MAPS_BROWSER_KEY" ] || [ -z "$GOOGLE_MAPS_MAP_ID" ]; then
+            echo "Set the GOOGLE_MAPS_BROWSER_KEY and GOOGLE_MAPS_MAP_ID repository secrets first." >&2
+            exit 1
+          fi
+          node -e 'const config = { googleMapsKey: process.env.GOOGLE_MAPS_BROWSER_KEY, googleMapId: process.env.GOOGLE_MAPS_MAP_ID };
+            require("fs").writeFileSync("_site/config.js", "window.LITTLE_DAYS_CONFIG = " + JSON.stringify(config) + ";\n");'
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

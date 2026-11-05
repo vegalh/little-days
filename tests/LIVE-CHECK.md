@@ -44,8 +44,19 @@ Never paste a key into this file, a test, or a commit.
 | 23 | Storage | DevTools → Application → Local Storage: `littleDays.places.v1` holds only place IDs and `{ status, visits, note }`, no names or addresses. | |
 | 24 | Billing view | Metrics show Places API (New) and Routes API requests matching what you did, and nothing unexpected. | |
 
+## Phase 4–5 checks
+
+| # | Check | How to confirm it's real | Pass? |
+|---|---|---|---|
+| 25 | One detail map | Open two places: the dialog keeps one map (one `.gm-style` inside `#place-map`), the old route line is gone, the new one is drawn. | |
+| 26 | Routes reused | Reopen the first place: Network shows no new `ComputeRoutes`. | |
+| 27 | Markers kept | Switch °F/°C and the day: no new Google requests, the same marker elements stay on the map. | |
+| 28 | Saved place details | Save a place, reload, scroll to My Places: one `GetPlace` loads its real name and address. | |
+| 29 | Results map reused | Change the walking time and search again: still one results map. | |
+
 ## Runs
 
 | Date | Browser | Key | Checks passed | Notes |
 |---|---|---|---|---|
+| 2026-11-04 (Phase 5) | Chromium (Playwright), localhost:8472 | dev | 1, 2, 3, 5, 16, 17, 18, 21, 25, 26, 27, 28 | One address pick (39 Autocomplete requests, 1 GetPlace), 1 Nature search, 1 matrix (5), 2 ComputeRoutes for 3 openings, 2 maps in total, 0 requests for °C + day change (same 10 marker elements), Save → reload → 1 GetPlace for the address and 1 for the saved place. The saved-place request fired before the script scrolled, most likely because the browser restored the scroll position; the wait-until-visible behavior is checked only with mocks. 29 not run live (mocked only). |
 | 2026-11-04 | Chromium (Playwright), localhost:8472 | dev | 1, 2, 3, 10 (via a blocked referrer), 16, 17, 18, 21 | One address pick, one Nature search (10 places), one route matrix (5 destinations), one route. All `200`. Fixed Google's marker deprecations afterwards (`glyphText`, pin as content, `gmp-click`); that fix is checked with mocks only. Not run: 4–9, 11–15, 19, 20, 22–24. |

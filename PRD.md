@@ -450,7 +450,7 @@ nature: {
 }
 ```
 
-- Prompts invite observation, language, movement, the senses, independence and child-led discovery, in plain words with no academic terms. Each one is a short sentence.
+- Prompts invite observation, language, movement, the senses, independence and child-led discovery, in plain words with no academic terms. Each one is a short sentence, worded as an invitation ("if your child is interested", "wonder together"), never a task to complete. Every guide starts with: "Ideas, not tasks: follow what your child notices, and stop when they've had enough."
 - **Perspectives:** each guide has three sets, one per visit, each with its own focus (for a bakery: shapes and colors, then smells and ingredients, then people and their jobs). Place details show them as three tabs, "First visit", "Second visit", "Third visit", with the first chosen. From Phase 4 the starting tab is the number of recorded visits to that place (7.17) modulo three, so each visit brings the next perspective.
 - The card shows one "notice" line as its exploration idea. The detail shows the full set.
 - `activities` are hand-picked RootMap IDs. In the detail they appear under "At home afterwards", filtered by weather and age (7.5), and open the activity details (7.8).
@@ -563,7 +563,9 @@ Everything is stored in `localStorage` on this device, and every read and write 
 - **Settings migration:** if `littleDays.settings.v2` doesn't exist, `littleDays.settings.v1` is read: its `unit` is kept and its `city` becomes `{ kind: "city", name: city }`, so a returning visitor still gets their weather. The rest takes the defaults (7.1). The result is saved as v2 and v1 is removed.
 - **What goes where:** Google gets the address text typed into Autocomplete and the search location (for nearby search and routes). Open-Meteo gets latitude and longitude **rounded to 2 decimals** (about 1 km), which is plenty for a forecast, and in the fallback the city name typed. Nager.Date gets the country code and year. The age range, mode, notes, themes and My Places never leave the device.
 - No analytics, no cookies set by Little Days, no backend.
-- **Delete my saved data:** a button in the footer's "Your data" area. After `confirm("Delete your saved places, journal entries, plan and choices from this browser? This can't be undone.")` it removes every `littleDays.*` key, old versions included, and reloads the page.
+- **Export my data:** a button in "Your data" that downloads `little-days-data-YYYY-MM-DD.json`: `{ format: "little-days-data", version: 1, exported, settings, places, plan }`, exactly what Little Days stores (settings, My Places with the journal, My week). It never contains an API key (none is stored) or Google place details (only place IDs). The page then says "Your data was saved to a file. It contains your journal, so keep it somewhere private."
+- **Import my data:** a button that opens a file picker. **Importing replaces** what's saved in this browser; it doesn't merge (the page says so next to the buttons). The file is checked first (under 1 MB, valid JSON, `format` and `version` match, all three parts present), then every part goes through the same cleaning as stored data, and only safe IDs are accepted as keys (no `__proto__`, `constructor` and so on). A file that fails says why and "Your saved data hasn't changed." A valid one asks `confirm("Replace everything Little Days has saved in this browser with this backup ({n} places)? This can't be undone.")`. If storage refuses a write (full or blocked), what was there before is put back and the page says "The backup couldn't be saved in this browser (storage may be full or blocked). Your saved data hasn't changed." After a successful import the page reloads.
+- **Delete my saved data:** a button set apart on its own line in "Your data". After `confirm("Delete your saved places, journal entries, plan and choices from this browser? This can't be undone.")` it removes every `littleDays.*` key, old versions included, and reloads the page.
 - **Your data** in the footer, as a short list: saved places, journal entries, plan and choices are stored only in this browser, with no accounts or sync; location permission is optional and asked only for "Use my location", and the device's position is never stored; place details, maps and walking routes come from Google Maps, and Little Days keeps only Google's place IDs; weather comes from Open-Meteo and holidays from Nager.Date; please don't write children's names in notes or journal entries.
 
 ## 8. Page states
@@ -688,53 +690,93 @@ Changing the unit updates every temperature, wind, rain amount and distance righ
 
 ### 9.2 Google Cloud setup
 
-1. **Project and billing.** In the Google Cloud console, create a project (e.g. "little-days") and link a billing account. Maps Platform doesn't work without billing.
-2. **Enable exactly three APIs** (APIs & Services → Library): **Maps JavaScript API**, **Places API (New)** and **Routes API**. Not the legacy "Places API", "Directions API" or "Distance Matrix API".
-3. **Map ID.** Google Maps Platform → Map management → create a JavaScript map ID (vector or raster). It's needed for `AdvancedMarkerElement`. During local development Google's `DEMO_MAP_ID` can be used instead.
-4. **Two browser keys** (Google Maps Platform → Keys & Credentials → Create credentials → API key). Neither is a secret once in a page, so the restrictions are what protect them:
+Project: `little-days-513800`. Done already: billing, the three APIs, and the dev key (`little-days-dev`, websites `http://localhost:8472/*`, the three APIs).
 
-   | Key | Application restriction: Websites | API restriction |
+1. **Enable exactly three APIs:** Maps JavaScript API, Places API (New), Routes API. Not the legacy "Places API", "Directions API" or "Distance Matrix API".
+2. **Map ID** (needed in production for the numbered markers): Google Maps Platform → Map management → Create map ID → type **JavaScript**, **Vector**. Name it `little-days-prod`. Its ID goes into the `GOOGLE_MAPS_MAP_ID` secret (9.5). `DEMO_MAP_ID` is for local development only.
+3. **Production key checklist** (`little-days-prod`, a separate key from the dev key):
+   - [ ] Application restriction **Websites**: `https://vegalh.github.io/little-days/*` only. No localhost, no `*.github.io`.
+   - [ ] API restriction: **only** Maps JavaScript API, Places API (New), Routes API.
+   - [ ] The dev key keeps only `http://localhost:8472/*` (and `http://localhost:8000/*` if you use that port).
+   - [ ] **Regenerate the dev key** (it was pasted into a chat on 2026-11-04) and paste the new one into the local `config.js`.
+   - [ ] The production key is stored only as a GitHub repository secret, never in a file or message.
+   - [ ] Quotas and budget alerts below are set before the first deployment.
+4. **Quotas** (APIs & Services → each API → Quotas & system limits → per day). For a pilot of up to about 50 explorations a day:
+
+   | API | Method | Daily cap |
    |---|---|---|
-   | `little-days-prod` | `https://vegalh.github.io/little-days/*` (the real Pages address) | Maps JavaScript API, Places API (New), Routes API |
-   | `little-days-dev` | `http://localhost:8000/*`, `http://127.0.0.1:8000/*` | the same three |
+   | Maps JavaScript API | map loads | 300 |
+   | Places API (New) | Autocomplete | 3,000 (Google's widget sends a request per typed character) |
+   | Places API (New) | GetPlace (place details) | 500 |
+   | Places API (New) | SearchNearby | 400 |
+   | Places API (New) | SearchText (example address) | 100 |
+   | Routes API | ComputeRouteMatrix | 300 (each up to 5 elements, plus 1 per "Check walking time") |
+   | Routes API | ComputeRoutes | 500 |
 
-   Keeping localhost off the production key stops anyone running a local copy from using it.
-5. **Quotas** (APIs & Services → each API → Quotas & system limits): set per-day caps on each method used. Starting points for a small pilot: Maps JavaScript API map loads 1,000/day; Places API (New) `SearchNearby` 2,000/day, `Autocomplete` 2,000/day, `GetPlace` 2,000/day, `SearchText` 200/day; Routes API `ComputeRouteMatrix` 500/day, `ComputeRoutes` 1,000/day. Adjust after watching real use.
-6. **Budget alert** (Billing → Budgets & alerts): e.g. $10/month with alerts at 50%, 90% and 100%. Alerts don't stop spending; the quotas do.
-7. **Local config.** Copy `config.example.js` to `config.js` and fill in the dev key and map ID. `config.js` is in `.gitignore`.
+   Raise them only after looking at real use in Metrics. When a cap is hit, the page shows its error states (8.3) rather than charging more.
+5. **Budget** (Billing → Budgets & alerts): a monthly budget of **$25** for the project with email alerts at **25%, 50%, 90% and 100%**. Alerts don't stop spending; the quotas do.
+6. **Local config:** `cp config.example.js config.js`, then put the dev key in `googleMapsKey`. `config.js` is in `.gitignore`.
 
 ### 9.3 Cost
 
-Google bills per request, by SKU, and the **fields requested set the SKU** (for example, asking `searchNearby` for opening hours or ratings moves it to a higher tier). Prices and free monthly usage change, so check Google's current pricing page rather than this file.
+Google bills per request, by SKU, and the **fields requested set the SKU** (for example, asking `searchNearby` for opening hours or ratings moves it to a higher tier). Prices and free monthly usage change, so check Google's current pricing page and the billing report rather than this file.
 
-Requests Little Days makes:
+Requests Little Days makes (checked live on 2026-11-04, PRD 7.2):
 
 | When | Requests |
 |---|---|
 | Page load | The Maps API script only. No map is created until a search, so no map load is billed. |
-| Typing an address | Autocomplete requests, grouped into one session per pick |
+| Typing an address | Autocomplete requests: Google's widget sends one per typed character (39 for the full demo address, live). Little Days can't change this. They form one session that ends with the place-details request below. |
 | Picking an address | 1 place-details request |
-| Example address | 1 text search |
-| One search (one interest) | 1 map load (the first search only; later searches reuse the map) + 1 nearby search + 1 route matrix (up to 10 elements) |
-| One search (All) | up to 6 nearby searches (only the categories not loaded yet) + 1 route matrix (only places without a walking time, up to 12 elements) |
+| Example address | 1 text search, once per visit |
+| One search (one interest) | 1 map load (the first search of the visit only; later searches reuse the map) + 1 nearby search + 1 route matrix (up to 5 elements) |
+| One search (All) | up to 6 nearby searches (only the categories not loaded yet) + 1 route matrix (up to 5 elements) |
+| "Check walking time" on another place | 1 route matrix with 1 element |
 | Showing an interest again in the same visit | Nothing (kept in page memory, 7.10) |
-| Choosing a location, or a return visit | No Google search. A picked address costs its place-details request; a restored saved address costs 1 place-details request. Weather and holidays are free. |
-| Opening a place | 1 compute-routes request the first time per place and starting point (reused after that), and 1 detail map load the first time only: the one detail map is reused for every place |
+| A return visit | 1 place-details request to restore a saved address. No search. Weather and holidays are free. |
+| Opening a place | 1 compute-routes request the first time per place and starting point (reused after that), and 1 map load the first time only: the one detail map is reused for every place |
 | Saved places not in the results | 1 place-details request each, only once My Places or My week is on screen (max 50 per visit) |
-| Changing units, mode, ages, the day or filters | Nothing: the list redraws and existing markers are reused |
+| Changing units, mode, ages, the day or filters | Nothing: the list redraws and existing markers are reused (live-checked) |
 
-Changing units, mode, ages, the day, or filters costs nothing.
+**A typical exploration** (type and pick an address, search one interest, open two places, one saved place in My Places): 1 Autocomplete session (~20–40 requests), 2 place details, 1 nearby search, 1 route matrix (5 elements), 2 compute-routes, 2 map loads.
+
+**Billable operations to watch:** map loads (Dynamic Maps), Autocomplete, Place Details, Nearby Search (the fields asked for put it in the Pro tier: `displayName` is a Pro field), Text Search, Compute Route Matrix (billed per element), Compute Routes.
 
 ### 9.4 Google Maps Platform rules
 
 - Places and routes are shown on or next to a Google map, with Google's logo and attributions left visible. Wherever Google place content is shown **without a visible Google map** (the place list in the phone List view, My Places, My week), the same container shows Google's **text attribution** "Google Maps", as Google's policy allows: spelled exactly, on one line, `translate="no"`, `font-family: Roboto, var(--font-body)` (Google says loading Roboto is optional and a sans-serif fallback is fine, so no font is loaded), weight 400, 12–16 px, color `#5E5E5E` (4.5:1 on our backgrounds). No logo file is needed.
-- If a place result includes third-party attributions, they're shown with that place.
-- **Storage:** only Google place IDs are stored (Google allows keeping them). Names, addresses, coordinates and walking times from Google are kept in memory for the visit and fetched again next time.
+- **Third-party attributions:** Google's policy requires showing a place's `attributions` when Google returns them. Little Days doesn't request that field yet, so none are received or shown. Before a wider launch, decide whether to request it (check its billing tier) and show it with each place (13).
+- **Storage:** only Google place IDs are stored (Google allows keeping them indefinitely). Names, addresses, coordinates, walking times and routes from Google are kept in page memory for the visit and fetched again next time; exports contain only place IDs (7.18).
 - Google content is never changed or shown as Little Days' own.
 
 ### 9.5 Deployment
 
-The production key must reach the published `config.js`, but `config.js` isn't committed. Deployment uses a small GitHub Actions workflow (`.github/workflows/pages.yml`): it checks out the repository, writes `config.js` from two repository secrets (`GOOGLE_MAPS_BROWSER_KEY`, `GOOGLE_MAPS_MAP_ID`), and publishes the files to GitHub Pages. It copies files only: no build, no bundling. Pages is set to "Source: GitHub Actions". `node_modules`, `tests`, `tools` and `design` aren't published.
+**Workflow:** `.github/workflows/pages.yml`. It runs **only when started by hand** (Actions → "Deploy to GitHub Pages" → Run workflow), never on push. It checks out the code, runs `node --test`, copies only the site files (`index.html`, `style.css`, the `.js` files and `images/`) into `_site`, writes `_site/config.js` from two repository secrets, and publishes `_site` with GitHub's Pages actions. There's no build step. `node_modules`, `tests`, `tools`, `design`, the docs and the package files aren't published.
+
+**Repository secrets** (Settings → Secrets and variables → Actions → New repository secret):
+
+| Secret | Value |
+|---|---|
+| `GOOGLE_MAPS_BROWSER_KEY` | the **production** browser key (9.2) |
+| `GOOGLE_MAPS_MAP_ID` | the production JavaScript map ID (9.2) |
+
+The workflow stops with a message if either is missing. The key ends up in the published `config.js`, as a browser key always does; the website and API restrictions are what protect it.
+
+**First deployment:**
+1. Finish the 9.2 checklist (map ID, production key, quotas, budget).
+2. Add the two secrets.
+3. Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+4. Commit and push `main` (including the workflow) when you're ready.
+5. Actions → "Deploy to GitHub Pages" → Run workflow on `main`. Watch it finish.
+6. Open `https://vegalh.github.io/little-days/` and run tests/LIVE-CHECK.md checks 1–3, 16–18 and 21 with the production key. Check 12 (a different address is refused) confirms the restriction.
+
+**Updating:** push to `main`, then run the workflow again.
+
+**Rollback:**
+- To go back to an earlier version: Actions → "Deploy to GitHub Pages" → open the last good run → **Re-run all jobs**. It redeploys that run's commit. Or `git revert` the bad commit, push, and run the workflow.
+- To take Google features offline at once (for example a key problem or unexpected cost): in Google Cloud, remove the website from the production key's restrictions or disable the key. The site keeps working in its weather-only fallback (8.3).
+- To take the whole site down: Settings → Pages → **Unpublish site**.
+- If the production key leaks beyond its restrictions: regenerate it in Google Cloud, update the secret, and run the workflow.
 
 ## 10. Testing
 
@@ -815,5 +857,7 @@ One phase at a time. Each phase ends with: what changed, the tests run and their
 - **Free/paid filter.** Google's `priceLevel` is mostly for restaurants and is in a pricier field tier, so "free" can't be verified cheaply. Version 1 shows no price information. Is that acceptable?
 - **Opening hours.** Showing `regularOpeningHours` would move nearby search to a pricier tier. Version 1 links to Google Maps instead. Keep it that way?
 - **The category type lists** (7.10) and the access estimates (7.11) are a first pass and need your review once real results come in.
-- **Guides** (7.14) will be drafted by the agent in Phase 4 and need your review before they ship, since they're Little Days' own words.
+- **Guides** (7.14) were drafted and then edited for child-led wording on 2026-11-04; they still need your review before the pilot, since they're Little Days' own words.
+- **Third-party attributions** (9.4): request Google's `attributions` field and show it with each place before a wider launch?
+- **Rain caution wording:** a drizzle code with a low chance shows "Rain is possible (14%)". Correct by the rules (7.4), but it may read oddly.
 - The earlier open questions still stand: the global heat and cold levels for hot-climate cities, the celebrations country list, and RootMap's gaps (no snow, wind, winter-holiday or summer activities).
