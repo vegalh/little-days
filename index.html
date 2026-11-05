@@ -10,7 +10,7 @@
 <body>
   <header class="site-header">
     <div class="wrap">
-      <a class="logo" href="#start"><span aria-hidden="true">🌱</span> Little Days</a>
+      <a class="logo" href="#explore"><span aria-hidden="true">🌱</span> Little Days</a>
       <nav class="site-nav" aria-label="Sections">
         <a href="#explore"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15 9-2 4-4 2 2-4z"/></svg> Explore</a>
         <a href="#weather"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg> Weather</a>
@@ -21,183 +21,195 @@
   </header>
 
   <main>
-    <div id="start" class="hero wrap">
-      <h1>Your neighborhood is full of little discoveries.</h1>
-      <p>Find meaningful places to explore with young children, right outside your door.</p>
-
-      <form id="location-form" class="controls" role="search" novalidate>
-        <div class="location-row">
-          <div class="field field-location">
-            <div id="google-location" hidden>
-              <p id="address-label" class="label">Address or place</p>
-              <div id="address-slot" class="address-slot"></div>
-            </div>
-            <div id="city-location" hidden>
-              <label for="city">City (for weather)</label>
-              <div class="city-row">
-                <input id="city" name="city" type="text" list="city-options" autocomplete="off" placeholder="e.g. Boston">
-                <datalist id="city-options"></datalist>
-                <button id="city-button" type="submit">Show weather</button>
+    <!-- Four views, one shown at a time (DESIGN.md 5). The nav links switch them by the URL hash. -->
+    <div class="view" data-view="explore">
+      <div class="hero wrap">
+        <h1>Your neighborhood is full of little discoveries.</h1>
+        <p>Find meaningful places to explore with young children, right outside your door.</p>
+      </div>
+      <div class="explore-page">
+        <aside class="explore-side" aria-label="Search">
+          <form id="location-form" class="controls" role="search" novalidate>
+            <div class="location-row">
+              <div class="field field-location">
+                <div id="google-location" hidden>
+                  <p id="address-label" class="label">Address or place</p>
+                  <div id="address-slot" class="address-slot"></div>
+                </div>
+                <div id="city-location" hidden>
+                  <label for="city">City (for weather)</label>
+                  <div class="city-row">
+                    <input id="city" name="city" type="text" list="city-options" autocomplete="off" placeholder="e.g. Boston">
+                    <datalist id="city-options"></datalist>
+                    <button id="city-button" type="submit">Show weather</button>
+                  </div>
+                  <p class="note">Maps aren't available right now, so you can check the weather by city.</p>
+                </div>
+                <p id="location-message" class="field-message" hidden></p>
+                <div class="location-actions">
+                  <button id="locate" type="button" class="button-secondary"><span aria-hidden="true">📍</span> Use my location</button>
+                  <button id="example" type="button" class="link-button" hidden>Try an example address</button>
+                </div>
+                <p id="location-line" class="location-line" hidden></p>
+                <div id="location-status" class="hint" role="status" aria-live="polite"></div>
               </div>
-              <p class="note">Maps aren't available right now, so you can check the weather by city.</p>
+              <div id="now-line" class="now-line" hidden></div>
             </div>
-            <p id="location-message" class="field-message" hidden></p>
-            <div class="location-actions">
-              <button id="locate" type="button" class="button-secondary"><span aria-hidden="true">📍</span> Use my location</button>
-              <button id="example" type="button" class="link-button" hidden>Try an example address</button>
+            <div class="choices">
+              <div class="field">
+                <label for="ages">Ages</label>
+                <select id="ages" name="ages">
+                  <option value="2-6">Mixed 2–6</option>
+                  <option value="under-2">Under 2</option>
+                  <option value="2-3">2–3</option>
+                  <option value="4-6">4–6</option>
+                </select>
+              </div>
+              <fieldset class="field">
+                <legend>Who's exploring</legend>
+                <div class="segmented">
+                  <label><input type="radio" name="mode" value="family"><span>Family</span></label>
+                  <label><input type="radio" name="mode" value="classroom"><span>Classroom</span></label>
+                </div>
+              </fieldset>
+              <fieldset class="field">
+                <legend>Walking time (minutes)</legend>
+                <div class="segmented segmented-wide">
+                  <label><input type="radio" name="minutes" value="5"><span>5</span></label>
+                  <label><input type="radio" name="minutes" value="10"><span>10</span></label>
+                  <label><input type="radio" name="minutes" value="15"><span>15</span></label>
+                  <label><input type="radio" name="minutes" value="20"><span>20</span></label>
+                  <label><input type="radio" name="minutes" value="30"><span>30</span></label>
+                </div>
+              </fieldset>
             </div>
-            <p id="location-line" class="location-line" hidden></p>
-            <div id="location-status" class="hint" role="status" aria-live="polite"></div>
+            <p class="note classroom-note" hidden>Google walking estimates may not reflect the time needed when accompanying young children. Check crossings and the route before visiting.</p>
+            <fieldset class="field">
+              <legend>What would you like to explore?</legend>
+              <div id="interest-chips" class="chips"></div>
+              <p class="note all-note" hidden>All searches six kinds of places, so it takes a little longer.</p>
+              <p id="interest-message" class="field-message" hidden></p>
+            </fieldset>
+            <div class="controls-footer">
+              <fieldset class="field">
+                <legend>Temperature</legend>
+                <div class="segmented">
+                  <label><input type="radio" name="unit" value="F" checked><span>°F</span></label>
+                  <label><input type="radio" name="unit" value="C"><span>°C</span></label>
+                </div>
+              </fieldset>
+              <button id="find" type="button" class="find-button">Find Little Adventures</button>
+            </div>
+          </form>
+        </aside>
+        <section id="explore" class="explore-main" aria-labelledby="explore-heading">
+          <div class="section-head">
+            <h2 id="explore-heading">Explore</h2>
           </div>
-          <div id="now-line" class="now-line" hidden></div>
-        </div>
-        <div class="choices">
-          <div class="field">
-            <label for="ages">Ages</label>
-            <select id="ages" name="ages">
-              <option value="2-6">Mixed 2–6</option>
-              <option value="under-2">Under 2</option>
-              <option value="2-3">2–3</option>
-              <option value="4-6">4–6</option>
-            </select>
+          <fieldset id="explore-tabs" class="explore-tabs" hidden>
+            <legend class="visually-hidden">What to explore</legend>
+            <div id="explore-chips" class="chips chips-scroll"></div>
+          </fieldset>
+          <div id="explore-status" class="status" role="status" aria-live="polite"></div>
+          <div id="explore-results" hidden>
+            <div class="explore-tools">
+              <fieldset class="field">
+                <legend>Setting</legend>
+                <div class="segmented segmented-small">
+                  <label><input type="radio" name="setting-filter" value="all" checked><span>All</span></label>
+                  <label><input type="radio" name="setting-filter" value="indoors"><span>Indoors</span></label>
+                  <label><input type="radio" name="setting-filter" value="outdoors"><span>Outdoors</span></label>
+                </div>
+              </fieldset>
+              <fieldset class="field">
+                <legend>Explored</legend>
+                <div class="segmented segmented-small">
+                  <label><input type="radio" name="explored-filter" value="all" checked><span>All</span></label>
+                  <label><input type="radio" name="explored-filter" value="new"><span>Not explored yet</span></label>
+                  <label><input type="radio" name="explored-filter" value="explored"><span>Explored</span></label>
+                </div>
+              </fieldset>
+              <button id="clear-filters" type="button" class="link-button">Clear filters</button>
+            </div>
+            <div id="explore-notes" class="explore-notes"></div>
+            <fieldset class="view-switch">
+              <legend class="visually-hidden">Show places as</legend>
+              <div class="segmented">
+                <label><input type="radio" name="explore-view" value="list" checked><span>List</span></label>
+                <label><input type="radio" name="explore-view" value="map"><span>Map</span></label>
+              </div>
+            </fieldset>
+            <div class="explore-layout">
+              <div id="place-list-box" class="place-list-box">
+                <p class="google-attribution" translate="no">Google Maps</p>
+                <div id="place-list" class="place-list"></div>
+              </div>
+              <div id="place-map-box" class="map-box">
+                <h3 id="map-heading" class="visually-hidden" tabindex="-1">Map of places</h3>
+                <div id="explore-map" class="map"></div>
+                <div id="map-peek" class="map-peek" hidden></div>
+              </div>
+            </div>
           </div>
-          <fieldset class="field">
-            <legend>Who's exploring</legend>
-            <div class="segmented">
-              <label><input type="radio" name="mode" value="family"><span>Family</span></label>
-              <label><input type="radio" name="mode" value="classroom"><span>Classroom</span></label>
-            </div>
-          </fieldset>
-          <fieldset class="field">
-            <legend>Walking time (minutes)</legend>
-            <div class="segmented segmented-wide">
-              <label><input type="radio" name="minutes" value="5"><span>5</span></label>
-              <label><input type="radio" name="minutes" value="10"><span>10</span></label>
-              <label><input type="radio" name="minutes" value="15"><span>15</span></label>
-              <label><input type="radio" name="minutes" value="20"><span>20</span></label>
-              <label><input type="radio" name="minutes" value="30"><span>30</span></label>
-            </div>
-          </fieldset>
-        </div>
-        <p class="note classroom-note" hidden>Google walking estimates may not reflect the time needed when accompanying young children. Check crossings and the route before visiting.</p>
-        <fieldset class="field">
-          <legend>What would you like to explore?</legend>
-          <div id="interest-chips" class="chips"></div>
-          <p class="note all-note" hidden>All searches six kinds of places, so it takes a little longer.</p>
-          <p id="interest-message" class="field-message" hidden></p>
-        </fieldset>
-        <div class="controls-footer">
-          <fieldset class="field">
-            <legend>Temperature</legend>
-            <div class="segmented">
-              <label><input type="radio" name="unit" value="F" checked><span>°F</span></label>
-              <label><input type="radio" name="unit" value="C"><span>°C</span></label>
-            </div>
-          </fieldset>
-          <button id="find" type="button" class="find-button">Find Little Adventures</button>
-        </div>
-      </form>
+        </section>
+      </div>
     </div>
 
-    <section id="explore" class="wrap" aria-labelledby="explore-heading">
-      <div class="section-head">
-        <h2 id="explore-heading">Explore</h2>
-      </div>
-      <fieldset id="explore-tabs" class="explore-tabs" hidden>
-        <legend class="visually-hidden">What to explore</legend>
-        <div id="explore-chips" class="chips chips-scroll"></div>
-      </fieldset>
-      <div id="explore-status" class="status" role="status" aria-live="polite"></div>
-      <div id="explore-results" hidden>
-        <div class="explore-tools">
-          <fieldset class="field">
-            <legend>Setting</legend>
-            <div class="segmented segmented-small">
-              <label><input type="radio" name="setting-filter" value="all" checked><span>All</span></label>
-              <label><input type="radio" name="setting-filter" value="indoors"><span>Indoors</span></label>
-              <label><input type="radio" name="setting-filter" value="outdoors"><span>Outdoors</span></label>
-            </div>
-          </fieldset>
-          <fieldset class="field">
-            <legend>Explored</legend>
-            <div class="segmented segmented-small">
-              <label><input type="radio" name="explored-filter" value="all" checked><span>All</span></label>
-              <label><input type="radio" name="explored-filter" value="new"><span>Not explored yet</span></label>
-              <label><input type="radio" name="explored-filter" value="explored"><span>Explored</span></label>
-            </div>
-          </fieldset>
-          <button id="clear-filters" type="button" class="link-button">Clear filters</button>
+    <div class="view" data-view="weather" hidden>
+      <p id="weather-empty" class="status wrap-status">Choose a place on the Explore tab to see its weather.</p>
+      <section id="weather" class="wrap" aria-labelledby="weather-heading" hidden>
+        <div class="section-head">
+          <h2 id="weather-heading">Weather</h2>
+          <p id="place-line" hidden></p>
         </div>
-        <div id="explore-notes" class="explore-notes"></div>
-        <fieldset class="view-switch">
-          <legend class="visually-hidden">Show places as</legend>
-          <div class="segmented">
-            <label><input type="radio" name="explore-view" value="list" checked><span>List</span></label>
-            <label><input type="radio" name="explore-view" value="map"><span>Map</span></label>
+        <div id="weather-status" class="status" role="status" aria-live="polite"></div>
+        <div id="weather-now" class="weather-now" hidden></div>
+        <p id="holiday-note" class="note" hidden></p>
+        <ol id="week" class="week" hidden></ol>
+        <div id="day-weather" class="day-weather" hidden>
+          <div id="warnings" class="warnings"></div>
+          <div id="wear" class="panel panel-wear"></div>
+        </div>
+      </section>
+
+      <section id="ideas" class="wrap" aria-labelledby="ideas-heading" hidden>
+        <div class="section-head">
+          <h2 id="ideas-heading"></h2>
+          <p id="ideas-subtitle"></p>
+        </div>
+        <div class="day-ideas">
+          <div id="idea-list" class="ideas"></div>
+          <div id="why" class="panel panel-why"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="view" data-view="my-places" hidden>
+      <section id="my-places" class="wrap" aria-labelledby="places-heading">
+        <div class="section-head">
+          <h2 id="places-heading">My Places</h2>
+          <p class="google-attribution" translate="no">Google Maps</p>
+        </div>
+        <fieldset class="places-tabs">
+          <legend class="visually-hidden">Show places</legend>
+          <div class="segmented segmented-small">
+            <label><input type="radio" name="places-tab" value="want" checked><span>Want to explore <span class="count" data-count="want"></span></span></label>
+            <label><input type="radio" name="places-tab" value="explored"><span>Explored <span class="count" data-count="explored"></span></span></label>
+            <label><input type="radio" name="places-tab" value="revisit"><span>Revisit <span class="count" data-count="revisit"></span></span></label>
           </div>
         </fieldset>
-        <div class="explore-layout">
-          <div id="place-list-box" class="place-list-box">
-            <p class="google-attribution" translate="no">Google Maps</p>
-            <div id="place-list" class="place-list"></div>
-          </div>
-          <div id="place-map-box" class="map-box">
-            <h3 id="map-heading" class="visually-hidden" tabindex="-1">Map of places</h3>
-            <div id="explore-map" class="map"></div>
-            <div id="map-peek" class="map-peek" hidden></div>
-          </div>
+        <div id="places-list" class="places-list"></div>
+      </section>
+    </div>
+
+    <div class="view" data-view="my-week" hidden>
+      <section id="my-week" class="wrap" aria-labelledby="plan-heading">
+        <div class="section-head">
+          <h2 id="plan-heading" tabindex="-1">My week</h2>
         </div>
-      </div>
-    </section>
-
-    <section id="weather" class="wrap" aria-labelledby="weather-heading" hidden>
-      <div class="section-head">
-        <h2 id="weather-heading">Weather</h2>
-        <p id="place-line" hidden></p>
-      </div>
-      <div id="weather-status" class="status" role="status" aria-live="polite"></div>
-      <div id="weather-now" class="weather-now" hidden></div>
-      <p id="holiday-note" class="note" hidden></p>
-      <ol id="week" class="week" hidden></ol>
-      <div id="day-weather" class="day-weather" hidden>
-        <div id="warnings" class="warnings"></div>
-        <div id="wear" class="panel panel-wear"></div>
-      </div>
-    </section>
-
-    <section id="ideas" class="wrap" aria-labelledby="ideas-heading" hidden>
-      <div class="section-head">
-        <h2 id="ideas-heading"></h2>
-        <p id="ideas-subtitle"></p>
-      </div>
-      <div class="day-ideas">
-        <div id="idea-list" class="ideas"></div>
-        <div id="why" class="panel panel-why"></div>
-      </div>
-    </section>
-
-    <section id="my-places" class="wrap" aria-labelledby="places-heading">
-      <div class="section-head">
-        <h2 id="places-heading">My Places</h2>
-        <p class="google-attribution" translate="no">Google Maps</p>
-      </div>
-      <fieldset class="places-tabs">
-        <legend class="visually-hidden">Show places</legend>
-        <div class="segmented segmented-small">
-          <label><input type="radio" name="places-tab" value="want" checked><span>Want to explore <span class="count" data-count="want"></span></span></label>
-          <label><input type="radio" name="places-tab" value="explored"><span>Explored <span class="count" data-count="explored"></span></span></label>
-          <label><input type="radio" name="places-tab" value="revisit"><span>Revisit <span class="count" data-count="revisit"></span></span></label>
-        </div>
-      </fieldset>
-      <div id="places-list" class="places-list"></div>
-    </section>
-
-    <section id="my-week" class="wrap" aria-labelledby="plan-heading">
-      <div class="section-head">
-        <h2 id="plan-heading" tabindex="-1">My week</h2>
-      </div>
-      <div id="plan"></div>
-    </section>
+        <div id="plan"></div>
+      </section>
+    </div>
   </main>
 
   <footer class="site-footer">

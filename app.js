@@ -37,6 +37,7 @@ const routeReminder = document.querySelector("#route-reminder");
 const detailMap = document.querySelector("#place-map");
 const placesList = document.querySelector("#places-list");
 const weatherSection = document.querySelector("#weather");
+const weatherEmpty = document.querySelector("#weather-empty");
 const weatherStatus = document.querySelector("#weather-status");
 const weatherNow = document.querySelector("#weather-now");
 const placeLine = document.querySelector("#place-line");
@@ -1660,6 +1661,7 @@ function clearWeather() {
 function showWeatherLoading(label) {
   clearWeather();
   weatherSection.hidden = false;
+  weatherEmpty.hidden = true;
   showStatus(weatherStatus, "loading", `Getting the weather for ${label}…`);
   nowLine.innerHTML = `<p class="now-loading">Getting the weather…</p>`;
   nowLine.hidden = false;
@@ -1677,6 +1679,7 @@ function showNotFound(city) {
   locationLine.hidden = true;
   clearWeather();
   weatherSection.hidden = true;
+  weatherEmpty.hidden = false;
   showStatus(locationStatus, "", `We couldn't find "${city}". Check the spelling, or add the state or country, like "Portland, Maine".`);
   cityInput.focus();
 }
@@ -1925,6 +1928,26 @@ function escapeHtml(text) {
 }
 
 
+// --- Views (DESIGN.md 5) ---
+// Explore, Weather, My Places and My week are shown one at a time, chosen by the URL hash,
+// so the back button and links like "More weather" work without a router.
+
+const VIEWS = ["explore", "weather", "my-places", "my-week"];
+
+function showView() {
+  const name = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "explore";
+  for (const view of document.querySelectorAll(".view")) view.hidden = view.dataset.view !== name;
+  for (const link of document.querySelectorAll(".site-nav a")) {
+    if (link.getAttribute("href") === `#${name}`) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  }
+}
+
+window.addEventListener("hashchange", () => {
+  showView();
+  window.scrollTo(0, 0);
+});
+
 // --- Start ---
 
 for (const input of unitInputs) input.checked = input.value === settings.unit;
@@ -1932,6 +1955,7 @@ document.querySelector("#interest-chips").innerHTML = interestChipsHtml("interes
 document.querySelector("#explore-chips").innerHTML = interestChipsHtml("explore-interest");
 showChoices();
 applyView();
+showView();
 saveSettings(storage, settings); // finishes a v1 → v2 migration (PRD.md 7.18)
 savePlan(storage, plan); // keep the cleaned-up plan (and finish a v1 → v2 migration)
 storePlaces(storage, savedPlaces); // the same for My Places

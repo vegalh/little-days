@@ -6,20 +6,22 @@
 @font-face { font-family: "Nunito"; font-weight: 600; font-display: swap; src: url("fonts/nunito-latin-600-normal.woff2") format("woff2"); }
 @font-face { font-family: "Nunito"; font-weight: 700; font-display: swap; src: url("fonts/nunito-latin-700-normal.woff2") format("woff2"); }
 
-/* RootMap's palette (RootMapMVP src/index.css), under Little Days' token names. */
+/* Colors from Peninsula Montessori Academy's Newton site (peninsulama.com/newton): white
+   and light-grey pages, honey-gold headings, near-black text, warm peach highlights. */
 :root {
-  --bg: #FBF2E4;
-  --surface: #FFFCF6;
-  --tint: #EEF1E6;
-  --ink: #3B2A1A;
-  --ink-soft: #75644F; /* RootMap's #8A7863, darkened to reach 4.5:1 on the cream background */
-  --line: #EEE1D0;
-  --accent: #4B7C63;
+  --bg: #F6F6F6;
+  --surface: #FFFFFF;
+  --tint: #FDF4E6;
+  --ink: #1B1B1B;
+  --ink-soft: #5E5E5E;
+  --line: #E8E2D8;
+  --accent: #917140; /* their deeper gold: 4.8:1 with white text */
   --accent-ink: #FFFFFF;
-  --selected: #E3EBE0;
-  --heading: #2F4D3D;
-  --apricot: #FBE9D7;
-  --shadow: 0 6px 20px rgba(59, 42, 26, .08);
+  --selected: #FCE3BC;
+  --heading: #917140;
+  --apricot: #FDEBCF;
+  --peach: #FAC97F;
+  --shadow: 0 6px 20px rgba(27, 27, 27, .06);
   --sky: #7FA7C9;
   --holiday: #96421A;
   --warning: #7A4F00;
@@ -108,7 +110,11 @@ h1, h2, h3 {
   text-decoration: none;
 }
 
-.site-header nav a:hover { color: var(--accent); }
+.site-header nav a:hover,
+.site-header nav a[aria-current=page] { color: var(--accent); }
+
+/* The current tab: gold text with a line under it on a computer. */
+.site-header nav a[aria-current=page] { box-shadow: inset 0 -2px 0 var(--accent); }
 
 
 .logo {
@@ -121,11 +127,47 @@ h1, h2, h3 {
 
 /* Hero and controls */
 
-.hero { padding-block: 24px 32px; }
+.hero { padding-block: 16px 24px; }
+
+/* Explore on a computer: search controls in a column on the left, results on the right. */
+.explore-page {
+  display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px 32px;
+}
+
+.explore-side {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  border-radius: var(--radius);
+}
+
+.explore-side .controls { max-width: none; }
+.explore-side .choices { gap: 12px 16px; }
+.explore-side .find-button { width: 100%; min-width: 0; }
+.explore-side .controls-footer { flex-direction: column; align-items: stretch; }
+.explore-main { padding-block: 0; }
+.wrap-status { max-width: 992px; margin: 32px auto; }
+
+/* Between a phone and a wide screen, the controls sit above the results. */
+@media (max-width: 1099px) {
+  /* minmax(0, …) lets the column shrink below its widest child (the swiping chip row). */
+  .explore-page { grid-template-columns: minmax(0, 1fr); }
+  .explore-side { position: static; max-height: none; overflow: visible; }
+  .explore-side .controls-footer { flex-direction: row; align-items: flex-end; }
+  .explore-side .find-button { width: auto; min-width: 240px; }
+}
+
 
 .hero h1 {
-  max-width: 18ch;
-  font-size: 62px;
+  max-width: 24ch;
+  font-size: 52px;
   line-height: 1.05;
   color: var(--heading);
 }
@@ -320,7 +362,7 @@ button {
   color: var(--accent-ink);
   background: var(--accent);
   border: 1px solid var(--accent);
-  border-radius: var(--radius-small);
+  border-radius: 999px;
   cursor: pointer;
   transition: opacity 150ms;
 }
@@ -899,7 +941,7 @@ dialog p { margin: 8px 0 0; }
 }
 
 .chip input:checked + span {
-  color: var(--accent);
+  color: var(--ink); /* gold text on peach is too faint to read */
   background: var(--selected);
   border-color: var(--accent);
 }
@@ -1362,7 +1404,7 @@ textarea {
 @media (max-width: 719px) {
   .wrap { padding: 0 16px; }
   .hero { padding-block: 8px 24px; }
-  .hero h1 { font-size: 44px; }
+  .hero h1 { font-size: 40px; }
   .hero > p { margin: 8px 0 16px; }
   /* City on its own row; the unit switch below it. */
   .controls { grid-template-columns: 1fr; gap: 12px; }
@@ -1470,6 +1512,11 @@ textarea {
     font-size: 12px;
     text-align: center;
   }
+  .site-header .site-nav a[aria-current=page] { font-weight: 700; box-shadow: none; }
+  .explore-page { padding: 0 16px 24px; gap: 16px; }
+  .explore-side .controls-footer { flex-direction: column; align-items: stretch; }
+  .explore-side .find-button { width: 100%; }
+  .wrap-status { margin: 24px 16px; }
 
   .plan > li { grid-template-columns: 1fr; gap: 0; padding-top: 12px; }
 
