@@ -1,33 +1,31 @@
-/* RootMap's fonts, bundled in fonts/ (SIL Open Font License, fonts/OFL.txt) rather than
+/* RootMap's font, bundled in fonts/ (SIL Open Font License, fonts/OFL.txt) rather than
    loaded from Google Fonts, which is blocked or slow in mainland China. */
-@font-face { font-family: "Caveat"; font-weight: 600; font-display: swap; src: url("fonts/caveat-latin-600-normal.woff2") format("woff2"); }
-@font-face { font-family: "Caveat"; font-weight: 700; font-display: swap; src: url("fonts/caveat-latin-700-normal.woff2") format("woff2"); }
 @font-face { font-family: "Nunito"; font-weight: 400; font-display: swap; src: url("fonts/nunito-latin-400-normal.woff2") format("woff2"); }
 @font-face { font-family: "Nunito"; font-weight: 600; font-display: swap; src: url("fonts/nunito-latin-600-normal.woff2") format("woff2"); }
 @font-face { font-family: "Nunito"; font-weight: 700; font-display: swap; src: url("fonts/nunito-latin-700-normal.woff2") format("woff2"); }
 
-/* Colors from Peninsula Montessori Academy's Newton site (peninsulama.com/newton): white
-   and light-grey pages, honey-gold headings, near-black text, warm peach highlights. */
+/* A clean, warm, modern palette: mostly white with warm-neutral accents, olive green for
+   selected states and primary actions (DESIGN.md "Colors"). */
 :root {
-  --bg: #F6F6F6;
+  --bg: #FFFFFF;
   --surface: #FFFFFF;
-  --tint: #FDF4E6;
-  --ink: #1B1B1B;
-  --ink-soft: #5E5E5E;
-  --line: #E8E2D8;
-  --accent: #917140; /* their deeper gold: 4.8:1 with white text */
+  --tint: #FAFAF8;
+  --ink: #26251F;
+  --ink-soft: #77766F;
+  --line: #EAE8E2;
+  --accent: #718C43;
   --accent-ink: #FFFFFF;
-  --selected: #FCE3BC;
-  --heading: #917140;
-  --apricot: #FDEBCF;
-  --peach: #FAC97F;
-  --shadow: 0 6px 20px rgba(27, 27, 27, .06);
+  --selected: #EAF0D8;
+  --heading: #26251F;
+  --apricot: #FBEFD9;
+  --peach: #F6D9A8;
+  --shadow: 0 1px 2px rgba(38, 37, 31, .04), 0 6px 20px rgba(38, 37, 31, .06);
   --sky: #7FA7C9;
   --holiday: #96421A;
-  --warning: #7A4F00;
-  --leaf-ink: #3F6B35;
+  --warning: #8A5A00;
+  --leaf-ink: #4B6B2E;
   --google-gray: #5E5E5E; /* only Google's "Google Maps" text attribution */
-  --font-head: "Caveat", cursive;
+  --font-head: "Nunito", system-ui, sans-serif;
   --font-body: "Nunito", system-ui, sans-serif;
   --radius: 20px;
   --radius-small: 14px;
@@ -87,6 +85,13 @@ html:lang(zh-CN) .day-name { font-size: 17px; }
   stroke-linecap: round;
   stroke-linejoin: round;
   vertical-align: middle;
+}
+
+/* A smaller inline variant, for a pin icon sitting beside a line of text. */
+.icon-inline {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2;
 }
 
 .wrap {
@@ -160,7 +165,7 @@ html:lang(zh-CN) .day-name { font-size: 17px; }
   align-items: center;
   gap: 6px;
   font-family: var(--font-head);
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--heading);
   text-decoration: none;
@@ -223,8 +228,8 @@ html:lang(zh-CN) .day-name { font-size: 17px; }
 
 .hero h1 {
   max-width: 24ch;
-  font-size: 52px;
-  line-height: 1.05;
+  font-size: 36px;
+  line-height: 1.3;
   color: var(--heading);
 }
 
@@ -291,12 +296,11 @@ html:lang(zh-CN) .day-name { font-size: 17px; }
   cursor: pointer;
 }
 
-/* RootMap's raised pill, on white rather than pale green so the choice stands out clearly. */
+/* The selected choice: a pale-green pill, consistent with chips and the Ages dropdown. */
 .segmented input:checked + span {
   font-weight: 700;
   color: var(--accent);
-  background: var(--surface);
-  box-shadow: 0 1px 3px rgba(59, 42, 26, .16);
+  background: var(--selected);
 }
 
 .segmented input:focus-visible + span {
@@ -339,7 +343,7 @@ gmp-place-autocomplete {
 
 gmp-place-autocomplete::part(input) {
   min-height: 44px !important;
-  background: var(--bg) !important;
+  background: var(--tint) !important;
   border: 1px solid var(--line) !important;
   border-radius: var(--radius-small) !important;
 }
@@ -358,9 +362,28 @@ gmp-place-autocomplete[aria-invalid=true]::part(input) { border-color: var(--acc
 .location-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 16px;
+  gap: 8px 12px;
   align-items: center;
   margin-top: 12px;
+}
+
+/* "Use my location" / "Try an example address" stay side by side down to narrow phones. */
+.location-actions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 150px;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 12px;
+  text-align: center;
+}
+
+/* "Try an example address": an outlined twin of "Use my location", not a plain link. */
+#example {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--line);
 }
 
 .location-line {
@@ -401,7 +424,7 @@ select {
   padding: 0 12px;
   font: inherit;
   color: var(--ink);
-  background: var(--bg);
+  background: var(--tint);
   border: 1px solid var(--line);
   border-radius: var(--radius-small);
 }
@@ -437,6 +460,13 @@ button:disabled {
   border-width: 1.5px;
 }
 
+/* "Use my location": a subtle pale-green fill, so it reads as the recommended shortcut. */
+#locate {
+  color: var(--accent);
+  background: var(--selected);
+  border-color: transparent;
+}
+
 .button-added,
 .button-added:disabled {
   color: var(--leaf-ink);
@@ -462,7 +492,7 @@ button:disabled {
 section { padding-block: 32px; }
 
 .section-head { margin-bottom: 16px; }
-.section-head h2 { font-size: 40px; }
+.section-head h2 { font-size: 28px; }
 
 .section-head p {
   margin: 4px 0 0;
@@ -507,7 +537,7 @@ section { padding-block: 32px; }
 }
 
 .now-card h3,
-.hours h3 { font-size: 26px; margin-bottom: 8px; }
+.hours h3 { font-size: 20px; margin-bottom: 8px; }
 .now-card p { margin: 0; color: var(--ink-soft); }
 
 .now-temp {
@@ -629,7 +659,7 @@ section { padding-block: 32px; }
 
 .day-name {
   font-family: var(--font-head);
-  font-size: 24px;
+  font-size: 17px;
   font-weight: 700;
   line-height: 1.1;
   color: var(--heading);
@@ -738,7 +768,7 @@ section { padding-block: 32px; }
   gap: 8px;
 }
 
-.idea h3 { font-size: 27px; }
+.idea h3 { font-size: 21px; }
 .idea p { margin: 0; }
 
 .meta {
@@ -798,7 +828,7 @@ section { padding-block: 32px; }
 
 .panel h3 {
   margin-bottom: 8px;
-  font-size: 26px;
+  font-size: 20px;
 }
 
 .panel ul {
@@ -944,7 +974,7 @@ dialog p { margin: 8px 0 0; }
 
 .site-footer p { margin: 0 0 16px; }
 .your-data { padding: 0; }
-.your-data h2 { font-size: 30px; margin-bottom: 16px; }
+.your-data h2 { font-size: 20px; margin-bottom: 16px; }
 .your-data ul { margin: 0; padding-left: 20px; }
 .your-data li + li { margin-top: 4px; }
 
@@ -987,7 +1017,7 @@ dialog p { margin: 8px 0 0; }
   font-weight: 600;
   color: var(--ink);
   text-align: left;
-  background: var(--bg);
+  background: var(--tint);
   border: 1px solid var(--line);
   border-radius: var(--radius-small);
 }
@@ -1046,6 +1076,16 @@ dialog p { margin: 8px 0 0; }
   gap: 8px;
 }
 
+/* The search form's interests: a 3-column grid of evenly sized buttons (DESIGN.md). */
+#interest-chips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+/* "All" is appended after the six categories; give it its own full-width row. */
+#interest-chips .chip:last-child { grid-column: 1 / -1; }
+
 .chip { position: relative; margin: 0 !important; }
 
 .chip input {
@@ -1057,17 +1097,22 @@ dialog p { margin: 8px 0 0; }
   display: inline-flex;
   gap: 6px;
   align-items: center;
+  justify-content: center;
   min-height: 44px;
   padding: 0 14px;
   font-weight: 600;
+  text-align: center;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
   cursor: pointer;
 }
 
+#interest-chips .chip,
+#interest-chips .chip > span { width: 100%; }
+
 .chip input:checked + span {
-  color: var(--ink); /* gold text on peach is too faint to read */
+  color: var(--accent);
   background: var(--selected);
   border-color: var(--accent);
 }
@@ -1085,7 +1130,13 @@ dialog p { margin: 8px 0 0; }
   justify-content: space-between;
 }
 
-.find-button { min-width: 240px; }
+.find-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 240px;
+}
 
 /* Explore */
 
@@ -1172,24 +1223,52 @@ dialog p { margin: 8px 0 0; }
 
 .place-google {
   display: grid;
-  grid-template-columns: 28px 1fr;
+  grid-template-columns: 64px 1fr;
   gap: 12px;
   align-items: start;
 }
 
+/* Square photo tile, badged with the card's map-marker number. The badge sits
+   just outside the tile's own frame, so it isn't clipped by the photo's rounded corners. */
+.place-photo-wrap {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+
+.place-photo {
+  width: 64px;
+  height: 64px;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-small);
+}
+
 .place-number {
+  position: absolute;
+  top: -6px;
+  left: -6px;
   display: inline-grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  font-size: 14px;
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--accent-ink);
   background: var(--accent);
+  border: 2px solid var(--surface);
   border-radius: 50%;
 }
 
-.place-card h3 { font-size: 28px; }
+.place-head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.place-head-row h3 { flex: 1; }
+
+.place-card h3 { font-size: 21px; margin: 0; }
 
 .place-title {
   min-height: 0;
@@ -1202,6 +1281,32 @@ dialog p { margin: 8px 0 0; }
 }
 
 .place-title:hover { text-decoration: underline; }
+
+/* Save toggle: an outline heart that fills in once a place is saved. */
+.heart-icon {
+  flex: none;
+  color: var(--ink-soft);
+}
+
+.heart-icon .icon { width: 22px; height: 22px; }
+
+.heart-button {
+  display: inline-flex;
+  min-height: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.heart-button:hover,
+.heart-button:focus-visible { color: var(--accent); }
+
+.heart-icon.is-saved,
+.heart-button:active {
+  color: var(--accent);
+}
+
+.heart-icon.is-saved .icon { fill: currentColor; }
 
 .place-address {
   margin: 4px 0 0;
@@ -1223,6 +1328,10 @@ dialog p { margin: 8px 0 0; }
 }
 
 .place-walk .link-button { min-height: 44px; font-weight: 600; }
+
+.place-main .place-tags {
+  margin: 8px 0 0;
+}
 
 .place-notes {
   margin-top: 12px;
@@ -1260,6 +1369,8 @@ dialog p { margin: 8px 0 0; }
   align-items: center;
   margin-top: 12px;
 }
+
+.place-card > .place-actions .button-secondary { flex: 1; text-align: center; }
 
 .tag-saved { --c: var(--leaf-ink); }
 
@@ -1320,7 +1431,7 @@ dialog p { margin: 8px 0 0; }
 #place-title:focus-visible { outline: 2px solid var(--accent); }
 
 .place-section { padding: 0 20px; margin-top: 24px; }
-.place-section h3 { font-size: 26px; margin-bottom: 8px; }
+.place-section h3 { font-size: 20px; margin-bottom: 8px; }
 .place-section p { margin: 0 0 8px; }
 .place-section a { color: var(--accent); font-weight: 600; }
 
@@ -1497,7 +1608,7 @@ textarea {
   box-shadow: var(--shadow);
 }
 
-.saved-place h3 { font-size: 26px; }
+.saved-place h3 { font-size: 21px; }
 .saved-place h3.unavailable { color: var(--ink-soft); font-family: var(--font-body); font-size: 16px; }
 .saved-place p { margin: 4px 0 0; }
 .saved-meta { font-size: 14px; color: var(--ink-soft); }
@@ -1530,14 +1641,14 @@ textarea {
 @media (max-width: 719px) {
   .wrap { padding: 0 16px; }
   .hero { padding-block: 8px 24px; }
-  .hero h1 { font-size: 40px; }
+  .hero h1 { font-size: 30px; }
   html:lang(zh-CN) .hero h1 { font-size: 28px; }
   html:lang(zh-CN) .section-head h2 { font-size: 24px; }
   .hero > p { margin: 8px 0 16px; }
   /* City on its own row; the unit switch below it. */
   .controls { grid-template-columns: 1fr; gap: 12px; }
   section { padding-block: 24px; }
-  .section-head h2 { font-size: 34px; }
+  .section-head h2 { font-size: 24px; }
 
   /* Swipeable row; the next card peeks in at the edge. */
   .week {
@@ -1558,7 +1669,7 @@ textarea {
     grid-template-columns: 96px 1fr;
     align-items: start;
   }
-  .idea h3 { font-size: 25px; }
+  .idea h3 { font-size: 19px; }
 
   /* "What to wear" comes first on phones. */
   .day-weather {
@@ -1567,19 +1678,21 @@ textarea {
   }
   .day-ideas { gap: 12px; }
 
-  .location-actions > button { flex: 1 1 100%; }
-  #locate { width: 100%; }
-
   /* Now on top; the next hours swipe sideways. */
   .weather-now { grid-template-columns: 1fr; gap: 12px; }
   .hours { overflow-x: auto; }
   .hour-list { grid-template-columns: repeat(6, 64px); }
 
-  .choices { display: grid; gap: 12px; }
+  /* Ages and "who's exploring" sit side by side (as in the reference design); walking
+     time gets its own full-width row since it has five options to lay out. */
+  .choices { display: flex; flex-wrap: wrap; gap: 12px; }
+  .choices > :nth-child(1),
+  .choices > :nth-child(2) { flex: 1 1 calc(50% - 6px); min-width: 0; }
+  .choices > :nth-child(3) { flex: 1 1 100%; }
   .choices .age-select,
   .choices .segmented { width: 100%; }
   .choices .segmented label { flex: 1; }
-  .choices .segmented span { min-width: 0; }
+  .choices .segmented span { min-width: 0; padding: 0 6px; }
   .find-button { width: 100%; }
   .controls-footer { gap: 12px; }
 
@@ -1607,7 +1720,7 @@ textarea {
     height: calc(100dvh - 160px);
     min-height: 360px;
   }
-  .place-card h3 { font-size: 26px; }
+  .place-card h3 { font-size: 19px; }
 
   .place-dialog { width: 100%; max-width: 100%; }
   .place-head { padding: 16px; }

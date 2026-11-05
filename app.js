@@ -2,6 +2,9 @@ const GEOCODE_URL = "https://geocoding-api.open-meteo.com/v1/search";
 const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
 const HOLIDAYS_URL = "https://date.nager.at/api/v3/PublicHolidays";
 
+// A small line-icon pin, replacing the 📍 emoji everywhere a location is labelled.
+const PIN_ICON = '<svg class="icon icon-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21S5 13.4 5 9a7 7 0 1 1 14 0c0 4.4-7 12-7 12Z"/><circle cx="12" cy="9" r="2.3"/></svg>';
+
 const form = document.querySelector("#location-form");
 const googleLocation = document.querySelector("#google-location");
 const addressSlot = document.querySelector("#address-slot");
@@ -21,6 +24,7 @@ const agesSelect = document.querySelector("#ages");
 const allNote = document.querySelector(".all-note");
 const interestMessage = document.querySelector("#interest-message");
 const findButton = document.querySelector("#find");
+const findButtonLabel = findButton.querySelector("span");
 const exploreTabs = document.querySelector("#explore-tabs");
 const exploreResults = document.querySelector("#explore-results");
 const exploreNotes = document.querySelector("#explore-notes");
@@ -352,7 +356,7 @@ function locate() {
 
 function resetLocateButton() {
   locateButton.disabled = false;
-  locateButton.innerHTML = `<span aria-hidden="true">📍</span> ${tr("Use my location")}`;
+  locateButton.innerHTML = `${PIN_ICON} ${tr("Use my location")}`;
 }
 
 // A saved location comes back on a return visit: weather only, never a place search.
@@ -768,11 +772,11 @@ let selectedPlace = null;
 let placeOpener = null;
 
 function interestChipsHtml(name) {
-  const options = [...CATEGORY_KEYS.map((key) => [key, CATEGORIES[key]]), ["all", { label: tr("All"), emoji: "✨" }]];
-  return options.map(([key, { label, emoji }]) => `
+  const options = [...CATEGORY_KEYS.map((key) => [key, CATEGORIES[key]]), ["all", { label: tr("All") }]];
+  return options.map(([key, { label }]) => `
     <label class="chip">
       <input type="radio" name="${name}" value="${key}">
-      <span><span aria-hidden="true">${emoji}</span><span>${tr(label)}</span><span class="chip-loaded" hidden>✓<span class="visually-hidden"> ${tr("(loaded)")}</span></span></span>
+      <span><span>${tr(label)}</span><span class="chip-loaded" hidden>✓<span class="visually-hidden"> ${tr("(loaded)")}</span></span></span>
     </label>`).join("");
 }
 
@@ -842,12 +846,12 @@ async function findAdventures() {
   const keys = categoriesToSearch(settings.interest, run.loaded);
   if (keys.length) {
     findButton.disabled = true;
-    findButton.textContent = tr("Searching…");
+    findButtonLabel.textContent = tr("Searching…");
     exploreResults.hidden = true;
     showStatus(exploreStatus, "loading", tr("Finding little adventures near {place}…", { place: placeLabel() }));
     const results = await Promise.allSettled(keys.map((key) =>
       searchNearbyPlaces(run.origin, searchRadius(settings.minutes), CATEGORIES[key].types)));
-    findButton.textContent = tr("Find Little Adventures");
+    findButtonLabel.textContent = tr("Find Little Adventures");
     findButton.disabled = false;
     if (run !== explore) return; // the location or walking time changed meanwhile
     results.forEach((result, i) => {
@@ -995,35 +999,47 @@ function placeWeatherLines(placeItem, day) {
   return lines;
 }
 
+// The same heart outline used for the "My Places" nav icon, so saving reads as one idea.
+const HEART_PATH = "M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5a5.5 5.5 0 0 0 1-8.9z";
+
 function placeCardHtml(placeItem, day) {
   const category = CATEGORIES[placeItem.category];
   const guide = guideFor(placeType(placeItem), placeItem.category);
   const visits = visitCount(savedPlaces, placeItem.id);
   const idea = tr(guide.sets[perspectiveFor(guide, visits)].notice[0]);
   const name = escapeHtml(placeItem.name || tr("Unnamed place"));
+  const initial = escapeHtml((placeItem.name || "?").trim()[0] || "?");
+  const saved = savedPlaces[placeItem.id];
   return `
     <article class="place-card${placeItem.id === selectedPlace ? " is-selected" : ""}" data-place="${placeItem.id}">
       <div class="place-google">
-        <span class="place-number" aria-hidden="true">${placeItem.number}</span>
-        <div>
-          <h3><button type="button" class="place-title" data-place-open="${placeItem.id}">
-            <span class="visually-hidden">${placeItem.number}. </span>${name}</button></h3>
+        <span class="place-photo-wrap">
+          <span class="art art-missing place-photo" data-initial="${initial}" aria-hidden="true"></span>
+          <span class="place-number" aria-hidden="true">${placeItem.number}</span>
+        </span>
+        <div class="place-main">
+          <div class="place-head-row">
+            <h3><button type="button" class="place-title" data-place-open="${placeItem.id}">
+              <span class="visually-hidden">${placeItem.number}. </span>${name}</button></h3>
+            ${saved
+              ? `<span class="heart-icon is-saved" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="${HEART_PATH}"/></svg></span>`
+              : `<button type="button" class="heart-icon heart-button" data-save="${placeItem.id}" aria-label="${tr("Save {name}", { name })}"><svg class="icon" viewBox="0 0 24 24"><path d="${HEART_PATH}"/></svg></button>`}
+          </div>
           <p class="place-address">${escapeHtml(placeItem.address || "")}</p>
           <p class="place-walk">${walkHtml(placeItem)}</p>
+          <p class="place-tags"><span class="tag tag-soft">${tr(category.label)}</span>
+            <span class="tag tag-soft">${tr("{setting} (estimate)", { setting: settingFor(placeItem) === "outdoors" ? tr("Outdoors") : tr("Indoors") })}</span>
+            ${saved ? statusTagHtml(placeItem.id) : ""}</p>
         </div>
       </div>
       <div class="place-notes">
         <p class="notes-label">${tr("Little Days notes")}</p>
-        <p class="place-tags"><span class="tag tag-soft"><span aria-hidden="true">${category.emoji}</span> ${tr(category.label)}</span>
-          <span class="tag tag-soft">${tr("{setting} (estimate)", { setting: settingFor(placeItem) === "outdoors" ? tr("Outdoors") : tr("Indoors") })}</span></p>
         <p>${accessHtml(placeItem)}</p>
         <ul class="place-weather">${placeWeatherLines(placeItem, day).map((line) => `<li>${line}</li>`).join("")}</ul>
         <p>${ageNotes(settings.ages).map((note) => tr(note)).join(" ")}</p>
         <p class="place-idea"><strong>${visits ? tr("Next visit:") : tr("Notice:")}</strong> ${escapeHtml(idea)}</p>
       </div>
       <div class="place-actions">
-        ${savedPlaces[placeItem.id] ? statusTagHtml(placeItem.id)
-          : `<button type="button" class="button-secondary" data-save="${placeItem.id}" aria-label="${tr("Save {name}", { name })}">${tr("Save")}</button>`}
         <button type="button" class="button-secondary" data-place-open="${placeItem.id}" aria-label="${tr("Details for {name}", { name })}">${tr("Details")}</button>
       </div>
     </article>`;
@@ -1148,7 +1164,7 @@ function renderPlaceDetails(placeItem, perspective) {
     <div>
       <h2 id="place-title" tabindex="-1">${name}</h2>
       <p class="place-address">${escapeHtml(placeItem.address || "")}</p>
-      <p><span class="tag tag-soft"><span aria-hidden="true">${category.emoji}</span> ${tr(category.label)}</span> ${statusTagHtml(id)}</p>
+      <p><span class="tag tag-soft">${tr(category.label)}</span> ${statusTagHtml(id)}</p>
     </div>
     <button type="button" class="button-secondary" data-place-close>${tr("Close")}</button>`;
   routeReminder.innerHTML = `${tr("A Google walking route isn't a check that the way suits young children. Before you go, look for busy road crossings, water, construction, closed or restricted areas, and the weather, and plan enough adults to supervise.")}
@@ -1586,7 +1602,7 @@ function placeItemHtml(visit, date) {
     return `
       <li class="plan-place">
         <form class="edit-visit-form" data-edit-form="${visit.entry}" novalidate>
-          <p class="plan-place-name"><span aria-hidden="true">📍</span> ${name}</p>
+          <p class="plan-place-name">${PIN_ICON} ${name}</p>
           <div class="form-row">
             <label>${tr("Date")} <input type="date" name="date" value="${date}" min="${isoToday()}" required></label>
             <label>${tr("Time")} <span class="optional">${tr("(optional)")}</span> <input type="time" name="time" value="${visit.time}"></label>
@@ -1607,7 +1623,7 @@ function placeItemHtml(visit, date) {
   return `
     <li class="plan-place">
       <div>
-        <span aria-hidden="true">📍</span>
+        ${PIN_ICON}
         ${info ? `<button type="button" class="link-button" data-place-open="${visit.placeId}">${name}</button>` : `<span>${name}</span>`}
         ${meta ? `<p class="plan-meta">${meta}</p>` : ""}
         ${visit.notes ? `<p class="plan-notes">${escapeHtml(visit.notes)}</p>` : ""}
