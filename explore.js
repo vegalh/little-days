@@ -2,28 +2,30 @@
 // Places here are plain objects made from Google's results:
 // { id, name, address, location: { lat, lng }, primaryType, types, category }
 
+// photos are RootMap activity photos for the place cards: never of the place itself, and the
+// list says so (AGENTS.md, Data and storage).
 // Little Days categories → Google place types (all from Google's Table A, checked
 // 2026-11-04). They're searched as includedPrimaryTypes, so a supermarket that also
 // lists "bakery" among its types isn't shown as a bakery.
 const CATEGORIES = {
-  "nature": { label: "Nature", emoji: "🌳", types: ["park", "botanical_garden", "garden", "hiking_area"] },
+  "nature": { label: "Nature", emoji: "🌳", photos: ["bark-rubbing", "leaf-rubbing", "egg-carton-nature-hunt"], types: ["park", "botanical_garden", "garden", "hiking_area"] },
   "everyday-life": {
-    label: "Everyday Life", emoji: "🥖",
+    label: "Everyday Life", emoji: "🥖", photos: ["i-spy-a-color", "exploring-fall-vegetables", "spreading-toast"],
     types: ["bakery", "grocery_store", "supermarket", "market", "farmers_market", "florist", "hardware_store", "book_store"],
   },
   "community-helpers": {
-    label: "Community Helpers", emoji: "🚒",
+    label: "Community Helpers", emoji: "🚒", photos: ["whats-that-sound", "i-spy-a-color"],
     types: ["fire_station", "police", "post_office", "city_hall", "community_center"],
   },
   "art-culture": {
-    label: "Art & Culture", emoji: "🎨",
+    label: "Art & Culture", emoji: "🎨", photos: ["paper-collage", "finger-painting-stamping", "water-painting-stones"],
     types: ["library", "museum", "art_gallery", "performing_arts_theater", "cultural_center"],
   },
   "animals-wildlife": {
-    label: "Animals & Wildlife", emoji: "🐦",
+    label: "Animals & Wildlife", emoji: "🐦", photos: ["duck-walk", "whats-that-sound"],
     types: ["zoo", "aquarium", "farm", "pet_store", "dog_park", "wildlife_park", "wildlife_refuge"],
   },
-  "movement": { label: "Movement", emoji: "🤸", types: ["playground", "athletic_field", "sports_complex"] },
+  "movement": { label: "Movement", emoji: "🤸", photos: ["rolling-in-the-leaves", "statue-game", "tossing-leaves-with-a-stick"], types: ["playground", "athletic_field", "sports_complex"] },
 };
 const CATEGORY_KEYS = Object.keys(CATEGORIES);
 

@@ -114,7 +114,7 @@ img { display: block; max-width: 100%; }
   .tabs { display: none; }
   :root { --tabs: 0px; }
   .top-tabs { display: flex; gap: 16px; font-size: 14px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
-  .top-tabs button { min-height: 44px; }
+  .top-tabs button { min-width: 44px; min-height: 44px; }
   .top-tabs button[aria-current=page] { color: var(--accent-strong); font-weight: 700; }
 }
 

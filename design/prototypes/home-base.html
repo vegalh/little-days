@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Little Days Home Base</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+/* Home base: the address is set once, then the app opens on real places. There is no search
+   box on the main screen, and "Change" returns to the same one-time step. */
+:root { --bg: #FBF8F1; --tint: #F3EFE4; --line: #E8E2D3; }
+body { background: var(--bg); padding-bottom: calc(var(--tabs) + 16px); }
+.top { display: flex; align-items: center; gap: 8px; height: 52px; padding: 0 8px 0 var(--gutter); }
+.top .lang { margin-left: auto; }
+.restart { display: inline-flex; align-items: center; min-height: 44px; }
+
+/* The one-time step */
+.setup { max-width: 560px; margin: 0 auto; padding: 8px var(--gutter) 16px; }
+.setup-photos { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; }
+.setup-photos img { width: 100%; height: clamp(136px, 22dvh, 200px); object-fit: cover; border-radius: 16px; }
+.setup h1 { margin-top: 24px; font-size: 28px; line-height: 1.15; }
+html:lang(zh-CN) .setup h1 { font-size: 26px; }
+.setup label, .setup .ask { display: block; margin: 16px 0 8px; font-size: 16px; font-weight: 700; }
+.setup .once { margin-top: 12px; font-size: 14px; color: var(--ink-2); }
+.setup .other { display: flex; flex-wrap: wrap; gap: 0 16px; margin-top: 8px; }
+.setup .other .btn-text { display: inline-flex; align-items: center; gap: 4px; }
+.setup .current { margin-top: 12px; font-size: 14px; color: var(--ink-2); overflow-wrap: anywhere; }
+.setup .credit { margin-top: 8px; font-size: 13px; color: var(--ink-2); }
+
+/* Every visit after */
+.home { display: grid; grid-template-columns: minmax(0, 1fr); }
+.from { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 8px 0 var(--gutter); font-size: 14px; }
+.from .icon { color: var(--accent-strong); }
+.from p { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.from .btn-text { flex: none; padding: 0 8px; }
+.map { height: clamp(208px, 30dvh, 280px); margin: 4px var(--gutter) 0; border-radius: 16px; }
+.tools { padding: 12px var(--gutter) 4px; }
+.tools .chip[aria-pressed=true] { background: var(--selected); }
+.list { min-width: 0; }
+.note { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding: 8px var(--gutter) 0; font-variant-numeric: tabular-nums; }
+.note h2 { font-size: 16px; }
+.small { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding: 4px var(--gutter) 0; }
+.entries { padding: 0 var(--gutter); }
+.entry { display: grid; grid-template-columns: 104px 1fr; gap: 12px; padding: 16px 0; border-top: 1px solid var(--line); }
+.entry:first-child { border-top: 0; }
+.entry.on .name { color: var(--accent-strong); }
+.entry-photo { position: relative; display: block; }
+.entry-photo img { width: 104px; height: 128px; object-fit: cover; border-radius: 12px; }
+.entry-no { position: absolute; left: 6px; top: 6px; }
+.entry-head { display: flex; align-items: flex-start; gap: 4px; }
+.name { flex: 1; min-width: 0; margin: -9px 0; padding: 11px 0; font-size: 18px; font-weight: 700; line-height: 1.25; text-align: left; }
+.entry .save { margin: -9px -10px 0 0; }
+.entry .idea { margin-top: 4px; font-size: 14px; line-height: 20px; }
+.entry .idea b { font-weight: 700; }
+.credit-line { padding: 0 var(--gutter); font-size: 13px; color: var(--ink-2); }
+.ghost { display: grid; grid-template-columns: 104px 1fr; gap: 12px; padding: 16px 0; border-top: 1px solid var(--line); }
+.ghost:first-of-type { border-top: 0; }
+.ghost i { display: block; border-radius: 12px; background: var(--tint); }
+.ghost > i { height: 128px; }
+.ghost span { display: grid; gap: 8px; align-content: start; }
+.ghost span i { height: 16px; border-radius: 8px; }
+
+@media (min-width: 960px) {
+  body { padding-bottom: 0; }
+  .top { height: 72px; padding: 0 24px; gap: 16px; }
+  .top .top-tabs { margin-left: auto; }
+  .top .lang { margin-left: 0; }
+  .setup { padding-top: 24px; }
+  .setup h1 { font-size: 32px; }
+  .home { grid-template-columns: minmax(420px, 5fr) 7fr; grid-template-rows: auto auto 1fr; column-gap: 24px; max-width: 1280px; margin: 0 auto; padding: 0 24px 24px; }
+  .from, .tools, .list { grid-column: 1; }
+  .from { padding: 0; }
+  .tools { padding: 8px 0 4px; flex-wrap: wrap; overflow: visible; }
+  .note, .small, .entries, .credit-line { padding-left: 0; padding-right: 0; }
+  .map { grid-column: 2; grid-row: 1 / 4; position: sticky; top: 16px; align-self: start; height: calc(100vh - 104px); max-height: 760px; margin: 0; }
+  .entry { grid-template-columns: 128px 1fr; }
+  .entry-photo img { width: 128px; height: 136px; }
+}
+</style>
+</head>
+<body>
+<div id="page"></div>
+<script src="shared.js"></script>
+<script>
+Object.assign(ZH, {
+  "Start over": "重新开始",
+  "Let's find places to explore with children.": "一起找找适合带孩子探索的地方。",
+  "Where do you usually start from?": "你通常从哪里出发？",
+  "Your school or home. You only need to do this once.": "比如学校或家。只需设置一次。",
+  "Saved in this browser until you change it.": "保存在此浏览器中，可随时更改。",
+  "Use my location this time": "这次使用我的位置",
+  "Keep this address": "保留此地址", "Change": "更改", "Now:": "当前：",
+  "Your current location": "你当前的位置",
+  "Photos from RootMap activities": "照片来自 RootMap 活动",
+  "Photos show RootMap activities, not these places": "照片展示的是 RootMap 活动，并非这些地点",
+});
+
+const HOME_KEY = "littleDaysPrototype.home"; // production stores the Google place ID instead
+const page = document.querySelector("#page");
+let screen = "setup";
+let loading = false;
+
+function readHome() {
+  try { return localStorage.getItem(HOME_KEY); } catch { return null; }
+}
+function writeHome(value) {
+  try {
+    if (value) localStorage.setItem(HOME_KEY, value);
+    else localStorage.removeItem(HOME_KEY);
+  } catch (error) { console.error(error); }
+}
+
+const header = () => `<header class="top">${brand}<button class="restart" type="button" data-restart><span class="tag-proto">${t("Prototype")} · ${t("Start over")}</span></button>${topTabs()}${langButton()}</header>`;
+
+function setup() {
+  const changing = Boolean(state.location);
+  return `${header()}<main class="setup">
+    ${changing ? "" : `<div class="setup-photos"><img src="${photoSrc("bark-rubbing")}" alt=""><img src="${photoSrc("i-spy-a-color")}" alt=""><img src="${photoSrc("duck-walk")}" alt=""></div>
+    <h1>${t("Let's find places to explore with children.")}</h1>`}
+    <p class="ask">${t("Where do you usually start from?")}</p>
+    <div id="field"></div>
+    <p class="once">${t(changing ? "Saved in this browser until you change it." : "Your school or home. You only need to do this once.")}</p>
+    ${changing ? `<p class="current">${t("Now:")} ${state.location.address}</p>` : ""}
+    <div class="other">
+      <button class="btn-text" type="button" data-once>${icon("locate", "icon-sm")}${t("Use my location this time")}</button>
+      ${changing ? `<button class="btn-text" type="button" data-keep>${t("Keep this address")}</button>` : `<button class="btn-text" type="button" data-example>${t("Try an example")}</button>`}
+    </div>
+    ${changing ? "" : `<p class="credit">${t("Photos from RootMap activities")}</p>`}
+  </main>`;
+}
+function entry(place, i) {
+  return `<article class="entry ${state.selected === place.id ? "on" : ""}" data-card="${place.id}">
+    <button class="entry-photo" type="button" data-open="${place.id}" tabindex="-1" aria-hidden="true"><img src="${photoSrc(place.photo)}" alt="" loading="lazy"><span class="pin-num entry-no">${i + 1}</span></button>
+    <div><div class="entry-head"><button class="name" type="button" data-open="${place.id}">${place.name}</button>${saveButton(place)}</div>
+      <p class="meta">${walkLabel(place.walk)} · ${place.miles} mi · ${categoryLabel(place.category)}</p>
+      <p class="idea"><b>${t("Little Days idea:")}</b> ${pick(place.idea)}</p>${classLine(place)}</div></article>`;
+}
+const ghost = () => `<div class="ghost" aria-hidden="true"><i></i><span><i style="width:70%"></i><i style="width:45%"></i><i></i><i style="width:85%"></i></span></div>`;
+function placesList() {
+  if (loading) return `<div class="note"><h2 role="status">${t("Searching…")}</h2></div><div class="entries">${ghost()}${ghost()}${ghost()}</div>`;
+  const list = visiblePlaces();
+  return `<div class="note"><h2>${placesLabel(list.length)} · ${walkLabel(state.minutes)}</h2><span class="meta">${weatherLine()}</span></div>
+    <div class="small"><span class="g-attr" translate="no">Google Maps</span><span class="sample">${t("Sample places, not real results")}</span></div>
+    <div class="entries">${list.length ? list.map(entry).join("") : `<p class="entry" style="display:block">${t("No places match these filters.")}</p>`}</div>
+    <p class="credit-line">${t("Photos show RootMap activities, not these places")}</p>`;
+}
+function home() {
+  const rows = [["all", "All"], ...CATEGORIES.map((c) => [c.key, c.label])];
+  const count = filterCount();
+  const where = `${state.location.address}${state.location.example ? ` · ${t("Example address")}` : ""}`;
+  return `${header()}<main class="home">
+    <div class="from">${icon("pin", "icon-sm")}<p title="${where}">${where}</p><button class="btn-text" type="button" data-change>${t("Change")}</button></div>
+    <div class="map" id="map"></div>
+    <div class="tools scroll-x"><button class="chip" type="button" data-filters aria-label="${t("Filters")}">${icon("filters", "icon-sm")}${count ? `<span class="num">${count}</span>` : ""}</button>
+      ${rows.map(([key, label]) => `<button class="chip" type="button" data-interest="${key}" aria-pressed="${state.interest === key}">${t(label)}</button>`).join("")}</div>
+    <section class="list" aria-label="${t("Explore")}">${placesList()}</section>
+  </main>`;
+}
+function paintMap() {
+  const map = document.querySelector("#map");
+  if (!map) return;
+  const wide = matchMedia("(min-width: 960px)").matches;
+  drawMap(map, { ...(wide ? { zoom: 1.2 } : { zoom: 0.66, cy: 436 }), showPlaces: !loading });
+}
+function render(keepScroll) {
+  const y = scrollY;
+  page.innerHTML = screen === "setup" ? setup() : home();
+  if (screen === "setup") {
+    mountField(document.querySelector("#field"));
+    const input = document.querySelector("#field input");
+    input.value = "";
+    document.querySelector("#field .gf-clear").hidden = true;
+  }
+  paintMap();
+  scrollTo(0, keepScroll ? y : 0);
+}
+// Each opening is a fresh search, because Google results can't be kept between visits.
+function openHome() {
+  screen = "home";
+  loading = true;
+  render();
+  if (params.get("state") === "loading") return;
+  setTimeout(() => { loading = false; render(true); }, 700);
+}
+setRender((reason) => {
+  if (reason !== "location") { render(true); return; }
+  // Only a picked address is kept: the example and device position are for this visit.
+  if (!state.location.example && !state.location.device) writeHome(state.location.address);
+  openHome();
+});
+document.addEventListener("click", (event) => {
+  const chip = event.target.closest("[data-interest]");
+  if (chip) { state.interest = chip.dataset.interest; state.selected = null; render(true); }
+  const pin = event.target.closest("[data-pin]");
+  if (pin) { state.selected = +pin.dataset.pin; render(true); }
+  if (event.target.closest("[data-change]")) { screen = "setup"; render(); }
+  if (event.target.closest("[data-keep]")) { screen = "home"; render(); }
+  if (event.target.closest("[data-once]")) {
+    toast(t("Prototype only: the browser would ask for your location here"));
+    state.location = { address: t("Your current location"), device: true };
+    openHome();
+  }
+  if (event.target.closest("[data-restart]")) {
+    writeHome(null);
+    state.location = null;
+    screen = "setup";
+    render();
+  }
+});
+addEventListener("resize", paintMap);
+
+const wanted = params.get("state");
+if (wanted === "first") writeHome(null);
+const saved = wanted === "return" || wanted === "loading" ? EXAMPLE : readHome();
+if (saved && wanted !== "first") { state.location = { address: saved }; openHome(); } else render();
+if (wanted === "change") { state.location = { address: EXAMPLE }; screen = "setup"; render(); }
+if (wanted === "return") { loading = false; render(); }
+openFromParams();
+</script>
+</body>
+</html>

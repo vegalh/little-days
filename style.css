@@ -4,16 +4,16 @@
 @font-face { font-family: "Nunito"; font-weight: 600; font-display: swap; src: url("fonts/nunito-latin-600-normal.woff2") format("woff2"); }
 @font-face { font-family: "Nunito"; font-weight: 700; font-display: swap; src: url("fonts/nunito-latin-700-normal.woff2") format("woff2"); }
 
-/* A clean, warm, modern palette: mostly white with warm-neutral accents, olive green for
-   selected states and primary actions (DESIGN.md "Colors"). */
+/* A warm paper page with white cards, and a deep olive for selected states and primary
+   actions, dark enough to pass AA as text and under white text (DESIGN.md 2). */
 :root {
-  --bg: #FFFFFF;
+  --bg: #FBF8F1;
   --surface: #FFFFFF;
-  --tint: #FAFAF8;
+  --tint: #F3EFE4;
   --ink: #26251F;
-  --ink-soft: #77766F;
-  --line: #EAE8E2;
-  --accent: #718C43;
+  --ink-soft: #66655C;
+  --line: #E8E2D3;
+  --accent: #4B6B2E;
   --accent-ink: #FFFFFF;
   --selected: #EAF0D8;
   --heading: #26251F;
@@ -66,7 +66,7 @@ html:lang(zh-CN) {
 html:lang(zh-CN) h1,
 html:lang(zh-CN) h2,
 html:lang(zh-CN) h3 { font-weight: 600; letter-spacing: .02em; }
-html:lang(zh-CN) .explore-side h1 { font-size: 22px; line-height: 1.3; }
+html:lang(zh-CN) .setup h1 { font-size: 26px; line-height: 1.3; }
 html:lang(zh-CN) .section-head h2 { font-size: 24px; }
 html:lang(zh-CN) .idea h3,
 html:lang(zh-CN) .saved-place h3 { font-size: 19px; }
@@ -203,13 +203,6 @@ html:lang(zh-CN) .day-name { font-size: 16px; }
 
 .explore-side { min-width: 0; }
 
-.explore-side h1 {
-  margin-bottom: 12px;
-  font-size: 24px;
-  line-height: 1.25;
-  text-wrap: balance;
-}
-
 .explore-main { min-width: 0; padding: 0; }
 .wrap-status { max-width: 992px; margin: 32px auto; }
 /* .wrap's own padding would otherwise cancel the sections' space above and below. */
@@ -280,12 +273,25 @@ fieldset.field {
   outline-offset: 1px;
 }
 
-/* The one search field and the small location button. */
-.search-row {
-  display: flex;
-  gap: 8px;
-  align-items: stretch;
-}
+/* The one-time step (PRD.md 7.1). "Change" shows only the address part of it. */
+.setup { max-width: 560px; margin: 0 auto; padding: 8px 24px 32px; }
+.setup-photos { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; }
+.setup-photos img { width: 100%; height: clamp(120px, 20dvh, 200px); object-fit: cover; border-radius: var(--radius-small); }
+.setup h1 { margin: 24px 0 16px; font-size: 28px; line-height: 1.15; text-wrap: balance; }
+.setup-ask { margin: 8px 0 0; font-weight: 700; }
+.setup-ask:focus { outline: 0; }
+.setup-note { margin: 0; font-size: 14px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.setup-actions { display: flex; flex-wrap: wrap; gap: 0 16px; }
+.setup-actions .link-button { display: inline-flex; gap: 4px; align-items: center; color: var(--accent); }
+.setup.is-change .setup-intro,
+.setup.is-change .setup-mode { display: none; }
+.setup.is-change { padding-top: 24px; }
+
+/* The saved starting point: one line and "Change", on Explore and Weather. */
+.base-line { display: flex; gap: 8px; align-items: center; justify-content: space-between; min-height: 44px; }
+.base-line p { flex: 1; min-width: 0; margin: 0; }
+.base-line .link-button { flex: none; color: var(--accent); }
+#place-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .search-field { flex: 1; min-width: 0; }
 
@@ -297,20 +303,25 @@ fieldset.field {
 .city-row input,
 .city-row button { min-height: 48px; }
 
-/* Google's address field, styled only through what it exposes: the element itself and its
-   parts (DESIGN.md 6). The element already draws a border and background, so those are set
-   here and the input inside is left plain, which gives one field instead of a box in a box.
-   Google's icon and clear button keep their own 48px slots, so they stay centered. */
+/* Google's address field, styled only through what it documents: the element and its
+   parts (DESIGN.md 6). One edge, and it belongs to the element: at rest a shadow draws it,
+   and on focus that edge gives way to Google's ring, so there are never two lines. Google's
+   default black box is on the element too, so this border: 0 is what removes it. */
 gmp-place-autocomplete {
   display: block;
   width: 100%;
+  height: 52px;
   font-family: var(--font-body);
   font-size: 16px;
+  color: var(--ink);
   color-scheme: light;
-  background-color: var(--tint);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-small);
+  background-color: var(--surface);
+  border: 0;
+  border-radius: 16px;
+  box-shadow: 0 0 0 1px var(--line), var(--shadow);
 }
+
+gmp-place-autocomplete:focus-within { box-shadow: var(--shadow); }
 
 /* !important: Google's own part styles would otherwise win (confirmed live). */
 gmp-place-autocomplete::part(input) {
@@ -328,7 +339,7 @@ gmp-place-autocomplete::part(prediction-list) {
 gmp-place-autocomplete::part(prediction-item-selected) { background: var(--selected) !important; }
 /* The focus ring part draws itself with border-color, not outline-color. */
 gmp-place-autocomplete::part(focus-ring) { border-color: var(--accent) !important; }
-gmp-place-autocomplete[aria-invalid=true] { border-color: var(--accent); }
+gmp-place-autocomplete[aria-invalid=true] { box-shadow: 0 0 0 2px var(--accent); }
 
 /* A long address is cut short rather than breaking the layout; the full text is in the
    field above and in the line's title. */
@@ -381,14 +392,6 @@ gmp-place-autocomplete[aria-invalid=true] { border-color: var(--accent); }
   border-radius: var(--radius-small);
 }
 
-.search-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.search-actions button { min-height: 48px; }
-.find-button { flex: 1; min-width: 0; }
-
 /* How many filters differ from the defaults, on the Filters button. */
 .count-badge {
   display: inline-grid;
@@ -415,13 +418,18 @@ gmp-place-autocomplete[aria-invalid=true] { border-color: var(--accent); }
 .filters-summary p { min-width: 0; margin: 0; }
 .filters-summary .link-button { flex: none; }
 
-.filters-panel {
-  display: grid;
-  gap: 16px;
-  margin-top: 4px;
-  padding-block: 16px;
-  border-block: 1px solid var(--line);
-}
+/* Every secondary setting, in one sheet (DESIGN.md 6). */
+dialog.filters-panel { padding: 0; }
+dialog.filters-panel[open] { display: flex; flex-direction: column; }
+.filters-head { display: flex; flex: none; align-items: center; justify-content: space-between; padding: 8px 8px 8px 16px; }
+.filters-head h2 { font-size: 18px; }
+.filters-head h2:focus { outline: 0; }
+.filters-body { flex: 1; min-height: 0; gap: 16px; padding: 0 16px 16px; overflow-y: auto; }
+.filters-foot { flex: none; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+.filters-foot button { width: 100%; }
+.explore-tools { display: flex; gap: 8px; align-items: center; min-width: 0; margin-bottom: 8px; }
+.filters-button { flex: none; }
+.link-as-button { display: inline-flex; align-items: center; min-height: 44px; margin-top: 8px; padding: 0 16px; font-weight: 600; text-decoration: none; }
 
 input[type=text],
 input[type=date],
@@ -500,12 +508,6 @@ button:disabled {
 
 .button-quiet:hover { color: var(--accent); }
 
-.icon-button {
-  flex: none;
-  width: 48px;
-  padding: 0;
-}
-
 .button-added,
 .button-added:disabled {
   color: var(--leaf-ink);
@@ -559,7 +561,6 @@ section { padding-block: 32px; }
 .hours,
 .idea,
 .plan,
-.place-card,
 .saved-place {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1139,8 +1140,9 @@ dialog p { margin: 8px 0 0; }
 /* Explore */
 
 .explore-tabs {
+  flex: 1;
   min-width: 0;
-  margin: 0 0 16px;
+  margin: 0;
   padding: 0;
   border: 0;
 }
@@ -1170,7 +1172,7 @@ dialog p { margin: 8px 0 0; }
 .place-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
-  gap: 12px;
+  gap: 0 24px;
 }
 
 .list-divider {
@@ -1180,13 +1182,11 @@ dialog p { margin: 8px 0 0; }
   color: var(--ink-soft);
 }
 
-.place-card { padding: 12px 16px 8px; }
-
-.place-card.is-selected {
-  background: var(--selected);
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
+/* An entry in the guide: a photo beside the words, with a rule between entries. */
+.place-card { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.place-card .art { width: 104px; height: 128px; aspect-ratio: auto; }
+.place-card .art img { width: 100%; height: 100%; object-fit: cover; }
+.place-card.is-selected { background: var(--selected); box-shadow: 0 0 0 8px var(--selected); border-radius: 2px; }
 
 .place-card h3 {
   display: flex;
@@ -1573,8 +1573,7 @@ textarea {
 
 @media (max-width: 719px) {
   .wrap { padding: 0 16px; }
-  .explore-side h1 { margin-bottom: 8px; font-size: 22px; }
-  html:lang(zh-CN) .explore-side h1 { font-size: 20px; }
+  .setup { padding: 8px 16px 24px; }
   html:lang(zh-CN) .section-head h2 { font-size: 22px; }
   .logo { font-size: 20px; }
   .logo-mark { width: 24px; height: 24px; }
@@ -1627,6 +1626,7 @@ textarea {
   .site-nav {
     position: fixed;
     inset: auto 0 0;
+    margin: 0;
     z-index: 10;
     display: grid;
     grid-auto-flow: column;

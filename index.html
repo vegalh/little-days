@@ -31,41 +31,207 @@
   <main>
     <!-- Four views, one shown at a time (DESIGN.md 5). The nav links switch them by the URL hash. -->
     <div class="view" data-view="explore">
-      <!-- Three parts: search, map, places. Stacked in that order on phones; on a wide
-           screen the search and places share a column beside the map (DESIGN.md 5). -->
-      <div id="explore" class="explore-page">
-        <aside class="explore-side" aria-label="Search">
-          <h1>Little adventures, close to home.</h1>
-          <form id="location-form" class="controls" role="search" novalidate>
-            <div class="search-row">
-              <div id="google-location" class="search-field" hidden>
-                <p id="address-label" class="visually-hidden">Address or place</p>
-                <div id="address-slot"></div>
-              </div>
-              <div id="city-location" class="search-field" hidden>
-                <label for="city" class="visually-hidden">City (for weather)</label>
-                <div class="city-row">
-                  <input id="city" name="city" type="text" list="city-options" autocomplete="off" placeholder="e.g. Boston">
-                  <datalist id="city-options"></datalist>
-                  <button id="city-button" type="submit" class="button-secondary">Show weather</button>
-                </div>
-              </div>
-              <button id="locate" type="button" class="button-secondary icon-button" aria-label="Use my location" title="Use my location"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+      <!-- The one-time step (PRD.md 7.1): the starting point is set here once and saved.
+           "Change" comes back to it. Explore itself has no search box. -->
+      <section id="setup" class="setup" aria-labelledby="setup-heading" hidden>
+        <div class="setup-intro">
+          <div class="setup-photos">
+            <img src="images/activities/bark-rubbing-480.webp" alt="" width="480" height="440">
+            <img src="images/activities/i-spy-a-color-480.webp" alt="" width="480" height="440">
+            <img src="images/activities/duck-walk-480.webp" alt="" width="480" height="440">
+          </div>
+          <h1 id="setup-heading">Let's find places to explore with children.</h1>
+        </div>
+        <form id="location-form" class="controls" role="search" novalidate>
+          <fieldset class="field setup-mode">
+            <legend>Who's exploring</legend>
+            <div class="segmented segmented-wide">
+              <label><input type="radio" name="mode" value="family"><span>Family</span></label>
+              <label><input type="radio" name="mode" value="classroom"><span>Classroom</span></label>
             </div>
-            <p id="city-note" class="note" hidden>Maps aren't available right now, so you can check the weather by city.</p>
-            <p id="location-message" class="field-message" hidden></p>
+          </fieldset>
+          <p id="address-label" class="setup-ask" tabindex="-1"></p>
+          <div id="google-location" class="search-field" hidden>
+            <div id="address-slot"></div>
+          </div>
+          <div id="city-location" class="search-field" hidden>
+            <label for="city" class="visually-hidden">City (for weather)</label>
+            <div class="city-row">
+              <input id="city" name="city" type="text" list="city-options" autocomplete="off" placeholder="e.g. Boston">
+              <datalist id="city-options"></datalist>
+              <button id="city-button" type="submit" class="button-secondary">Show weather</button>
+            </div>
+          </div>
+          <p id="city-note" class="note" hidden>Maps aren't available right now, so you can check the weather by city.</p>
+          <p id="location-message" class="field-message" hidden></p>
+          <div id="location-status" class="hint" role="status" aria-live="polite"></div>
+          <p id="setup-note" class="setup-note"></p>
+          <p id="setup-current" class="setup-note" hidden></p>
+          <div class="setup-actions">
+            <button id="locate" type="button" class="link-button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg> <span>Use my location this time</span></button>
+            <button id="example" type="button" class="link-button" hidden>Try an example address</button>
+            <button id="keep-address" type="button" class="link-button" hidden>Keep this address</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Three parts: starting point, map, places. Stacked in that order on phones; on a
+           wide screen the starting point and places share a column beside the map (DESIGN.md 5). -->
+      <div id="explore" class="explore-page" hidden>
+        <aside class="explore-side" aria-label="Your starting point">
+          <h1 class="visually-hidden">Little adventures, close to home.</h1>
+          <div class="base-line">
             <p id="location-line" class="location-line" hidden></p>
-            <div id="location-status" class="hint" role="status" aria-live="polite"></div>
-            <div id="now-line" class="now-line" hidden></div>
-            <div class="search-actions">
-              <button id="find" type="button" class="find-button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15 9-2 4-4 2 2-4z"/></svg> <span>Explore nearby</span></button>
-              <button id="filters-toggle" type="button" class="button-secondary" aria-expanded="false" aria-controls="filters-panel"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg> <span>Filters</span> <span id="filters-count" class="count-badge" hidden></span></button>
-            </div>
-            <div id="filters-summary" class="filters-summary" hidden>
-              <p id="filters-active"></p>
-              <button id="reset-filters" type="button" class="link-button" hidden>Reset</button>
-            </div>
-            <div id="filters-panel" class="filters-panel" hidden>
+            <button type="button" class="link-button" data-change-base>Change</button>
+          </div>
+          <div id="now-line" class="now-line" hidden></div>
+        </aside>
+        <section id="place-map-box" class="map-box is-empty" aria-labelledby="map-heading">
+          <h2 id="map-heading" class="visually-hidden" tabindex="-1">Map of places</h2>
+          <!-- A map is a billed load (PRD.md 9.3), so it's created with the first results.
+               Until then this slot holds the Explore status. It's never a picture of a map. -->
+          <div id="map-empty" class="map-empty">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21S5 13.4 5 9a7 7 0 1 1 14 0c0 4.4-7 12-7 12Z"/><circle cx="12" cy="9" r="2.3"/></svg>
+            <div id="explore-status" class="status" role="status" aria-live="polite"></div>
+          </div>
+          <div id="explore-map" class="map" hidden></div>
+          <div id="map-peek" class="map-peek" hidden></div>
+        </section>
+        <section class="explore-main" aria-labelledby="explore-heading">
+          <h2 id="explore-heading" class="visually-hidden">Nearby places</h2>
+          <div class="explore-tools">
+            <button id="filters-toggle" type="button" class="button-secondary filters-button" aria-expanded="false" aria-controls="filters-panel"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg> <span>Filters</span> <span id="filters-count" class="count-badge" hidden></span></button>
+            <fieldset id="explore-tabs" class="explore-tabs" hidden>
+              <legend class="visually-hidden">What to explore</legend>
+              <div id="explore-chips" class="chips chips-scroll"></div>
+            </fieldset>
+          </div>
+          <div id="filters-summary" class="filters-summary" hidden>
+            <p id="filters-active"></p>
+            <button id="reset-filters" type="button" class="link-button" hidden>Reset</button>
+          </div>
+          <div id="explore-results" hidden>
+            <div id="explore-notes" class="explore-notes"></div>
+            <p class="google-attribution" translate="no">Google Maps</p>
+            <div id="place-list" class="place-list"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="view" data-view="weather" hidden>
+      <div id="weather-empty" class="status wrap-status">
+        <p>Choose a place on the Explore tab to see its weather.</p>
+        <a class="button-secondary link-as-button" href="#explore">Set your starting point</a>
+      </div>
+      <section id="weather" class="wrap" aria-labelledby="weather-heading" hidden>
+        <div class="section-head">
+          <h2 id="weather-heading">Weather</h2>
+          <p id="weather-subtitle"></p>
+          <div class="base-line">
+            <p id="place-line" hidden></p>
+            <button type="button" class="link-button" data-change-base>Change</button>
+          </div>
+        </div>
+        <div id="weather-status" class="status" role="status" aria-live="polite"></div>
+        <div id="weather-now" class="weather-now" hidden></div>
+        <p id="holiday-note" class="note" hidden></p>
+        <ol id="week" class="week" hidden></ol>
+        <div id="day-weather" class="day-weather" hidden>
+          <div id="warnings" class="warnings"></div>
+          <div id="wear" class="panel panel-wear"></div>
+        </div>
+      </section>
+
+      <section id="ideas" class="wrap" aria-labelledby="ideas-heading" hidden>
+        <div class="section-head">
+          <h2 id="ideas-heading"></h2>
+          <p id="ideas-subtitle"></p>
+        </div>
+        <div class="day-ideas">
+          <div id="idea-list" class="ideas"></div>
+          <div id="why" class="panel panel-why"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="view" data-view="my-places" hidden>
+      <section id="my-places" class="wrap" aria-labelledby="places-heading">
+        <div class="section-head">
+          <h2 id="places-heading">My Places</h2>
+          <p id="places-subtitle"></p>
+          <p class="google-attribution" translate="no">Google Maps</p>
+        </div>
+        <fieldset class="places-tabs">
+          <legend class="visually-hidden">Show places</legend>
+          <div class="segmented segmented-small">
+            <label><input type="radio" name="places-tab" value="want" checked><span>Want to explore <span class="count" data-count="want"></span></span></label>
+            <label><input type="radio" name="places-tab" value="explored"><span>Explored <span class="count" data-count="explored"></span></span></label>
+            <label><input type="radio" name="places-tab" value="revisit"><span>Revisit <span class="count" data-count="revisit"></span></span></label>
+          </div>
+        </fieldset>
+        <div id="places-list" class="places-list"></div>
+      </section>
+    </div>
+
+    <div class="view" data-view="my-week" hidden>
+      <section id="my-week" class="wrap" aria-labelledby="plan-heading">
+        <div class="section-head section-head-row">
+          <div>
+            <h2 id="plan-heading" tabindex="-1">My week</h2>
+            <p id="plan-subtitle"></p>
+          </div>
+          <button id="print-week" type="button" class="button-secondary" data-print-week><svg class="icon icon-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V4h12v5M5 18H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-1M6 14h12v6H6z"/></svg> Print My Week</button>
+        </div>
+        <div id="plan"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Weather by Open-Meteo · Holidays by Nager.Date · Activities and photos from RootMap · Places, maps and walking routes from Google Maps</p>
+      <section class="your-data" aria-labelledby="data-heading">
+        <h2 id="data-heading">Your data</h2>
+
+        <div class="data-group">
+          <h3>Privacy</h3>
+          <ul>
+            <li>Your saved places, journal entries, plan and choices are stored only in this browser. There are no accounts and nothing is synced.</li>
+            <li>Location permission is optional. Little Days asks only when you press "Use my location", and never stores your device's position.</li>
+            <li>Place details, maps and walking routes come from Google Maps. Little Days keeps only Google's place IDs.</li>
+            <li>Weather comes from Open-Meteo, and public holidays from Nager.Date.</li>
+            <li>Please don't write children's names in notes or journal entries.</li>
+          </ul>
+        </div>
+
+        <div class="data-group">
+          <h3>Backup & restore</h3>
+          <p>Save your places, journal, plan and choices to a file, so you can move them to another browser or keep a copy. Importing a backup replaces what's saved here; it doesn't merge.</p>
+          <div class="data-actions">
+            <button id="export-data" type="button" class="button-secondary">Save a backup file</button>
+            <button id="import-data" type="button" class="button-secondary">Restore from a backup file</button>
+            <input id="import-file" type="file" accept="application/json,.json" hidden>
+          </div>
+          <p id="data-status" class="data-status" role="status" aria-live="polite"></p>
+        </div>
+
+        <div class="data-group data-group-danger">
+          <h3>Delete your data</h3>
+          <p>Permanently remove everything Little Days has saved in this browser: every place, journal entry, plan and choice. This can't be undone, so make a backup first if you want to keep a copy.</p>
+          <button id="delete-data" type="button" class="button-secondary">Delete my saved data</button>
+        </div>
+      </section>
+    </div>
+  </footer>
+
+  <!-- Every secondary setting, in one place (DESIGN.md 6). -->
+  <dialog id="filters-panel" class="filters-panel" aria-labelledby="filters-heading">
+    <div class="filters-head">
+      <h2 id="filters-heading" tabindex="-1" autofocus>Filters</h2>
+      <button id="filters-close" type="button" class="button-quiet" aria-label="Close"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="controls filters-body">
               <fieldset class="field">
                 <legend>Who's exploring</legend>
                 <div class="segmented segmented-wide">
@@ -137,130 +303,11 @@
                   <label><input type="radio" name="unit" value="C"><span>°C</span></label>
                 </div>
               </fieldset>
-            </div>
-          </form>
-        </aside>
-        <section id="place-map-box" class="map-box is-empty" aria-labelledby="map-heading">
-          <h2 id="map-heading" class="visually-hidden" tabindex="-1">Map of places</h2>
-          <!-- No map exists until a search: a map is a billed load (PRD.md 9.3), so this slot
-               holds the Explore status instead. It's never a picture of a map. -->
-          <div id="map-empty" class="map-empty">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21S5 13.4 5 9a7 7 0 1 1 14 0c0 4.4-7 12-7 12Z"/><circle cx="12" cy="9" r="2.3"/></svg>
-            <div id="explore-status" class="status" role="status" aria-live="polite"></div>
-            <button id="example" type="button" class="link-button" hidden>Try an example address</button>
-          </div>
-          <div id="explore-map" class="map" hidden></div>
-          <div id="map-peek" class="map-peek" hidden></div>
-        </section>
-        <section class="explore-main" aria-labelledby="explore-heading">
-          <h2 id="explore-heading" class="visually-hidden">Nearby places</h2>
-          <fieldset id="explore-tabs" class="explore-tabs" hidden>
-            <legend class="visually-hidden">What to explore</legend>
-            <div id="explore-chips" class="chips chips-scroll"></div>
-          </fieldset>
-          <div id="explore-results" hidden>
-            <div id="explore-notes" class="explore-notes"></div>
-            <p class="google-attribution" translate="no">Google Maps</p>
-            <div id="place-list" class="place-list"></div>
-          </div>
-        </section>
-      </div>
     </div>
-
-    <div class="view" data-view="weather" hidden>
-      <p id="weather-empty" class="status wrap-status">Choose a place on the Explore tab to see its weather.</p>
-      <section id="weather" class="wrap" aria-labelledby="weather-heading" hidden>
-        <div class="section-head">
-          <h2 id="weather-heading">Weather</h2>
-          <p id="place-line" hidden></p>
-        </div>
-        <div id="weather-status" class="status" role="status" aria-live="polite"></div>
-        <div id="weather-now" class="weather-now" hidden></div>
-        <p id="holiday-note" class="note" hidden></p>
-        <ol id="week" class="week" hidden></ol>
-        <div id="day-weather" class="day-weather" hidden>
-          <div id="warnings" class="warnings"></div>
-          <div id="wear" class="panel panel-wear"></div>
-        </div>
-      </section>
-
-      <section id="ideas" class="wrap" aria-labelledby="ideas-heading" hidden>
-        <div class="section-head">
-          <h2 id="ideas-heading"></h2>
-          <p id="ideas-subtitle"></p>
-        </div>
-        <div class="day-ideas">
-          <div id="idea-list" class="ideas"></div>
-          <div id="why" class="panel panel-why"></div>
-        </div>
-      </section>
+    <div class="filters-foot">
+      <button id="filters-done" type="button">Show places</button>
     </div>
-
-    <div class="view" data-view="my-places" hidden>
-      <section id="my-places" class="wrap" aria-labelledby="places-heading">
-        <div class="section-head">
-          <h2 id="places-heading">My Places</h2>
-          <p class="google-attribution" translate="no">Google Maps</p>
-        </div>
-        <fieldset class="places-tabs">
-          <legend class="visually-hidden">Show places</legend>
-          <div class="segmented segmented-small">
-            <label><input type="radio" name="places-tab" value="want" checked><span>Want to explore <span class="count" data-count="want"></span></span></label>
-            <label><input type="radio" name="places-tab" value="explored"><span>Explored <span class="count" data-count="explored"></span></span></label>
-            <label><input type="radio" name="places-tab" value="revisit"><span>Revisit <span class="count" data-count="revisit"></span></span></label>
-          </div>
-        </fieldset>
-        <div id="places-list" class="places-list"></div>
-      </section>
-    </div>
-
-    <div class="view" data-view="my-week" hidden>
-      <section id="my-week" class="wrap" aria-labelledby="plan-heading">
-        <div class="section-head section-head-row">
-          <h2 id="plan-heading" tabindex="-1">My week</h2>
-          <button id="print-week" type="button" class="button-secondary" data-print-week><svg class="icon icon-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V4h12v5M5 18H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-1M6 14h12v6H6z"/></svg> Print My Week</button>
-        </div>
-        <div id="plan"></div>
-      </section>
-    </div>
-  </main>
-
-  <footer class="site-footer">
-    <div class="wrap">
-      <p>Weather by Open-Meteo · Holidays by Nager.Date · Activities and photos from RootMap · Places, maps and walking routes from Google Maps</p>
-      <section class="your-data" aria-labelledby="data-heading">
-        <h2 id="data-heading">Your data</h2>
-
-        <div class="data-group">
-          <h3>Privacy</h3>
-          <ul>
-            <li>Your saved places, journal entries, plan and choices are stored only in this browser. There are no accounts and nothing is synced.</li>
-            <li>Location permission is optional. Little Days asks only when you press "Use my location", and never stores your device's position.</li>
-            <li>Place details, maps and walking routes come from Google Maps. Little Days keeps only Google's place IDs.</li>
-            <li>Weather comes from Open-Meteo, and public holidays from Nager.Date.</li>
-            <li>Please don't write children's names in notes or journal entries.</li>
-          </ul>
-        </div>
-
-        <div class="data-group">
-          <h3>Backup & restore</h3>
-          <p>Save your places, journal, plan and choices to a file, so you can move them to another browser or keep a copy. Importing a backup replaces what's saved here; it doesn't merge.</p>
-          <div class="data-actions">
-            <button id="export-data" type="button" class="button-secondary">Save a backup file</button>
-            <button id="import-data" type="button" class="button-secondary">Restore from a backup file</button>
-            <input id="import-file" type="file" accept="application/json,.json" hidden>
-          </div>
-          <p id="data-status" class="data-status" role="status" aria-live="polite"></p>
-        </div>
-
-        <div class="data-group data-group-danger">
-          <h3>Delete your data</h3>
-          <p>Permanently remove everything Little Days has saved in this browser: every place, journal entry, plan and choice. This can't be undone, so make a backup first if you want to keep a copy.</p>
-          <button id="delete-data" type="button" class="button-secondary">Delete my saved data</button>
-        </div>
-      </section>
-    </div>
-  </footer>
+  </dialog>
 
   <dialog id="details" aria-labelledby="details-title">
     <div id="details-body"></div>

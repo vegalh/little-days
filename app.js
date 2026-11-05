@@ -22,10 +22,15 @@ const unitInputs = document.querySelectorAll("input[name=unit]");
 const exploreStatus = document.querySelector("#explore-status");
 const agesSelect = document.querySelector("#ages");
 const allNote = document.querySelector(".all-note");
-const findButton = document.querySelector("#find");
-const findButtonLabel = findButton.querySelector("span");
+const setupSection = document.querySelector("#setup");
+const setupNote = document.querySelector("#setup-note");
+const setupCurrent = document.querySelector("#setup-current");
+const addressLabel = document.querySelector("#address-label");
+const keepButton = document.querySelector("#keep-address");
+const explorePage = document.querySelector("#explore");
 const filtersToggle = document.querySelector("#filters-toggle");
 const filtersPanel = document.querySelector("#filters-panel");
+const filtersDone = document.querySelector("#filters-done");
 const filtersCount = document.querySelector("#filters-count");
 const filtersSummary = document.querySelector("#filters-summary");
 const filtersActive = document.querySelector("#filters-active");
@@ -187,6 +192,8 @@ let weatherRequest = 0;
 let pickedLabel = "";
 // The button that opened the details dialog, to return focus to it.
 let dialogOpener = null;
+// True while the one-time step is open to change the starting point.
+let changingBase = false;
 // Fallback cities offered while typing, by label: { "Portland, Maine, United States": place }
 let suggestions = {};
 let suggestTimer = null;
@@ -275,9 +282,17 @@ async function getHolidays(countryCode, years) {
 
 // --- Location ---
 
-// Every way of choosing a location ends here: show it, then load its weather.
+// Every way of choosing a location ends here: keep it, then load its places and weather.
+// Only a picked address or a searched city is saved, never a device position or the
+// example (PRD.md 7.18). It's saved at once, so a weather problem can't lose it.
 function chooseLocation(location) {
   place = location;
+  if (location.kind === "place" || location.kind === "city") {
+    settings.location = location;
+    saveSettings(storage, settings);
+  }
+  changingBase = false;
+  renderScreen();
   clearInvalid();
   locationStatus.textContent = "";
   const example = location.kind === "example" ? `<span> · ${tr("Example address")}</span>` : "";
@@ -285,6 +300,7 @@ function chooseLocation(location) {
   locationLine.title = location.label;
   locationLine.hidden = false;
   resetExplore();
+  exploreHere();
   return loadWeather(location);
 }
 
@@ -307,12 +323,6 @@ async function loadWeather(location) {
       holidayProblem: holidays.problem,
     };
     selectedDay = 0;
-    // Only a picked address or a searched city is saved, never a device position
-    // or the example (PRD.md 7.18).
-    if (location.kind === "place" || location.kind === "city") {
-      settings.location = location;
-      saveSettings(storage, settings);
-    }
     showStatus(weatherStatus, "", "");
     render();
   } catch (error) {
@@ -380,7 +390,8 @@ function locate() {
   );
 }
 
-// A saved location comes back on a return visit: weather only, never a place search.
+// A saved location comes back on a return visit. Its places load when Explore is showing
+// (exploreHere), so opening straight on another view costs no search.
 async function restoreLocation(saved) {
   if (saved.kind === "city") {
     cityInput.value = saved.name;
@@ -393,6 +404,8 @@ async function restoreLocation(saved) {
     await chooseLocation(await placeLocation(saved.placeId));
   } catch (error) {
     console.error(error);
+    changingBase = true;
+    renderScreen();
     showStatus(locationStatus, "", tr("We couldn't load your saved address. Enter it again."));
   }
 }
@@ -414,6 +427,7 @@ async function startGoogle() {
     renderExploreStatus();
     renderMyPlaces();
     renderPlan();
+    exploreHere();
   } catch (error) {
     useFallback(error);
   }
@@ -511,7 +525,6 @@ cityInput.addEventListener("input", () => {
 });
 
 addressSlot.addEventListener("input", clearInvalid);
-findButton.addEventListener("click", findAdventures);
 
 document.addEventListener("change", (event) => {
   const { name, value } = event.target;
@@ -520,6 +533,8 @@ document.addEventListener("change", (event) => {
     settings.mode = value;
     saveSettings(storage, settings);
     showChoices();
+    renderScreen();
+    renderMyPlaces();
     renderPlaces();
     if (placeDialog.open && openPlaceId && findPlace(openPlaceId)) renderPlaceDetails(findPlace(openPlaceId));
     renderPlan();
@@ -631,12 +646,23 @@ function clearFilters() {
   renderFilterSummary();
 }
 
-function setFiltersOpen(open) {
-  filtersPanel.hidden = !open;
-  filtersToggle.setAttribute("aria-expanded", String(open));
-}
+filtersToggle.addEventListener("click", () => {
+  filtersPanel.showModal();
+  filtersToggle.setAttribute("aria-expanded", "true");
+});
 
-filtersToggle.addEventListener("click", () => setFiltersOpen(filtersPanel.hidden));
+filtersDone.addEventListener("click", () => filtersPanel.close());
+document.querySelector("#filters-close").addEventListener("click", () => filtersPanel.close());
+filtersPanel.addEventListener("click", (event) => {
+  if (event.target === filtersPanel) filtersPanel.close();
+});
+
+// A changed walking time or interest searches once, when the sheet closes.
+filtersPanel.addEventListener("close", () => {
+  filtersToggle.setAttribute("aria-expanded", "false");
+  filtersToggle.focus();
+  if (!explore || categoriesToSearch(settings.interest, explore.loaded).length) exploreHere();
+});
 
 // What differs from the defaults (the first of each SETTING_CHOICES list). The mode is shown
 // but isn't a filter: it stays until the adult changes it, so Reset can never quietly drop
@@ -766,6 +792,10 @@ sectionObserver.observe(document.querySelector("#my-places"));
 sectionObserver.observe(document.querySelector("#my-week"));
 locateButton.addEventListener("click", locate);
 exampleButton.addEventListener("click", useExample);
+keepButton.addEventListener("click", keepBase);
+document.addEventListener("click", (event) => {
+  if (event.target.closest("[data-change-base]")) openSetup();
+});
 
 // Changing the unit or day re-renders; neither sends a request.
 for (const input of unitInputs) {
@@ -875,9 +905,6 @@ function showChoices() {
     const key = label.querySelector("input").value;
     label.querySelector(".chip-loaded").hidden = allLoaded || !(explore && explore.loaded[key]);
   }
-  findButton.disabled = mapsState !== "ready";
-  // Without Google there's nothing to explore: only the weather fallback is offered.
-  findButton.hidden = mapsState === "missing" || mapsState === "failed";
   exampleButton.hidden = mapsState !== "ready" || Boolean(place);
   renderFilterSummary();
 }
@@ -911,16 +938,15 @@ function showMapAndList(visible) {
   if (!visible) mapPeek.hidden = true;
 }
 
-// The only thing that starts a Places search (PRD.md 7.1).
+// Starts the places search whenever Explore is what's on screen with a starting point:
+// on opening, on choosing a new one, and on coming back to Explore (PRD.md 7.1). Other
+// views never search, and a visit searches each interest once (explore.loaded).
+function exploreHere() {
+  if (place && mapsState === "ready" && !changingBase && viewName() === "explore") findAdventures();
+}
+
 async function findAdventures() {
-  clearInvalid();
-  if (!place) {
-    const field = cityLocation.hidden ? document.querySelector("#address") : cityInput;
-    showInvalid(field || locateButton, tr("Enter an address or use your location first."));
-    return;
-  }
-  if (mapsState !== "ready") return;
-  setFiltersOpen(false);
+  if (!place || mapsState !== "ready") return;
   if (!explore || explore.key !== exploreKey()) {
     explore = {
       key: exploreKey(),
@@ -933,14 +959,10 @@ async function findAdventures() {
   const run = explore;
   const keys = categoriesToSearch(settings.interest, run.loaded);
   if (keys.length) {
-    findButton.disabled = true;
-    findButtonLabel.textContent = tr("Searching…");
     showMapAndList(false);
     showStatus(exploreStatus, "loading", tr("Finding little adventures near {place}…", { place: placeLabel() }));
     const results = await Promise.allSettled(keys.map((key) =>
       searchNearbyPlaces(run.origin, searchRadius(settings.minutes), CATEGORIES[key].types)));
-    findButtonLabel.textContent = tr("Explore nearby");
-    findButton.disabled = false;
     if (run !== explore) return; // the location or walking time changed meanwhile
     results.forEach((result, i) => {
       if (result.status === "fulfilled") run.loaded[keys[i]] = result.value;
@@ -954,8 +976,6 @@ async function findAdventures() {
     run.partial = failed > 0;
   }
   await showResults(true);
-  // Beside the search the map is already in view; stacked, it comes up to the top.
-  if (!mapBeside()) placeMapBox.scrollIntoView({ block: "start", behavior: reducedMotion() ? "auto" : "smooth" });
 }
 
 // checkRoutes: false when only switching to an interest already loaded, so that
@@ -1016,6 +1036,7 @@ async function renderPlaces() {
 
   const notes = [tr(shown.length === 1 ? "{count} place · walking times from Google, ideas from Little Days" : "{count} places · walking times from Google, ideas from Little Days",
     { count: shown.length })];
+  notes.push(tr("Photos show RootMap activities, not these places."));
   if (!day) notes.push(tr("Weather unavailable. Check the forecast before you go."));
   for (const holiday of day ? day.publicHolidays : []) {
     notes.push(tr("{holiday} falls on this day. Many services close, so check hours before you go.", { holiday: escapeHtml(tr(holiday)) }));
@@ -1130,8 +1151,11 @@ function placeCardHtml(placeItem, day) {
   const idea = guideText(guide.sets[perspectiveFor(guide, visits)].notice[0]);
   const name = escapeHtml(placeItem.name || tr("Unnamed place"));
   const hazard = day && day.weather.hazards.length && settingFor(placeItem) === "outdoors";
+  const photos = category.photos;
   return `
     <article class="place-card${placeItem.id === selectedPlace ? " is-selected" : ""}" data-place="${placeItem.id}">
+      ${photoHtml(activityById(photos[placeItem.number % photos.length]), "104px")}
+      <div class="place-body">
       <h3><span class="place-number" aria-hidden="true">${placeItem.number}</span>
         <button type="button" class="place-title" data-place-open="${placeItem.id}">
           <span class="visually-hidden">${placeItem.number}. </span>${name}</button></h3>
@@ -1145,6 +1169,7 @@ function placeCardHtml(placeItem, day) {
         <button type="button" class="button-secondary" data-place-open="${placeItem.id}" aria-label="${tr("View details for {name}", { name })}">${tr("View details")}</button>
         ${savedPlaces[placeItem.id] ? statusTagHtml(placeItem.id)
           : `<button type="button" class="button-quiet" data-save="${placeItem.id}" aria-label="${tr("Save {name}", { name })}"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${HEART_PATH}"/></svg> ${tr("Save")}</button>`}
+      </div>
       </div>
     </article>`;
 }
@@ -1561,11 +1586,12 @@ function renderMyPlaces() {
   const shown = ids.filter((id) => savedPlaces[id].status === tab)
     .sort((a, b) => (lastActivity(savedPlaces[a]) < lastActivity(savedPlaces[b]) ? 1 : -1));
   if (!shown.length) {
-    placesList.innerHTML = `<p class="status">${{
-      want: tr("No places here yet. Save places from Explore to plan your next walk."),
+    placesList.innerHTML = `<div class="status"><p>${{
+      want: settings.mode === "classroom" ? tr("No places here yet. Save places from Explore to plan your next class walk.")
+        : tr("No places here yet. Save places from Explore to plan your next walk."),
       explored: tr("No explored places yet. Record a visit from a place's details after you go."),
       revisit: tr("Places you'd like to visit again, with fresh ideas, appear here."),
-    }[tab]}</p>`;
+    }[tab]}</p><a class="button-secondary link-as-button" href="#explore">${tr("Find places")}</a></div>`;
     return;
   }
   if (visibleSections.has("my-places")) ensurePlaceInfo(shown);
@@ -1596,23 +1622,14 @@ function savedPlaceHtml(id) {
     </article>`;
 }
 
-// Choosing an interest never searches by itself (PRD.md 7.1): an interest already
-// loaded for this starting point shows again from memory; otherwise Find is needed.
+// An interest already loaded for this starting point shows again from memory, with no
+// request. A new one searches, or waits for Filters to close if it's open.
 function chooseInterest(value) {
   settings.interest = value;
   saveSettings(storage, settings);
   showChoices();
-  if (!explore || explore.key !== exploreKey()) {
-    renderExploreStatus();
-  } else if (!categoriesToSearch(value, explore.loaded).length) {
-    showResults(false);
-  } else {
-    showMapAndList(false);
-    showStatus(exploreStatus, "", value === "all"
-      ? tr("Press Explore nearby to see places near {place}.", { place: placeLabel() })
-      : tr("Press Explore nearby to see {interest} places near {place}.", { interest: interestWord(value), place: placeLabel() }),
-      findAdventures, tr("Explore nearby"));
-  }
+  if (explore && explore.key === exploreKey() && !categoriesToSearch(value, explore.loaded).length) showResults(false);
+  else if (!filtersPanel.open) exploreHere();
 }
 
 // --- My week ---
@@ -1655,7 +1672,8 @@ let editingEntry = null;
 function renderPlan() {
   const dates = planDates();
   if (!dates.length) {
-    planBox.innerHTML = `<p class="status">${tr("Your week is empty. Add activities or places to plan your week.")}</p>`;
+    planBox.innerHTML = `<div class="status"><p>${tr("Your week is empty. Add activities or places to plan your week.")}</p>
+      <a class="button-secondary link-as-button" href="#explore">${tr("Find places")}</a></div>`;
     return;
   }
   const placeIds = Object.values(plan).flat().filter((x) => typeof x === "object").map((x) => x.placeId);
@@ -2064,23 +2082,59 @@ function showStatus(area, className, text, retry, retryLabel = tr("Try again")) 
   }
 }
 
-// With Google, the first-visit prompt is the Explore status in the map slot.
+// The one-time step shows until there's a starting point, and again for "Change". Everything
+// else on Explore waits behind it. Its words follow who's exploring.
+function renderScreen() {
+  const setup = changingBase || (!place && !settings.location);
+  setupSection.hidden = !setup;
+  explorePage.hidden = setup;
+  setupSection.classList.toggle("is-change", changingBase);
+  addressLabel.textContent = settings.mode === "classroom" ? tr("Where's your school?") : tr("Where's home?");
+  setupNote.textContent = changingBase ? tr("Saved in this browser until you change it.") : tr("You only need to do this once.");
+  setupCurrent.textContent = place ? tr("Now: {place}", { place: place.label }) : "";
+  setupCurrent.hidden = !changingBase || !place;
+  keepButton.hidden = !changingBase || !place;
+  const classroom = settings.mode === "classroom";
+  document.querySelector("#weather-subtitle").textContent = classroom ? tr("What to expect before taking the class out.") : tr("What to expect before you head out.");
+  document.querySelector("#places-subtitle").textContent = classroom ? tr("Places for class walks.") : tr("Places to explore together.");
+  document.querySelector("#plan-subtitle").textContent = classroom ? tr("School days in the week ahead.") : tr("The week ahead.");
+}
+
+function openSetup() {
+  changingBase = true;
+  clearInvalid();
+  showStatus(locationStatus, "", "");
+  const field = document.querySelector("#address");
+  if (field) field.value = "";
+  cityInput.value = "";
+  renderScreen();
+  location.hash = "explore";
+  addressLabel.focus();
+}
+
+function keepBase() {
+  changingBase = false;
+  renderScreen();
+  if (explore) renderPlaces();
+  else exploreHere();
+  document.querySelector(".explore-side [data-change-base]").focus();
+}
+
+// With Google, the first-visit prompt is the one-time step itself.
 function renderFirstVisit() {
   if (place || settings.location || cityLocation.hidden) return;
   showStatus(locationStatus, "", tr("Enter your city or use your location to see the weather."));
 }
 
 function renderExploreStatus() {
-  if (mapsState === "loading") {
-    showStatus(exploreStatus, "", "");
-  } else if (mapsState === "missing") {
+  if (mapsState === "missing") {
     showStatus(exploreStatus, "", tr("Maps and places aren't set up on this copy of Little Days yet."));
   } else if (mapsState === "failed") {
     showStatus(exploreStatus, "", tr("Google Maps isn't available right now, so places and walking times can't be shown."));
-  } else if (place) {
-    showStatus(exploreStatus, "", tr("Press Explore nearby to see places near {place}.", { place: placeLabel() }));
+  } else if (!place && settings.location) {
+    showStatus(exploreStatus, "loading", tr("Loading your starting point…"));
   } else {
-    showStatus(exploreStatus, "", tr("Enter an address or use your location, then press Explore nearby."));
+    showStatus(exploreStatus, "", "");
   }
 }
 
@@ -2119,6 +2173,8 @@ function showWeatherError(retry) {
 
 function showNotFound(city) {
   place = null;
+  changingBase = true;
+  renderScreen();
   locationLine.hidden = true;
   clearWeather();
   weatherSection.hidden = true;
@@ -2417,15 +2473,21 @@ document.querySelector("#lang-switch").addEventListener("click", () => {
 
 const VIEWS = ["explore", "weather", "my-places", "my-week"];
 
+function viewName() {
+  return VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "explore";
+}
+
 function showView() {
-  const name = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "explore";
+  const name = viewName();
   for (const view of document.querySelectorAll(".view")) view.hidden = view.dataset.view !== name;
   for (const link of document.querySelectorAll(".site-nav a")) {
     if (link.getAttribute("href") === `#${name}`) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
   }
   // The map can't be drawn while its view is hidden, so it catches up here.
-  if (name === "explore") renderPlaces();
+  if (name !== "explore") return;
+  if (explore) renderPlaces();
+  else exploreHere();
 }
 
 window.addEventListener("hashchange", () => {
@@ -2440,6 +2502,7 @@ for (const input of unitInputs) input.checked = input.value === settings.unit;
 document.querySelector("#interest-chips").innerHTML = interestChipsHtml("interest");
 document.querySelector("#explore-chips").innerHTML = interestChipsHtml("explore-interest");
 showChoices();
+renderScreen();
 showView();
 saveSettings(storage, settings); // finishes a v1 → v2 migration (PRD.md 7.18)
 savePlan(storage, plan); // keep the cleaned-up plan (and finish a v1 → v2 migration)
