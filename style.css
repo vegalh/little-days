@@ -803,6 +803,9 @@ dialog p { margin: 8px 0 0; }
 .your-data h2 { font-size: 20px; color: var(--ink); margin-bottom: 8px; }
 .your-data ul { margin: 0 0 16px; padding-left: 20px; }
 .your-data li + li { margin-top: 4px; }
+.data-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.data-status { margin: 8px 0 0; color: var(--ink); }
+.data-status:empty { display: none; }
 
 /* More controls: ages, who's exploring, walking time, interests, Find */
 
@@ -1149,6 +1152,7 @@ dialog p { margin: 8px 0 0; }
 }
 
 .perspective-focus { font-weight: 600; }
+.guide-note { font-size: 14px; font-style: italic; color: var(--ink-soft); }
 .place-dialog .place-actions { padding: 0 20px 20px; margin-top: 24px; }
 
 /* Forms in the details dialog and My week */

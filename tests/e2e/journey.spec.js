@@ -217,3 +217,48 @@ test("Delete my saved data removes everything Little Days stored", async ({ page
   expect(await page.evaluate(() => localStorage.getItem("littleDays.plan.v2"))).toBe("{}");
   expect(JSON.parse(await page.evaluate(() => localStorage.getItem("littleDays.settings.v2"))).location).toBeNull();
 });
+
+test("one results map for the whole visit, and the example address is looked up once", async ({ page }, testInfo) => {
+  await start(page, testInfo);
+  await search(page, "Nature");
+  // A new walking time starts a new search, but the map stays the same one.
+  await page.locator("label", { hasText: /^20$/ }).click();
+  await page.getByRole("button", { name: "Find Little Adventures" }).click();
+  await expect(page.locator(".place-card").first()).toBeVisible();
+  expect(await page.evaluate(() => window.fakeMapCount)).toBe(1);
+  await page.getByRole("button", { name: "Try an example address" }).click();
+  await expect(page.locator("#location-line")).toContainText("Example address");
+  await page.getByRole("button", { name: "Try an example address" }).click();
+  await expect(page.locator(".now-temp")).toBeVisible();
+  expect(await count(page, "searchByText")).toBe(1);
+});
+
+test("Export my data downloads a backup; Import my data replaces only after confirming", async ({ page }, testInfo) => {
+  const places = { "fake-park-1": { status: "explored", category: "nature", saved: "2026-11-01", visits: [{ date: "2026-11-02", observation: "Leaves", next: "" }] } };
+  await start(page, testInfo, { "littleDays.places.v2": JSON.stringify(places) });
+  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Export my data" }).click()]);
+  expect(download.suggestedFilename()).toBe("little-days-data-2026-11-04.json");
+  const exported = JSON.parse(await (await download.createReadStream()).toArray().then((c) => Buffer.concat(c).toString()));
+  expect(exported).toMatchObject({ format: "little-days-data", version: 1, places });
+  expect(JSON.stringify(exported)).not.toMatch(/fake-test-key|Test Park|221 Washington/);
+
+  // A broken file is refused and nothing changes.
+  await page.locator("#import-file").setInputFiles({ name: "x.json", mimeType: "application/json", buffer: Buffer.from("{oops") });
+  await expect(page.locator("#data-status")).toHaveText("That file isn't a Little Days backup (it isn't valid JSON). Your saved data hasn't changed.");
+
+  // A valid backup replaces what's saved (the dialog is accepted in start()).
+  const backup = { ...exported, places: { "fake-library-1": { status: "want", category: "art-culture", saved: "2026-10-01", visits: [] } } };
+  await page.locator("#import-file").setInputFiles({ name: "b.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(backup)) });
+  await page.waitForLoadState("load");
+  await expect.poll(() => page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("littleDays.places.v2") || "{}")))).toEqual(["fake-library-1"]);
+});
+
+test("Import is cancelled when the replace isn't confirmed", async ({ page }, testInfo) => {
+  testInfo.api = await mockApis(page, { config: GOOGLE_CONFIG, storage: { "littleDays.places.v2": JSON.stringify({ keep: { status: "want", visits: [] } }) } });
+  page.on("dialog", (dialog) => dialog.dismiss());
+  await page.goto("/");
+  const backup = { format: "little-days-data", version: 1, settings: {}, places: {}, plan: {} };
+  await page.locator("#import-file").setInputFiles({ name: "b.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(backup)) });
+  await expect(page.locator("#data-status")).toHaveText("Import cancelled. Your saved data hasn't changed.");
+  expect(await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("littleDays.places.v2"))))).toEqual(["keep"]);
+});

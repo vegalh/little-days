@@ -212,7 +212,14 @@
           <li>Weather comes from Open-Meteo, and public holidays from Nager.Date.</li>
           <li>Please don't write children's names in notes or journal entries.</li>
         </ul>
-        <button id="delete-data" type="button" class="button-secondary">Delete my saved data</button>
+        <p>Back up your places, journal, plan and choices to a file, or move them to another browser. Importing a backup <strong>replaces</strong> what's saved here; it doesn't merge.</p>
+        <div class="data-actions">
+          <button id="export-data" type="button" class="button-secondary">Export my data</button>
+          <button id="import-data" type="button" class="button-secondary">Import my data</button>
+          <input id="import-file" type="file" accept="application/json,.json" hidden>
+          <button id="delete-data" type="button" class="button-secondary">Delete my saved data</button>
+        </div>
+        <p id="data-status" class="data-status" role="status" aria-live="polite"></p>
       </section>
     </div>
   </footer>

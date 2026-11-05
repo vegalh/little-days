@@ -15,6 +15,10 @@ const OLD_SETTINGS_KEY = "littleDays.settings.v1";
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const text = (value, max) => (typeof value === "string" ? value.trim().slice(0, max) : "");
+// Google place IDs and Little Days entry IDs use only these characters. Anything else, such as
+// "__proto__" or "constructor" from an imported file, is refused rather than used as a key.
+const SAFE_ID = /^[A-Za-z0-9_-]{1,300}$/;
+const isSafeId = (id) => typeof id === "string" && SAFE_ID.test(id) && !(id in Object.prototype);
 
 function isPlanned(plan, date, id) {
   return (plan[date] || []).includes(id);
@@ -40,7 +44,7 @@ function removeFromPlan(plan, date, id) {
 // --- Planned place visits ---
 
 function cleanPlannedPlace(visit) {
-  if (!visit || visit.kind !== "place" || !text(visit.placeId, 300) || !text(visit.entry, 100)) return null;
+  if (!visit || visit.kind !== "place" || !isSafeId(visit.placeId) || !isSafeId(visit.entry)) return null;
   return {
     kind: "place",
     entry: text(visit.entry, 100),
@@ -175,7 +179,7 @@ function cleanPlaces(places) {
   const clean = {};
   if (!places || typeof places !== "object" || Array.isArray(places)) return clean;
   for (const [id, entry] of Object.entries(places)) {
-    if (!id || !entry || !PLACE_STATUSES.includes(entry.status)) continue;
+    if (!isSafeId(id) || !entry || !PLACE_STATUSES.includes(entry.status)) continue;
     const visits = (Array.isArray(entry.visits) ? entry.visits : []).map(cleanVisit).filter(Boolean);
     clean[id] = {
       status: entry.status,
@@ -277,13 +281,98 @@ function settingsFromV1(old) {
 // Returns { unit, mode, ages, minutes, interest, location } with defaults for
 // anything missing or invalid. Reads v1 when there is no v2 yet.
 function loadSettings(storage) {
-  const saved = readJson(storage, SETTINGS_KEY) || settingsFromV1(readJson(storage, OLD_SETTINGS_KEY));
+  return cleanSettings(readJson(storage, SETTINGS_KEY) || settingsFromV1(readJson(storage, OLD_SETTINGS_KEY)));
+}
+
+function cleanSettings(saved) {
+  if (!saved || typeof saved !== "object") saved = {};
   const settings = {};
   for (const [name, choices] of Object.entries(SETTING_CHOICES)) {
     settings[name] = choices.includes(saved[name]) ? saved[name] : choices[0];
   }
   settings.location = cleanLocation(saved.location);
+  if (settings.location && settings.location.kind === "place" && !isSafeId(settings.location.placeId)) settings.location = null;
   return settings;
+}
+
+// --- Export and import (PRD.md 7.18) ---
+// The file holds only what Little Days stores itself: settings, My Places with the journal,
+// and My week. No API key (it's never stored) and no Google place details (only place IDs).
+
+const EXPORT_FORMAT = "little-days-data";
+const EXPORT_VERSION = 1;
+const MAX_IMPORT_BYTES = 1000000;
+
+function exportData(storage, today, knownIds, now = new Date()) {
+  return {
+    format: EXPORT_FORMAT,
+    version: EXPORT_VERSION,
+    exported: now.toISOString(),
+    settings: loadSettings(storage),
+    places: loadPlaces(storage),
+    plan: loadPlan(storage, today, knownIds),
+  };
+}
+
+// Returns { data } with the cleaned contents, or { error } with a sentence for the page.
+// Nothing is written here.
+function readImport(fileText, today, knownIds) {
+  if (typeof fileText !== "string" || fileText.length > MAX_IMPORT_BYTES) {
+    return { error: "That file is too large to be a Little Days backup." };
+  }
+  let raw;
+  try {
+    raw = JSON.parse(fileText);
+  } catch {
+    return { error: "That file isn't a Little Days backup (it isn't valid JSON)." };
+  }
+  if (!raw || typeof raw !== "object" || Array.isArray(raw) || raw.format !== EXPORT_FORMAT) {
+    return { error: "That file isn't a Little Days backup." };
+  }
+  if (raw.version !== EXPORT_VERSION) {
+    return { error: "This backup was made by a different version of Little Days and can't be imported." };
+  }
+  for (const part of ["settings", "places", "plan"]) {
+    if (!raw[part] || typeof raw[part] !== "object" || Array.isArray(raw[part])) {
+      return { error: "That backup is incomplete, so nothing was imported." };
+    }
+  }
+  return {
+    data: {
+      settings: cleanSettings(raw.settings),
+      places: cleanPlaces(raw.places),
+      plan: cleanPlan(raw.plan, today, knownIds),
+    },
+  };
+}
+
+// Replaces everything Little Days has saved with data from readImport. If storage
+// refuses any write (full, or blocked), what was there before is put back and false
+// is returned.
+function replaceSavedData(storage, data) {
+  const writes = [[SETTINGS_KEY, data.settings], [PLACES_KEY, data.places], [PLAN_KEY, data.plan]];
+  const before = writes.map(([key]) => {
+    try {
+      return storage.getItem(key);
+    } catch {
+      return null;
+    }
+  });
+  try {
+    for (const [key, value] of writes) storage.setItem(key, JSON.stringify(value));
+  } catch {
+    writes.forEach(([key], i) => {
+      try {
+        if (before[i] == null) storage.removeItem(key);
+        else storage.setItem(key, before[i]);
+      } catch {
+        // Storage is refusing everything; there's nothing more to do.
+      }
+    });
+    return false;
+  }
+  for (const key of [OLD_SETTINGS_KEY, OLD_PLACES_KEY, OLD_PLAN_KEY]) removeKey(storage, key);
+  return true;
 }
 
 // Saves v2 and removes v1, so the migration happens once.
@@ -298,6 +387,6 @@ if (typeof module !== "undefined") {
     cleanPlan, loadPlan, savePlan, loadSettings, saveSettings,
     plannedPlaces, isPlacePlanned, addPlaceToPlan, findPlannedPlace, removePlannedPlace, updatePlannedPlace,
     PLACES_KEY, OLD_PLACES_KEY, cleanPlaces, savePlace, setPlaceStatus, recordVisit, removePlace, visitCount,
-    loadPlaces, storePlaces, deleteSavedData,
+    loadPlaces, storePlaces, deleteSavedData, cleanSettings, exportData, readImport, replaceSavedData,
   };
 }

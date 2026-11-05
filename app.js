@@ -384,10 +384,14 @@ function useFallback(error) {
   renderFirstVisit();
 }
 
+let exampleLocation = null;
+
 async function useExample() {
   exampleButton.disabled = true;
   try {
-    const location = await findExampleAddress();
+    // Looked up once per visit: pressing the button again doesn't search again.
+    exampleLocation = exampleLocation || await findExampleAddress();
+    const location = exampleLocation;
     if (!location) throw new Error("Google found nothing for the example address");
     const field = document.querySelector("#address");
     if (field) field.value = EXAMPLE_ADDRESS;
@@ -503,7 +507,7 @@ document.querySelector("#clear-filters").addEventListener("click", clearFilters)
 for (const type of ["mouseover", "focusin"]) {
   placeList.addEventListener(type, (event) => {
     const card = event.target.closest(".place-card");
-    if (card && explore && explore.markers) highlightMarker(explore.markers, card.dataset.place);
+    if (card && resultsView.markers) highlightMarker(resultsView.markers, card.dataset.place);
   });
 }
 
@@ -523,6 +527,43 @@ document.addEventListener("submit", (event) => {
   else if (form.matches("[data-edit-form]")) submitEditVisit(form);
   else return;
   event.preventDefault();
+});
+
+// Backup (PRD.md 7.18): a JSON file of what Little Days stores, never Google content.
+const dataStatus = document.querySelector("#data-status");
+const importFile = document.querySelector("#import-file");
+
+document.querySelector("#export-data").addEventListener("click", () => {
+  const data = exportData(storage, isoToday(), ACTIVITY_IDS);
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+  link.download = `little-days-data-${isoToday()}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  dataStatus.textContent = "Your data was saved to a file. It contains your journal, so keep it somewhere private.";
+});
+
+document.querySelector("#import-data").addEventListener("click", () => importFile.click());
+
+importFile.addEventListener("change", async () => {
+  const file = importFile.files[0];
+  importFile.value = "";
+  if (!file) return;
+  const { data, error } = readImport(await file.text(), isoToday(), ACTIVITY_IDS);
+  if (error) {
+    dataStatus.textContent = `${error} Your saved data hasn't changed.`;
+    return;
+  }
+  const count = Object.keys(data.places).length;
+  if (!confirm(`Replace everything Little Days has saved in this browser with this backup (${count} ${count === 1 ? "place" : "places"})? This can't be undone.`)) {
+    dataStatus.textContent = "Import cancelled. Your saved data hasn't changed.";
+    return;
+  }
+  if (!replaceSavedData(storage, data)) {
+    dataStatus.textContent = "The backup couldn't be saved in this browser (storage may be full or blocked). Your saved data hasn't changed.";
+    return;
+  }
+  location.reload();
 });
 
 document.querySelector("#delete-data").addEventListener("click", () => {
@@ -612,8 +653,10 @@ document.addEventListener("error", (event) => {
 
 // What's loaded for the current starting point and walking time, kept in page memory
 // only (PRD.md 7.10): { key, origin, loaded: { category: [place] }, routes: { placeId: route },
-// shortlist, partial, routesFailed, map, markers }
+// shortlist, partial, routesFailed }
 let explore = null;
+// The results map, kept for the whole visit: { map, markers }.
+const resultsView = { markers: {} };
 let selectedPlace = null;
 // The place shown in the details dialog, and the button that opened it.
 let placeOpener = null;
@@ -793,9 +836,10 @@ async function renderPlaces() {
 
   // The list is complete without the map, so a map problem never hides it.
   try {
-    if (!explore.map) explore.map = await createMap(exploreMap, explore.origin, config.googleMapId || "DEMO_MAP_ID");
+    // One results map per visit, reused by every search (a new map is a new billed map load).
+    if (!resultsView.map) resultsView.map = await createMap(exploreMap, explore.origin, config.googleMapId || "DEMO_MAP_ID");
     // Markers are reused: only places that appear or disappear change (PRD.md 7.16).
-    explore.markers = await syncMarkers(explore.map, explore.origin, shown, selectPlace, explore.markers);
+    resultsView.markers = await syncMarkers(resultsView.map, explore.origin, shown, selectPlace, resultsView.markers);
   } catch (error) {
     console.error(error);
   }
@@ -880,7 +924,7 @@ function selectPlace(id) {
   selectedPlace = id;
   const placeItem = explore.shortlist.find((p) => p.id === id);
   if (!placeItem) return;
-  highlightMarker(explore.markers || {}, id);
+  highlightMarker(resultsView.markers, id);
   for (const card of placeList.querySelectorAll(".place-card")) {
     card.classList.toggle("is-selected", card.dataset.place === id);
   }
@@ -1019,6 +1063,7 @@ function renderPlaceDetails(placeItem, perspective) {
       <p class="notes-label">Little Days ideas</p>
       <h3 id="ideas-detail-heading">Why explore this place?</h3>
       <p>${escapeHtml(guide.why)}</p>
+      <p class="guide-note">${GUIDE_NOTE}</p>
       ${visits ? `<p class="perspective-note">You've recorded ${visits} ${visits === 1 ? "visit" : "visits"}, so a new perspective comes first.</p>` : ""}
       <div class="perspectives" role="group" aria-label="Visit">
         ${guide.sets.map((set, i) => `<button type="button" class="perspective" data-perspective="${i}" data-place-id="${id}"

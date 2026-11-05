@@ -1,5 +1,5 @@
-// Exploration guides (PRD.md 7.14). Written by hand for Little Days: DRAFT, for review
-// before shipping. Each guide is about a kind of place, never a specific one, so nothing
+// Exploration guides (PRD.md 7.14). Written by hand for Little Days. Edited 2026-11-04 for
+// child-led wording (ideas, not tasks); still to be reviewed by the owner before the pilot. Each guide is about a kind of place, never a specific one, so nothing
 // here may say what a particular place has, offers or allows.
 // Each guide has three perspectives, one per visit. activities are RootMap IDs offered
 // as at-home ideas afterwards.
@@ -51,7 +51,7 @@ const GUIDES = {
       {
         focus: "Sharing and turns",
         notice: ["Other children playing", "Waiting for a turn", "Friendly faces and words"],
-        before: ["Practice a simple phrase, like “Can I have a turn when you're done?”"],
+        before: ["For older children, practice a simple phrase, like “Can I have a turn when you're done?”"],
         during: ["Watch together how other children take turns.", "Name feelings you see: excited, waiting, proud.", "Step back so your child can try first."],
         after: ["Remember together someone your child played near or with."],
         practical: "Let your child decide when it's time to move to the next thing.",
@@ -60,7 +60,7 @@ const GUIDES = {
         focus: "Shapes and materials",
         notice: ["Circles, triangles and straight lines", "Metal, wood, plastic, sand or bark", "Warm and cool surfaces"],
         before: ["Bring a small cloth to dry a wet seat if needed."],
-        during: ["Go on a shape hunt around the equipment.", "Touch different surfaces and compare them.", "Notice shadows and where the sun is."],
+        during: ["Notice shapes in the equipment, if your child is interested.", "Touch different surfaces and find words for them.", "Notice shadows and where the sun is."],
         after: ["Build a small playground from blocks or boxes at home."],
         practical: "Let your child brush off sand and tidy their shoes before leaving.",
       },
@@ -73,7 +73,7 @@ const GUIDES = {
       {
         focus: "Colors and shapes",
         notice: ["Flowers and leaves of many colors", "Round, pointed and feathery shapes", "Big plants and tiny ones"],
-        before: ["Talk about looking with eyes and gentle hands, and only picking where it's allowed."],
+        before: ["Talk about looking with eyes and gentle hands, and leaving flowers where they grow."],
         during: ["Choose one color and find it in three places.", "Crouch down to see plants at your child's height.", "Name what you see with simple, exact words."],
         after: ["Paint or draw a favorite flower from memory."],
         practical: "Let your child water a plant at home.",
@@ -81,7 +81,7 @@ const GUIDES = {
       {
         focus: "Smells and textures",
         notice: ["Sweet, fresh or earthy smells", "Soft, fuzzy or waxy leaves", "Damp soil after rain"],
-        before: ["Check posted rules about touching plants."],
+        before: ["Check posted rules about touching plants. Some plants prickle or sting, so look first together."],
         during: ["Smell a flower together and find a word for it.", "Where touching is allowed, gently feel a leaf.", "Notice how the air smells in different spots."],
         after: ["Smell herbs or fruit at home and compare."],
         practical: "Let your child wash their own hands after the visit.",
@@ -104,7 +104,7 @@ const GUIDES = {
         focus: "Books and pictures",
         notice: ["Shelves, covers and colors", "Big books and small books", "Pictures of animals, places and people"],
         before: ["Talk about using quiet voices and walking feet indoors."],
-        during: ["Let your child choose a book by its cover.", "Look at one picture together and talk about what's happening.", "Point out letters from your child's name."],
+        during: ["Let your child choose a book by its cover.", "Look at one picture together and talk about what's happening.", "If your child is curious, look for a letter from their name."],
         after: ["Tell the story again at home in your child's own words."],
         practical: "Let your child carry the books and help put them in the bag.",
       },
@@ -120,7 +120,7 @@ const GUIDES = {
         focus: "Quiet and calm",
         notice: ["How the room sounds", "Soft and hard seats", "Light from windows and lamps"],
         before: ["Bring a favorite book from home to share."],
-        during: ["Sit together and listen to the quiet for a moment.", "Find a cozy spot your child likes.", "Read a short book slowly, at your child's pace."],
+        during: ["Sit together and listen to the quiet for a moment.", "Let your child choose a cozy spot.", "Read a short book slowly, at your child's pace."],
         after: ["Make a calm reading corner at home."],
         practical: "Let your child choose where to put their books when you get home.",
       },
@@ -134,7 +134,7 @@ const GUIDES = {
         focus: "Shapes and colors",
         notice: ["Round, long, twisted and braided shapes", "Golden, brown and pale colors", "Big loaves and small rolls"],
         before: ["Talk about looking with eyes, and asking before touching anything."],
-        during: ["Find one round thing, one long thing and one twisted thing.", "Name the colors you see.", "Compare a big and a small one."],
+        during: ["Look for round, long and twisted shapes, if your child is interested.", "Name the colors your child points to.", "Compare a big one and a small one."],
         after: ["Make bread shapes with playdough at home."],
         practical: "Let your child hand over the money or hold the bag, if you buy something.",
       },
@@ -164,7 +164,7 @@ const GUIDES = {
         focus: "Colors and shapes",
         notice: ["Fruit and vegetables of every color", "Round, long and bumpy shapes", "Big piles and small baskets"],
         before: ["Make a short list together, maybe with pictures."],
-        during: ["Find something red, something green and something yellow.", "Feel the weight of two fruits and compare.", "Let your child choose one item from the list."],
+        during: ["Notice the colors together, and let your child name the ones they see.", "If you're buying fruit, let your child hold two and feel which is heavier.", "Let your child choose one item from the list."],
         after: ["Sort what you bought by color or shape."],
         practical: "Let your child put items in the basket and unpack them at home.",
       },
@@ -172,7 +172,7 @@ const GUIDES = {
         focus: "Where food comes from",
         notice: ["Food that grows on trees, in the ground or on vines", "Food in boxes, bags and tins", "Cold and warm aisles"],
         before: ["Talk about one food and where it grows."],
-        during: ["Find one food that grew in the ground.", "Notice which foods are kept cold.", "Wonder aloud how the food got to the shop."],
+        during: ["Wonder together which foods grew in the ground.", "Notice which foods are kept cold.", "Wonder aloud how the food got to the shop."],
         after: ["Wash or peel a vegetable you bought."],
         practical: "Let your child scrub potatoes or wash fruit at home.",
       },
@@ -194,7 +194,7 @@ const GUIDES = {
         focus: "Letters and parcels",
         notice: ["Envelopes, boxes and stamps", "Big and small parcels", "Writing and numbers on labels"],
         before: ["Make a simple card or drawing together to send to someone."],
-        during: ["Look at the shapes and sizes of parcels.", "Find numbers on signs or labels.", "Let your child hold the letter until it's time to post it."],
+        during: ["Look at the shapes and sizes of parcels.", "Notice numbers on signs or labels.", "Let your child hold the letter until it's time to post it."],
         after: ["Talk about who will open the letter and how they'll feel."],
         practical: "Let your child put the stamp on and drop the letter in the box.",
       },
@@ -210,7 +210,7 @@ const GUIDES = {
         focus: "Journeys",
         notice: ["Mailboxes on the way", "Vans or carts that carry mail", "Addresses on houses"],
         before: ["Look at your own address and its number."],
-        during: ["Count mailboxes on the walk.", "Look for house numbers and say them together.", "Wonder where a parcel might be going."],
+        during: ["Notice mailboxes on the walk.", "Say house numbers together, if your child enjoys it.", "Wonder where a parcel might be going."],
         after: ["Draw a map of the walk from home to the post office."],
         practical: "Let your child bring in the mail at home.",
       },
@@ -224,7 +224,7 @@ const GUIDES = {
         focus: "Big shapes and colors",
         notice: ["Big doors and what's behind them, if they're open", "Red and other bright colors", "Signs and numbers on the building"],
         before: ["Plan to look from the sidewalk, and keep clear of the driveway."],
-        during: ["Stand well back from the doors and look together.", "Name the colors and shapes you see.", "Count windows, doors or wheels you can see."],
+        during: ["Stand well back from the doors and the driveway, and look together.", "Name the colors and shapes your child notices.", "Count windows or doors, if your child enjoys counting."],
         after: ["Draw the building from memory."],
         practical: "Let your child help pack a small snack and water for the walk.",
       },
@@ -238,9 +238,9 @@ const GUIDES = {
       },
       {
         focus: "People who help",
-        notice: ["Uniforms, helmets and boots", "People working together", "Signs about safety"],
+        notice: ["Uniforms, helmets and boots, if anyone is outside", "People working together", "Signs on the building"],
         before: ["Talk about the many people who help in your community."],
-        during: ["Watch from the sidewalk without going in.", "Notice any signs and talk about what they might say.", "Wave if your child wants to."],
+        during: ["Watch from the sidewalk without going in.", "Notice any signs and talk about what they might say.", "If someone is outside and the moment suits, your child can wave."],
         after: ["Talk about helpers your child knows."],
         practical: "Let your child practice putting on their own coat and boots.",
       },
@@ -270,13 +270,16 @@ const GUIDES = {
         focus: "Materials",
         notice: ["Paint, stone, wood, metal or cloth", "Smooth and rough surfaces", "Light and shadow"],
         before: ["Bring a few materials from home to compare later."],
-        during: ["Guess what something is made of.", "Find something shiny and something dull.", "Notice how light falls on things."],
+        during: ["Wonder together what something is made of.", "Notice shiny and dull surfaces.", "Notice how light falls on things."],
         after: ["Make a collage from paper and fabric scraps."],
         practical: "Let your child help tidy the art materials afterwards.",
       },
     ],
   },
 };
+
+// Shown above every guide.
+const GUIDE_NOTE = "Ideas, not tasks: follow what your child notices, and stop when they've had enough.";
 
 // Category fallbacks for every other type.
 const CATEGORY_GUIDES = {
@@ -289,7 +292,7 @@ const CATEGORY_GUIDES = {
         focus: "What's here",
         notice: ["Colors, shapes and signs", "Things for sale or in use", "Sounds and smells"],
         before: ["Talk about where you're going and what it's for."],
-        during: ["Find three things your child can name.", "Notice something new to your child.", "Follow your child's questions."],
+        during: ["Let your child point out what they recognize, and name it together.", "Notice what's new to your child.", "Follow your child's questions."],
         after: ["Talk about one thing you saw."],
         practical: "Let your child carry something small for you.",
       },
@@ -305,7 +308,7 @@ const CATEGORY_GUIDES = {
         focus: "Numbers and words",
         notice: ["Numbers on doors and signs", "Letters your child knows", "Lines and lists"],
         before: ["Look at a number or letter your child knows."],
-        during: ["Find that number or letter.", "Count things you see.", "Read a sign together."],
+        during: ["Notice if that number or letter appears.", "Count things your child is interested in.", "Read a sign together."],
         after: ["Write or draw a sign for home."],
         practical: "Let your child help make a list for the next trip.",
       },
@@ -319,7 +322,7 @@ const CATEGORY_GUIDES = {
         focus: "The building",
         notice: ["Doors, windows and signs", "Flags, colors and numbers", "Vehicles parked nearby"],
         before: ["Plan to look from outside, and keep clear of doors and driveways."],
-        during: ["Name the shapes and colors you see.", "Count windows or doors.", "Talk about what happens inside."],
+        during: ["Name the shapes and colors your child notices.", "Count windows or doors, if your child enjoys counting.", "Talk about what happens inside."],
         after: ["Draw the building from memory."],
         practical: "Let your child help pack for the walk.",
       },
@@ -327,7 +330,7 @@ const CATEGORY_GUIDES = {
         focus: "People who help",
         notice: ["Uniforms and badges", "People coming and going", "How people help each other"],
         before: ["Talk about helpers your child knows."],
-        during: ["Watch from a respectful distance.", "Talk about what each helper does.", "Wave if your child wants to."],
+        during: ["Watch from a respectful distance.", "Talk about what each helper does.", "If someone is outside and the moment suits, your child can wave."],
         after: ["Play pretend helpers at home."],
         practical: "Let your child practice waiting calmly.",
       },
@@ -335,7 +338,7 @@ const CATEGORY_GUIDES = {
         focus: "On the way",
         notice: ["Signs, crossings and lights", "Mailboxes and benches", "Other helpers on the street"],
         before: ["Look at the route together first."],
-        during: ["Stop at each crossing and look together.", "Notice signs and talk about them.", "Count helpers you see."],
+        during: ["Stop at each crossing and look together.", "Notice signs and talk about them.", "Notice helpers you see on the way."],
         after: ["Draw a map of the walk."],
         practical: "Let your child press the crossing button, with you.",
       },
@@ -352,7 +355,7 @@ const CATEGORY_GUIDES = {
         before: ["Talk about watching quietly, and only touching where it's clearly allowed."],
         during: ["Watch one animal for a while.", "Copy how it moves.", "Use words like fast, slow, high and low."],
         after: ["Play an animal-moves game at home."],
-        practical: "Let your child help feed a pet or a bird at home, if you have one.",
+        practical: "Let your child help care for a pet or a plant at home.",
       },
       {
         focus: "Sounds and homes",
@@ -406,5 +409,5 @@ function perspectiveFor(guide, visits) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { GUIDES, CATEGORY_GUIDES, GUIDE_FOR_TYPE, guideFor, perspectiveFor };
+  module.exports = { GUIDES, CATEGORY_GUIDES, GUIDE_FOR_TYPE, GUIDE_NOTE, guideFor, perspectiveFor };
 }

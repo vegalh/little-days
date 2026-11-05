@@ -7,7 +7,7 @@ const {
   loadPlan, savePlan, loadSettings, saveSettings,
   OLD_PLAN_KEY, addPlaceToPlan, plannedPlaces, isPlacePlanned, removePlannedPlace, updatePlannedPlace,
   PLACES_KEY, OLD_PLACES_KEY, cleanPlaces, savePlace, setPlaceStatus, recordVisit, removePlace, visitCount,
-  loadPlaces, storePlaces, deleteSavedData,
+  loadPlaces, storePlaces, deleteSavedData, exportData, readImport, replaceSavedData,
 } = require("../plan.js");
 
 const IDS = ACTIVITIES.map((a) => a.id);
@@ -239,4 +239,73 @@ test("delete my saved data removes every Little Days key, old versions included"
   deleteSavedData(storage);
   assert.deepEqual(Object.keys(storage.data), ["someoneElse"]);
   assert.doesNotThrow(() => deleteSavedData(blockedStorage));
+});
+
+// --- Export and import (PRD.md 7.18) ---
+
+function filledStorage() {
+  const storage = fakeStorage();
+  saveSettings(storage, { ...DEFAULTS, unit: "C", mode: "classroom", location: { kind: "place", placeId: "ChIJhome" } });
+  storePlaces(storage, recordVisit({}, "ChIJpark", "nature", TODAY, { date: TODAY, observation: "Leaves", next: "Trees" }));
+  savePlan(storage, addPlaceToPlan(addToPlan({}, "2026-11-07", "duck-walk"), "2026-11-07", PARK, "e1"));
+  return storage;
+}
+
+test("export: settings, places with the journal, and the plan, with nothing from Google", () => {
+  const data = exportData(filledStorage(), TODAY, IDS, new Date("2026-10-31T12:00:00Z"));
+  assert.equal(data.format, "little-days-data");
+  assert.equal(data.version, 1);
+  assert.equal(data.exported, "2026-10-31T12:00:00.000Z");
+  assert.equal(data.settings.unit, "C");
+  assert.deepEqual(data.places.ChIJpark.visits, [{ date: TODAY, observation: "Leaves", next: "Trees" }]);
+  assert.deepEqual(data.plan["2026-11-07"][0], "duck-walk");
+  assert.doesNotMatch(JSON.stringify(data), /AIza|displayName|formattedAddress|"lat"/);
+});
+
+test("import: a backup round-trips into empty storage", () => {
+  const file = JSON.stringify(exportData(filledStorage(), TODAY, IDS));
+  const { data, error } = readImport(file, TODAY, IDS);
+  assert.equal(error, undefined);
+  const target = fakeStorage({ [OLD_PLAN_KEY]: JSON.stringify({ "2026-11-01": ["statue-game"] }) });
+  assert.equal(replaceSavedData(target, data), true);
+  assert.deepEqual(exportData(target, TODAY, IDS, new Date(0)).places, data.places);
+  assert.deepEqual(loadPlan(target, TODAY, IDS), data.plan);
+  assert.equal(target.data[OLD_PLAN_KEY], undefined); // replaced, not merged
+});
+
+test("import: malformed, foreign, unsupported or incomplete files are refused", () => {
+  assert.match(readImport("{not json", TODAY, IDS).error, /isn't valid JSON/);
+  assert.match(readImport("[]", TODAY, IDS).error, /isn't a Little Days backup/);
+  assert.match(readImport(JSON.stringify({ format: "other" }), TODAY, IDS).error, /isn't a Little Days backup/);
+  assert.match(readImport(JSON.stringify({ format: "little-days-data", version: 2 }), TODAY, IDS).error, /different version/);
+  assert.match(readImport(JSON.stringify({ format: "little-days-data", version: 1, settings: {}, places: [] }), TODAY, IDS).error, /incomplete/);
+  assert.match(readImport("x".repeat(1000001), TODAY, IDS).error, /too large/);
+});
+
+test("import: unsafe keys and bad values never get in", () => {
+  const file = `{"format":"little-days-data","version":1,"settings":{"unit":"K","location":{"kind":"place","placeId":"__proto__"}},
+    "places":{"__proto__":{"status":"want"},"constructor":{"status":"want"},"ok-id":{"status":"explored","visits":[{"date":"2026-11-01","observation":"<b>hi</b>"}]},"bad id!":{"status":"want"}},
+    "plan":{"__proto__":["duck-walk"],"2026-11-07":["duck-walk",{"kind":"place","entry":"__proto__","placeId":"x"},{"kind":"place","entry":"e1","placeId":"toString"}]}}`;
+  const { data } = readImport(file, TODAY, IDS);
+  assert.deepEqual(Object.keys(data.places), ["ok-id"]);
+  assert.equal(Object.getPrototypeOf(data.places), Object.prototype);
+  assert.equal(({}).status, undefined); // nothing leaked onto Object.prototype
+  assert.equal(data.places["ok-id"].visits[0].observation, "<b>hi</b>"); // kept as text; the page escapes it
+  assert.deepEqual(data.plan, { "2026-11-07": ["duck-walk"] });
+  assert.equal(data.settings.unit, "F");
+  assert.equal(data.settings.location, null);
+});
+
+test("import: if storage fills up part way, the old data is put back", () => {
+  const storage = filledStorage();
+  const before = { ...storage.data };
+  let writes = 0;
+  const setItem = storage.setItem;
+  storage.setItem = (key, value) => {
+    if (++writes === 2) throw new Error("QuotaExceededError");
+    setItem(key, value);
+  };
+  const { data } = readImport(JSON.stringify({ format: "little-days-data", version: 1, settings: {}, places: {}, plan: {} }), TODAY, IDS);
+  assert.equal(replaceSavedData(storage, data), false);
+  assert.deepEqual(storage.data, before);
 });
