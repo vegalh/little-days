@@ -224,8 +224,9 @@
 
     <div class="view" data-view="my-week" hidden>
       <section id="my-week" class="wrap" aria-labelledby="plan-heading">
-        <div class="section-head">
+        <div class="section-head section-head-row">
           <h2 id="plan-heading" tabindex="-1">My week</h2>
+          <button id="print-week" type="button" class="button-secondary" data-print-week><svg class="icon icon-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V4h12v5M5 18H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-1M6 14h12v6H6z"/></svg> Print My Week</button>
         </div>
         <div id="plan"></div>
       </section>
@@ -291,6 +292,9 @@
   </dialog>
 
   <p id="announce" class="visually-hidden" role="status" aria-live="polite"></p>
+
+  <!-- Filled in just before window.print() (PRD.md 7.9, 7.14); never shown on screen. -->
+  <div id="print-area" aria-hidden="true"></div>
 
   <!-- config.js is gitignored (PRD.md 9.2). Without it, the page runs without Google. -->
   <script src="config.js"></script>

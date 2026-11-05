@@ -62,6 +62,7 @@ const dialogBody = document.querySelector("#details-body");
 const dialogAdd = document.querySelector("#details-add");
 const dialogStatus = document.querySelector("#details-status");
 const announcer = document.querySelector("#announce");
+const printArea = document.querySelector("#print-area");
 
 // WMO weather codes used by Open-Meteo: [emoji, label]
 const WEATHER = {
@@ -750,6 +751,9 @@ document.addEventListener("click", (event) => {
   if (perspective) showPerspective(perspective.dataset.placeId, Number(perspective.dataset.perspective));
   if (add) addActivity(add.dataset.add, add.dataset.date);
   if (remove) removeActivity(remove.dataset.remove, remove.dataset.date);
+  if (event.target.closest("[data-print-week]")) printWeek();
+  const printGuideButton = event.target.closest("[data-print-guide]");
+  if (printGuideButton) printGuideFor(printGuideButton.dataset.printGuide);
 });
 
 // A photo that fails to load becomes a plain tile instead of a broken image.
@@ -1202,7 +1206,10 @@ function renderPlaceDetails(placeItem, perspective) {
     ${visitsHtml(placeItem)}
     ${planFormHtml(placeItem, guide.sets[suggested].focus, day)}
 
-    <div class="place-actions"><button type="button" class="button-secondary" data-place-close>${tr("Close")}</button></div>`;
+    <div class="place-actions">
+      <button type="button" class="button-secondary" data-print-guide="${id}">${tr("Print Adventure Guide")}</button>
+      <button type="button" class="button-secondary" data-place-close>${tr("Close")}</button>
+    </div>`;
 }
 
 function statusTagHtml(id) {
@@ -1666,6 +1673,163 @@ function removeVisit(entry) {
   renderPlan();
   announce(tr("Removed the visit from your week."));
   planHeading.focus();
+}
+
+// --- Print (PRD.md 7.9, 7.14) ---
+// Both printed pages are built, once, into #print-area from state already in memory (the
+// plan, savedPlaces, findPlace's cache and the current forecast): printing never makes a
+// Google, weather or holiday request. style.css's @media print shows only #print-area.
+// The private journal (an entry's observation/next, PRD.md 7.17) is never printed here.
+
+function printHeaderHtml() {
+  return `
+    <p class="logo print-brand" translate="no">
+      <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path class="logo-mark-leaf" d="M12 13C7.6 13 4.5 9.7 4.5 5.1 9.3 5.1 12 8.5 12 13Z"/>
+        <path class="logo-mark-leaf" d="M12 13c4.4 0 7.5-3.3 7.5-7.9-4.8 0-7.5 3.4-7.5 7.9Z"/>
+        <path class="logo-mark-stem" d="M12 21v-8.2"/>
+      </svg>
+      Little Days
+    </p>`;
+}
+
+// The weather line for one date: the real forecast when it's in range, never a guess
+// (PRD.md 7.9), or else the exact fallback text the print spec asks for.
+function printWeatherHtml(day) {
+  if (!day) return tr("Weather forecast not available yet.");
+  const [icon, label] = weatherOf(day.code);
+  return `<span aria-hidden="true">${icon}</span> ${label} · ${temp(day.high)} / ${temp(day.low)}`;
+}
+
+// Only days with something actually planned: a printed planner of the week's real
+// adventures, not a page per forecast day (avoids unnecessary blank pages, spec §5).
+function printWeek() {
+  const dates = planDates().filter((date) => (plan[date] || []).length);
+  const placeIds = Object.values(plan).flat().filter((x) => typeof x === "object").map((x) => x.placeId);
+  printArea.innerHTML = `
+    <article class="print-page print-week">
+      ${printHeaderHtml()}
+      <h1 class="print-title">${tr("Our Little Adventures")}</h1>
+      ${dates.length ? `<p class="print-subtitle">${printWeekRange(dates)}</p>` : ""}
+      ${placeIds.length ? `<p class="google-attribution" translate="no">Google Maps</p>` : ""}
+      ${dates.length ? dates.map(printWeekDayHtml).join("") : `<p class="print-empty">${tr("Your week is empty. Add activities or places to plan your week.")}</p>`}
+    </article>`;
+  window.print();
+}
+
+// Dates are already formatted for the page's language (formatDay); only the dash joining
+// them is language-neutral, so no translation is needed here.
+function printWeekRange(dates) {
+  const first = formatDay(dates[0]);
+  const last = formatDay(dates[dates.length - 1]);
+  return first === last ? first : `${first} – ${last}`;
+}
+
+// Only called for dates that have at least one entry (printWeek filters to those).
+function printWeekDayHtml(date) {
+  const entries = plan[date] || [];
+  const day = current ? current.days.find((d) => d.date === date) : null;
+  const items = entries.map((entry) => typeof entry === "string" ? printActivityItemHtml(entry) : printPlaceItemHtml(entry)).join("");
+  return `
+    <section class="print-day">
+      <h2>${formatDay(date)}</h2>
+      <p class="print-weather">${printWeatherHtml(day)}</p>
+      <ul class="print-items">${items}</ul>
+      <div class="print-notes">
+        <p class="print-notes-label">${tr("What did we notice?")}</p>
+        <div class="print-notes-box" aria-hidden="true"></div>
+      </div>
+    </section>`;
+}
+
+function printActivityItemHtml(id) {
+  const activity = activityById(id);
+  if (!activity) return "";
+  return `
+    <li class="print-item">
+      <p class="print-item-title">${escapeHtml(rootmapText(activity).title)}</p>
+      <p class="print-item-meta">${tr("from RootMap")}</p>
+    </li>`;
+}
+
+// A planned visit: the place's name/address (Google content, so the attribution above
+// covers it) and only the adult's own preparation notes, never the private journal.
+function printPlaceItemHtml(visit) {
+  const info = findPlace(visit.placeId);
+  const name = info ? escapeHtml(info.name || tr("Unnamed place")) : tr("Saved place (details unavailable right now)");
+  const meta = [visit.time, visit.theme].filter(Boolean).map(escapeHtml).join(" · ");
+  return `
+    <li class="print-item">
+      <p class="print-item-title">${name}</p>
+      ${info && info.address ? `<p class="print-item-address">${escapeHtml(info.address)}</p>` : ""}
+      ${meta ? `<p class="print-item-meta">${meta}</p>` : ""}
+      ${visit.notes ? `<p class="print-item-notes">${escapeHtml(visit.notes)}</p>` : ""}
+    </li>`;
+}
+
+// Reads the perspective actually shown (the tab the adult chose, not just the suggested
+// one) straight from the dialog, since showPerspective() never re-renders the whole dialog.
+function printGuideFor(id) {
+  const placeItem = findPlace(id);
+  if (!placeItem) return;
+  const activeTab = placeBody.querySelector(".perspective[aria-pressed=true]");
+  const shown = activeTab ? Number(activeTab.dataset.perspective) : 0;
+  printGuide(placeItem, shown, current ? current.days[selectedDay] : null);
+}
+
+function printGuide(placeItem, shown, day) {
+  const guide = guideFor(placeType(placeItem), placeItem.category);
+  const set = guide.sets[shown];
+  const list = (items) => `<ul>${items.map((item) => `<li>${escapeHtml(tr(item))}</li>`).join("")}</ul>`;
+  printArea.innerHTML = `
+    <article class="print-page print-guide">
+      ${printHeaderHtml()}
+      <h1 class="print-title">${escapeHtml(placeItem.name || tr("Unnamed place"))}</h1>
+      ${placeItem.address ? `<p class="print-address">${escapeHtml(placeItem.address)}</p>` : ""}
+      <p class="google-attribution" translate="no">Google Maps</p>
+      <section class="print-section">
+        <h2>${day ? tr("Weather on {day}", { day: formatDay(day.date) }) : tr("Weather")}</h2>
+        <p>${printWeatherHtml(day)}</p>
+      </section>
+      <p class="print-perspective">${tr(["First visit", "Second visit", "Third visit"][shown])}</p>
+      <section class="print-section">
+        <h2>${tr("Why explore this place?")}</h2>
+        <p>${escapeHtml(tr(guide.why))}</p>
+      </section>
+      <section class="print-section">
+        <h2>${tr("Exploration focus")}</h2>
+        <p>${escapeHtml(tr(set.focus))}</p>
+      </section>
+      <section class="print-section">
+        <h2>${tr("What children might notice")}</h2>
+        ${list(set.notice)}
+      </section>
+      <section class="print-section">
+        <h2>${tr("Before you go")}</h2>
+        ${list(set.before)}
+      </section>
+      <section class="print-section">
+        <h2>${tr("During the visit")}</h2>
+        ${list(set.during)}
+      </section>
+      <section class="print-section">
+        <h2>${tr("After the visit")}</h2>
+        ${list(set.after)}
+      </section>
+      <section class="print-section">
+        <h2>${tr("Practical life extension")}</h2>
+        <p>${escapeHtml(tr(set.practical))}</p>
+      </section>
+      <section class="print-section print-observations">
+        <h2>${tr("What did we notice?")}</h2>
+        <div class="print-notes-box" aria-hidden="true"></div>
+      </section>
+      <section class="print-section print-drawing">
+        <h2>${tr("Draw what you noticed")}</h2>
+        <div class="print-drawing-box" aria-hidden="true"></div>
+      </section>
+    </article>`;
+  window.print();
 }
 
 // --- Activity details ---

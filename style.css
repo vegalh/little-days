@@ -367,16 +367,22 @@ gmp-place-autocomplete[aria-invalid=true]::part(input) { border-color: var(--acc
   margin-top: 12px;
 }
 
-/* "Use my location" / "Try an example address" stay side by side down to narrow phones. */
+/* "Use my location" / "Try an example address" stay side by side down to narrow phones;
+   an even 50/50 split (not a min-width-based basis) keeps them from wrapping to separate
+   rows, and the label wraps to a second line instead if the text doesn't fit. */
 .location-actions > button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 1 1 150px;
+  flex: 1 1 0;
   gap: 6px;
   min-width: 0;
-  padding: 0 12px;
+  height: auto;
+  min-height: 44px;
+  padding: 10px 12px;
+  line-height: 1.2;
   text-align: center;
+  white-space: normal;
 }
 
 /* "Try an example address": an outlined twin of "Use my location", not a plain link. */
@@ -493,6 +499,16 @@ section { padding-block: 32px; }
 
 .section-head { margin-bottom: 16px; }
 .section-head h2 { font-size: 28px; }
+
+/* My week's heading plus its "Print My Week" button, side by side when there's room. */
+.section-head-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.section-head-row h2 { margin: 0; }
 
 .section-head p {
   margin: 4px 0 0;
@@ -1772,4 +1788,105 @@ textarea {
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
+}
+
+/* Print: "Print My Week" and "Print Adventure Guide" (PRD.md 7.9, 7.14, DESIGN.md 11).
+   app.js fills #print-area with one of the two pages, then calls window.print(). On screen
+   it's always hidden; only @media print shows it, and hides everything else in its place -
+   no PDF library, just window.print(), @media print and @page (DESIGN.md "Don't"). */
+#print-area { display: none; }
+
+@media print {
+  /* Nothing else on the page prints: no header, nav, dialogs, maps or bottom bar. */
+  body > :not(#print-area) { display: none !important; }
+  #print-area { display: block !important; }
+
+  /* No fixed size, so the browser's own Letter/A4 choice (and Save as PDF) is respected;
+     a comfortable margin keeps every browser's unprintable edge clear on both sizes. */
+  @page { margin: 14mm; }
+
+  html, body { background: #FFF; }
+
+  .print-page {
+    max-width: 100%;
+    color: var(--ink);
+    font: 15px/1.5 var(--font-body);
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .print-brand {
+    margin: 0 0 16px;
+    font-size: 20px;
+  }
+  .print-brand .logo-mark { width: 24px; height: 24px; }
+
+  .print-title { font-size: 26px; }
+  .print-subtitle { margin: 4px 0 0; color: var(--ink-soft); }
+  .print-address { margin: 4px 0 0; color: var(--ink-soft); }
+  .print-perspective {
+    display: inline-block;
+    margin: 12px 0 0;
+    padding: 2px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--selected);
+    border-radius: 999px;
+  }
+
+  .print-empty { margin-top: 16px; color: var(--ink-soft); }
+
+  /* One day of My Week: kept together rather than split across a page break. */
+  .print-day {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    break-inside: avoid;
+  }
+  .print-day:first-of-type { border-top: 0; }
+  .print-day h2 { font-size: 18px; }
+  .print-weather { margin: 2px 0 12px; font-size: 13px; color: var(--ink-soft); }
+
+  .print-items { margin: 0; padding: 0; list-style: none; }
+  .print-item {
+    padding: 8px 0;
+    border-top: 1px dashed var(--line);
+    break-inside: avoid;
+  }
+  .print-items li:first-child { border-top: 0; }
+  .print-item-title { margin: 0; font-weight: 700; }
+  .print-item-address,
+  .print-item-meta,
+  .print-item-notes { margin: 2px 0 0; font-size: 13px; color: var(--ink-soft); }
+
+  /* A section of the guide (why explore, focus, notice, before/during/after, practical
+     life): each stays on one page together, never split mid-list. */
+  .print-section {
+    margin-top: 18px;
+    break-inside: avoid;
+  }
+  .print-section h2 { font-size: 16px; }
+  .print-section p { margin: 4px 0 0; }
+  .print-section ul { margin: 4px 0 0; padding-left: 20px; }
+  .print-section li { margin: 2px 0; }
+
+  /* Blank, ruled space for a handwritten note - a nature-journal page, not a spreadsheet. */
+  .print-notes,
+  .print-observations { margin-top: 18px; break-inside: avoid; }
+  .print-notes-label { margin: 0 0 6px; font-weight: 600; }
+  .print-notes-box {
+    height: 70px;
+    background-image: repeating-linear-gradient(to bottom, transparent 0 23px, var(--line) 23px 24px);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-small);
+  }
+
+  /* A plain box for a small drawing: no ruled lines, just a gentle frame. */
+  .print-drawing { margin-top: 18px; break-inside: avoid; }
+  .print-drawing-box {
+    height: 140px;
+    border: 1px dashed var(--line);
+    border-radius: var(--radius-small);
+  }
 }

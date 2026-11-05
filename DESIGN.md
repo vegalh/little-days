@@ -17,32 +17,32 @@ A neighborhood field guide: like a well-made nature journal with a real map tuck
 
 ## 2. Color
 
-The colors come from **Peninsula Montessori Academy's Newton site** (peninsulama.com/newton): white and light-grey pages, honey-gold headings, near-black text and warm peach highlights. The fonts, shapes and icons still follow RootMap (sections 3–4).
+A clean, warm, modern palette: primarily white with subtle warm-neutral accents and a soft olive green for selected states and primary actions. Minimal, mobile-first, and restrained — no decorative gradients, illustrations, or ornamental lines. The fonts, shapes and icons still broadly follow RootMap (sections 3–4).
 
 Defined as CSS custom properties on `:root` in `style.css`. **`style.css` is the source of truth**: this table lists exactly what it defines. Component styles use the tokens, never raw hex values. Don't rename a token that's in use; add a new one only when a component needs it, and add it here.
 
 | Token | Value | Use |
 |---|---|---|
-| `--bg` | `#F6F6F6` | Page background (their light-grey sections) |
+| `--bg` | `#FFFFFF` | Page background |
 | `--surface` | `#FFFFFF` | Cards, controls, status areas |
-| `--tint` | `#FDF4E6` | Soft cream panels: Little Days notes, What to wear, the segmented-control track |
-| `--apricot` | `#FDEBCF` | Warm boxes: weather warnings, the route reminder |
-| `--peach` | `#FAC97F` | Their peach highlight (defined for accents) |
-| `--selected` | `#FCE3BC` | Selected pill and day, selected place card |
-| `--ink` | `#1B1B1B` | Main text |
-| `--ink-soft` | `#5E5E5E` | Secondary text, labels, unselected controls |
-| `--heading` | `#917140` | Headings, logo, place and activity titles (their deeper gold; their lighter `#B58D51` is too faint for text) |
-| `--accent` | `#917140` | Buttons, selected text, focus ring, markers, route line (4.8:1 with white text) |
+| `--tint` | `#FAFAF8` | Soft off-white panels: Little Days notes, What to wear, the segmented-control track |
+| `--apricot` | `#FBEFD9` | Warm boxes: weather warnings, the route reminder |
+| `--peach` | `#F6D9A8` | Warm highlight (defined for accents) |
+| `--selected` | `#EAF0D8` | Selected pill and day, selected place card, "Use my location" fill |
+| `--ink` | `#26251F` | Main text |
+| `--ink-soft` | `#77766F` | Secondary text, labels, unselected controls |
+| `--heading` | `#26251F` | Headings, logo, place and activity titles (same as body ink — headings get hierarchy from size and weight, not color) |
+| `--accent` | `#718C43` | Olive green: buttons, selected text, focus ring, markers, route line |
 | `--accent-ink` | `#FFFFFF` | Text on accent |
-| `--line` | `#E8E2D8` | Borders, dividers |
+| `--line` | `#EAE8E2` | Borders, dividers |
 | `--sky` | `#7FA7C9` | Rain/cool details (defined, not used yet) |
-| `--leaf-ink` | `#3F6B35` | "Added ✓", status tags |
+| `--leaf-ink` | `#4B6B2E` | "Added ✓", status tags |
 | `--holiday` | `#96421A` | Holiday tags |
-| `--warning` | `#7A4F00` | Warning icons, "Indoor day" tag |
+| `--warning` | `#8A5A00` | Warning icons, "Indoor day" tag |
 | `--google-gray` | `#5E5E5E` | Only Google's "Google Maps" text attribution |
-| `--shadow` | `0 6px 20px rgba(27,27,27,.06)` | The one soft shadow, on cards |
+| `--shadow` | `0 1px 2px rgba(38,37,31,.04), 0 6px 20px rgba(38,37,31,.06)` | The one soft shadow, on cards |
 
-Text on a peach or cream background is `--ink`, never gold: gold on peach is too faint. Buttons are rounded pills, like the site's.
+Text on a peach, apricot or tint background is `--ink`, never the accent color at small sizes. Buttons are rounded pills.
 
 Shape tokens: `--radius` (20px, cards) and `--radius-small` (14px, controls, RootMap's `--radius-control`). Font tokens: section 3.
 
@@ -56,24 +56,25 @@ Dark mode is not part of version 1. The Autocomplete element is set to `color-sc
 
 RootMap's two fonts, **bundled with the site** in `fonts/` (woff2, SIL Open Font License, `fonts/OFL.txt`). Nothing is loaded from Google Fonts or any CDN, which also keeps the site fast in mainland China.
 
-- **Headings** (`--font-head`): `"Caveat", cursive`, weights 600 and 700. A handwritten script for the logo, page title, section headings, day names, and place and activity titles. Caveat runs small, so its sizes are larger than a serif's would be.
-- **Body** (`--font-body`): `"Nunito", system-ui, sans-serif`, weights 400, 600, 700. Rounded and friendly, for everything else.
+- **Headings** (`--font-head`) and **Body** (`--font-body`): both `"Nunito", system-ui, sans-serif`, weights 400, 600, 700. One clean, rounded sans-serif family for everything — the logo, page title, section headings, day names, place and activity titles, and body text. English heading sizes are tuned down to roughly match the Chinese sizes below, so the hierarchy reads the same in both languages.
 - **Chinese** (`html:lang(zh-CN)`) uses the system's Chinese font, as RootMap does: `"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif`, never a downloaded one (a full Chinese font is too large, and Google Fonts is slow in mainland China). Headings are weight 600 with slight letter spacing, at Chinese sizes: logo 24px, hero 36px (phone 28px), section headings 28px (phone 24px), card titles 21px, panel and detail headings 20px, day names 17px. Line height 1.65.
-- **EN / 中文 switch:** a small pill at the end of the top bar (white, gold bold text, 1.5px `--line` border, at least 40px tall), showing the other language in its own script.
-- Base size 16px, line height 1.5. Headings line height 1.15, color `--heading`.
+- **EN / 中文 switch:** a small pill at the end of the top bar (white, olive-green bold text, 1.5px `--line` border, at least 40px tall), showing the other language in its own script.
+- Base size 16px, line height 1.5. Headings line height 1.15, color `--heading` (same as body ink).
 
 | Role | Desktop | Phone |
 |---|---|---|
-| Logo | 32px / 700 | same |
-| Hero title | 62px / 700 | 44px |
-| Section heading (h2) | 40px / 700 | 34px |
-| Place and activity title (h3) | 27–28px / 700 | 25–26px |
-| Panel and detail headings | 26px / 700 | same |
-| Day name | 24px / 700 | same |
+| Logo | 24px / 700 | same |
+| Hero title | 36px / 700 | 30px |
+| Section heading (h2) | 28px / 700 | 24px |
+| Place and activity title (h3) | 21px / 700 | 19px |
+| Panel and detail headings | 20px / 700 | same |
+| Day name | 17px / 700 | 16px |
 | Body | 16px | 16px |
 | Labels, meta, tags | 13–14px / 600 | same |
 
-- Temperatures, walking minutes and distances use `font-variant-numeric: tabular-nums`, in Nunito (never Caveat).
+English sizes were rescaled down from the earlier (Caveat) sizes to line up with the Chinese sizes above, since Nunito reads larger at a given size than a handwritten script does.
+
+- Temperatures, walking minutes and distances use `font-variant-numeric: tabular-nums`.
 - Sentence case everywhere ("Add to my week", "Want to explore"). No all-caps.
 
 ## 4. Shape and spacing
@@ -83,7 +84,7 @@ RootMap's two fonts, **bundled with the site** in `fonts/` (woff2, SIL Open Font
 - **Shadow:** `--shadow`, RootMap's single soft shadow, on cards (controls card, place cards, saved places, idea cards, day cards, Now and Next hours, My week, status areas) and on the selected segment.
 - **Segmented controls** (°F/°C, Family/Classroom, walking time, filters, List/Map, My Places tabs) follow RootMap's: a `--tint` track with 3px padding and 12px corners; the selected segment is `--surface` (white) with `--accent` bold text, 9px corners and a small shadow. RootMap uses its pale green here; white was chosen so the selection is easy to see. Unselected segments are `--ink-soft`.
 - **Interest chips** follow RootMap's filter pills: `--surface`, 1px `--line`, 12px corners; the selected pill is `--selected` with an `--accent` border and text.
-- **Icons:** RootMap's line icons (24 × 24, 1.8 stroke, `currentColor`) for navigation: compass (Explore), sun (Weather), heart (My Places), calendar (My week). Weather and category emoji stay, always next to text.
+- **Icons:** RootMap's line icons (24 × 24, 1.8 stroke, `currentColor`) for navigation: compass (Explore), sun (Weather), heart (My Places), calendar (My week), plus a pin, a folded map, and a compass for the location/example/search buttons. Interest and category labels are plain text, no emoji — kept visually restrained per the mobile-first redesign. Weather emoji stay, always next to text that says the same thing.
 - **Spacing** uses a 4px base: 4, 8, 12, 16, 24, 32, 48.
 - Content max width 1040px, centered, except the Explore section, which may widen to 1200px on large screens so the map has room. Side gutter 16px on phones, 24px from 720px up.
 
@@ -91,7 +92,7 @@ RootMap's two fonts, **bundled with the site** in `fonts/` (woff2, SIL Open Font
 
 ### Navigation
 
-Little Days is **four views, one shown at a time**: **Explore** (with the search controls and the hero), **Weather** (with the at-home ideas), **My Places** and **My week**. The URL hash chooses the view (`#explore`, `#weather`, `#my-places`, `#my-week`), so links like "More weather" and the browser's back button work without a router. The current tab has `aria-current="page"`: gold text with a gold underline in the top bar, bold gold in the phone's bottom bar. Switching views scrolls to the top. The footer (Your data) shows under every view.
+Little Days is **four views, one shown at a time**: **Explore** (with the search controls and the hero), **Weather** (with the at-home ideas), **My Places** and **My week**. The URL hash chooses the view (`#explore`, `#weather`, `#my-places`, `#my-week`), so links like "More weather" and the browser's back button work without a router. The current tab has `aria-current="page"`: olive-green text with an olive-green underline in the top bar, bold olive-green in the phone's bottom bar. Switching views scrolls to the top. The footer (Your data) shows under every view.
 
 Explore on a computer (1100px and up) is an app layout: the search controls in a sticky column on the left (380px), the results (tabs, filters, list and map side by side) on the right. Between 720px and 1100px the controls sit above the results. On phones everything is one column.
 
@@ -107,7 +108,7 @@ The section table below lists where each part lives.
 | My week | `#my-week` | "My week" link |
 | Footer | — | — |
 
-**Header:** an original two-leaf sprout mark (inline SVG, `--heading` gold, `.logo-mark`) next to the "Little Days" wordmark (serif, `--accent`) on the left, links "Explore · Weather · My Places · My week" on the right. On phones the header links move to a **bottom bar** (fixed, `--surface`, top border `--line`, four equal 44px+ targets with an emoji above a 12px label: 🧭 Explore, ☀️ Weather, 📍 My Places, 🗓️ My week, `env(safe-area-inset-bottom)` padding), so they're reachable with a thumb. The page gets matching bottom padding so nothing hides behind it.
+**Header:** an original two-leaf sprout mark (inline SVG, `--heading`, `.logo-mark`) next to the "Little Days" wordmark (`--accent`) on the left, links "Explore · Weather · My Places · My week" on the right. On phones the header links move to a **bottom bar** (fixed, `--surface`, top border `--line`, four equal 44px+ targets with an emoji above a 12px label: 🧭 Explore, ☀️ Weather, 📍 My Places, 🗓️ My week, `env(safe-area-inset-bottom)` padding), so they're reachable with a thumb. The page gets matching bottom padding so nothing hides behind it.
 
 ### Page order
 
@@ -130,7 +131,7 @@ The section table below lists where each part lives.
 ### Desktop (720px and up)
 
 - **Hero:** title and subheading, then the controls card full width.
-- **Controls card:** row 1 location (field wide, "Use my location" beside it) with the compact weather line to its right (min 280px) once a location is chosen, wrapping under it when there isn't room; row 2 the location line and example button; row 3 Ages, Who's exploring, Walking time side by side; row 4 Interests chips (wrapping); row 5 the °F / °C switch on the left and the primary button on the right.
+- **Controls card:** row 1 location field, wide, with the compact weather line to its right (min 280px) once a location is chosen, wrapping under it when there isn't room; row 2 "Use my location" and "Try an example address" side by side (`.location-actions`, an even 50/50 split); row 3 the location line; row 4 Ages, Who's exploring, Walking time side by side; row 5 Interests chips, a 3-column grid with "All" spanning the full width; row 6 the °F / °C switch on the left and the primary button on the right.
 - **Weather:** Now and Next hours side by side in one panel; the seven-day strip below (seven cards in one row, `grid-auto-flow: column`, min 132px each, scrolls sideways inside its own container only if needed); warnings and "What to wear" side by side below the strip.
 - **Explore:** two columns, **list on the left (minmax(340px, 5fr)), map on the right (7fr)**. The map is `position: sticky; top: 16px; height: calc(100vh - 32px)`, max 760px, so it stays in view while the list scrolls with the page. Cards are one column in the list.
 - **Ideas:** three cards side by side (`repeat(auto-fill, minmax(260px, 1fr))`), then "Why these activities?".
@@ -139,7 +140,7 @@ The section table below lists where each part lives.
 
 ### Phone (under 720px): designed on its own
 
-- **Hero** is short: 32px title, subheading, then the controls card stacked. The location field is full width with "Use my location" as a full-width secondary button under it. Ages is a full-width dropdown button. Who's exploring and Walking time are full-width segmented controls (five 44px segments fit 343px). Interest chips wrap. The primary button is full width at the bottom. The adult reaches the button after little scrolling.
+- **Hero** is short: 30px title, subheading, then the controls card stacked. The location field is full width with "Use my location" and "Try an example address" side by side under it (an even 50/50 split, wrapping each label to a second line rather than wrapping the buttons onto separate rows). Ages and Who's exploring sit side by side in two columns; Walking time gets its own full-width row below (it has five options to lay out). Interest chips are a 3-column grid, with "All" spanning the full width below them. The primary button is full width at the bottom. The adult reaches the button after little scrolling.
 - **Weather:** Now on top, Next hours as a sideways-swiping row of six columns, then the seven-day strip as a sideways-swiping row of compact day cards (112px wide, `scroll-snap-type: x mandatory`, the next card peeking in). Neither wraps into a tall grid, and the page itself never scrolls sideways. Warnings and "What to wear" follow, stacked.
 - **Explore:** a **List / Map switch** (two radio buttons styled as a segmented control) sticks to the top of the section while scrolling it. List is shown first. Only one of list and map is visible at a time; the hidden one uses `hidden`, so it isn't reachable by keyboard or screen reader.
   - **List:** full-width place cards, 12px apart.
@@ -158,8 +159,7 @@ The section table below lists where each part lives.
 
 **Location**
 - Google's `<gmp-place-autocomplete>` sits under a visible `<label>` "Address or place". It's styled to match the other inputs using only what Google exposes: on the element, `font-family: var(--font-body)`, `color-scheme: light`; `::part(input)` gets the 44px height, `--bg` background, `--line` border and 12px radius (`!important`, needed to win over Google's own part styles); `::part(focus-ring)` gets `--accent` as a `border-color` (not `outline-color`, which the part doesn't expose); `::part(prediction-list)` gets `--surface`, a `--line` border and 12px radius; `::part(prediction-item-selected)` gets `--selected`. Google's own icon and suggestion attribution inside the list are left as they are. Chromium only applies `::part()` rules from a `<link>` stylesheet once that stylesheet is toggled after the custom element upgrades, so `google.js` briefly disables and re-enables the stylesheet (`refreshPartStyles()`) once the Autocomplete element is ready.
-- **"Use my location"**: secondary button with "📍" (`aria-hidden`). While asking: disabled, "Finding you…".
-- **"Try an example address"** (only while Google Maps is available): a text button (underlined, `--accent`, 14px) under the field. Pressing it fills the field with "221 Washington Street, Newton, MA 02458", sets the location with one Google text search (PRD.md 7.1), and marks the line under it "Example address", in `--ink-soft`, so it's never mistaken for the adult's own location.
+- **"Use my location"** and **"Try an example address"** sit side by side below the field (`.location-actions`, flex row, wrapping label text rather than the buttons onto a second row). "Use my location" is a pale-green (`--selected`) filled pill with a pin icon; while asking: disabled, "Finding you…". "Try an example address" (only while Google Maps is available) is an outlined secondary button with a folded-map icon — a bordered twin of "Use my location", not a plain underlined link. Pressing it fills the field with "221 Washington Street, Newton, MA 02458", sets the location with one Google text search (PRD.md 7.1), and marks the line under it "Example address", in `--ink-soft`, so it's never mistaken for the adult's own location.
 - **Location chosen**: a line under the field: "📍 Your current location" or the formatted address, in 14px `--ink-soft`, with a "Change" text button.
 - **If Google Maps is unavailable** (not configured, refused or failed), the Autocomplete is replaced by the earlier city search: a text field "City (for weather)" with the browser's suggestion list (`<datalist>`, Open-Meteo geocoding) and a "Show weather" button on the same row, styled like the earlier Search button. A note under it in `--ink-soft`: "Maps aren't available right now, so you can check the weather by city." Nothing in the fallback looks like place discovery: no example button, no map, and Explore shows its setup or unavailable message.
 
@@ -171,7 +171,7 @@ The section table below lists where each part lives.
 
 **Walking time**: segmented control, five radio buttons (5, 10, 15, 20, 30), legend "Walking time (minutes)".
 
-**Interests (one search at a time)**: a `<fieldset>` with legend "What would you like to explore?" and **seven radio buttons styled as chips**: 🌳 Nature · 🥖 Everyday Life · 🚒 Community Helpers · 🎨 Art & Culture · 🐦 Animals & Wildlife · 🤸 Movement · ✨ All. One is chosen at a time and **none is chosen at first**. Choosing "All" shows a 14px `--ink-soft` note: "All searches six kinds of places, so it takes a little longer." Chips: pill, 44px tall, `--surface` with a `--line` border; chosen chip `--accent` background with `--accent-ink` text. Emoji are `aria-hidden`.
+**Interests (one search at a time)**: a `<fieldset>` with legend "What would you like to explore?" and **seven radio buttons styled as chips**, text only (no emoji): Nature · Everyday Life · Community Helpers · Art & Culture · Animals & Wildlife · Movement · All, laid out as a 3-column grid with "All" spanning the full width below. One is chosen at a time and **none is chosen at first**. Choosing "All" shows a 14px `--ink-soft` note: "All searches six kinds of places, so it takes a little longer." Chips: rounded rectangle, 44px tall, `--surface` with a `--line` border; chosen chip `--selected` background with an `--accent` border and text.
 
 **°F / °C switch**: two radio buttons styled as a segmented control inside a `<fieldset>` with the legend "Temperature". The selected side is `--accent` with `--accent-ink` text.
 
@@ -179,12 +179,12 @@ The section table below lists where each part lives.
 
 ### Weather
 
-**Now**: a `--surface` card: large temperature (40px serif, tabular), weather emoji and condition, then "Feels like 61°", "Wind 9 mph, gusts 20 mph", "Rain 10% this hour", and the rain amount when it's raining.
+**Now**: a `--surface` card: large temperature (40px, tabular), weather emoji and condition, then "Feels like 61°", "Wind 9 mph, gusts 20 mph", "Rain 10% this hour", and the rain amount when it's raining.
 
 **Next hours**: six equal columns (time, emoji, temperature, "Rain n%"), each column 64px min. Each column is labelled with its hour ("6 PM"), including the current one, so it isn't confused with the Now card's 15-minute values.
 
 **Day card** (a `<button>` with `aria-pressed`), unchanged:
-- Day name (serif), date, weather emoji, high (bold) and low (`--ink-soft`), condition text, "Rain n%".
+- Day name (bold), date, weather emoji, high (bold) and low (`--ink-soft`), condition text, "Rain n%".
 - Holiday or celebration: a pumpkin tag inside the card ("Halloween").
 - Hazard day: an "Indoor day" tag in `--warning`.
 - Featured activity: its photo (4:3 tile) and title at the bottom, title clamped to two lines.
@@ -234,7 +234,7 @@ The two-part card is how Google content is visually separated from Little Days c
 
 A native `<dialog>`, `--bg` background, sections separated by 24px. Order:
 
-1. **Header** (sticky inside the dialog): place name (h2, serif), address, category tag, and "Close" (secondary). Under it, "Places from Google Maps" is not needed because the map below shows Google's attribution.
+1. **Header** (sticky inside the dialog): place name (h2), address, category tag, and "Close" (secondary). Under it, "Places from Google Maps" is not needed because the map below shows Google's attribution.
 2. **Map**: 16:10 frame (20px radius) with the start and place markers and the walking route as a `--accent` line, 5px wide, 0.9 opacity. Under it: "🚶 12 min walk · 0.6 mi (Google walking estimate)", any Google warnings under "From Google:" in 14px, then the **route reminder** in a `--tint` box with "⚠︎" in `--warning`. If the route failed: "Walking route unavailable."
 3. **Weather**: the selected day's emoji, condition, high/low, rain %, and the weather note.
 4. **Before you set off**: access line, age note, and the link "Check hours and details on Google Maps ↗" (opens in a new tab).
@@ -246,7 +246,7 @@ Opening moves focus to the dialog title; Escape and Close close it, and focus re
 
 ### At-home ideas
 
-**Activity card**: `--surface`, 20px radius. Photo (4:3 tile), serif title (a button that opens details), meta line "Indoor · 15 min · Ages 2–3", the holiday-inspired label when it applies, the RootMap description, up to three domain tags in `--ink-soft`, the RootMap safety note in 14px `--ink-soft` with "Safety:" in bold, and an "Add to my week" primary button at the bottom. Unchanged.
+**Activity card**: `--surface`, 20px radius. Photo (4:3 tile), bold title (a button that opens details), meta line "Indoor · 15 min · Ages 2–3", the holiday-inspired label when it applies, the RootMap description, up to three domain tags in `--ink-soft`, the RootMap safety note in 14px `--ink-soft` with "Safety:" in bold, and an "Add to my week" primary button at the bottom. Unchanged.
 
 **Why these activities?**: `--tint` panel, 20px radius, "💡" heading, two to four sentences. Unchanged.
 
@@ -258,7 +258,7 @@ A major section, as prominent as Explore.
 
 - **Heading** "My Places", and directly under it the **Google Maps text attribution** (component "Google attribution" below), since this list shows Google content without a map. My week shows it above its rows when any place entry is listed.
 - **Status tabs**: three tabs as a segmented control with counts: "Want to explore (3)" · "Explored (5)" · "Revisit (1)". The first tab with places is shown first.
-- **Saved place card**: `--surface`, 20px radius. Name (h3, serif) and address, then "Last explored Nov 2 · 2 visits" or "Saved Nov 4" in 14px `--ink-soft`, the latest "Next time" idea, and "Exploration history (n)" as a `<details>` showing the journal. "Open" (secondary) and "Remove" (text button) at the bottom. Status is changed in place details.
+- **Saved place card**: `--surface`, 20px radius. Name (h3) and address, then "Last explored Nov 2 · 2 visits" or "Saved Nov 4" in 14px `--ink-soft`, the latest "Next time" idea, and "Exploration history (n)" as a `<details>` showing the journal. "Open" (secondary) and "Remove" (text button) at the bottom. Status is changed in place details.
 - A place whose details couldn't be fetched shows "Place details unavailable right now" as its title, in `--ink-soft`, with the status, note and Remove still working.
 - **Empty tab**: "No places here yet." plus one helpful line: Want to explore → "Save places from Explore to plan your next walk."; Explored → "Mark places as explored after you visit."; Revisit → "Places you'd like to see again, with fresh ideas, appear here."
 
@@ -296,9 +296,9 @@ One `--surface` card with rows (day + date on the left, entries on the right). E
 - **Activity photos** are the original RootMap photos, copied into `images/activities/` as WebP, 480 and 960 pixels wide.
 - Shown in a fixed 4:3 frame (`aspect-ratio: 4 / 3; object-fit: cover`) with 12px corners.
 - Every `<img>` has `srcset` (480w, 960w), `sizes`, `width`/`height` (no layout shift), `loading="lazy"` and `decoding="async"`. `alt=""`, because the title next to it says what it shows.
-- **Missing photo:** a plain `--tint` tile with the title's first letter in the serif face at 50% opacity. Never a broken-image icon.
-- **Places have no photos** in version 1 (Google photos are a pricier field and need author credit). The number badge and category emoji are enough.
-- **Weather and categories** use emoji, `aria-hidden="true"`, always next to text that says the same thing: weather ☀️ 🌤️ ⛅ ☁️ 🌫️ 🌧️ ❄️ ⛈️; categories 🌳 🥖 🚒 🎨 🐦 🤸 ✨; places 📍; walking 🚶.
+- **Missing photo:** a plain `--tint` tile with the title's first letter at 50% opacity. Never a broken-image icon.
+- **Places have no photos** in version 1 (Google photos are a pricier field and need author credit). A photo-tile placeholder (the title's first letter) with the number badge are enough; category and indoor/outdoor are shown as plain-text tags, not emoji.
+- **Weather** uses emoji, `aria-hidden="true"`, always next to text that says the same thing: ☀️ 🌤️ ⛅ ☁️ 🌫️ 🌧️ ❄️ ⛈️. Categories, places and walking are plain text/line icons, no emoji (the one exception is the compact "📍 {address}" location-line status text, kept as emoji because several tests assert its exact text content).
 - No icon fonts and no images from outside URLs. Google's map tiles and markers come with the Maps API.
 
 ## 8. Motion
@@ -316,10 +316,21 @@ Almost none. 150ms fades on hover color and dialog open. Smooth `scroll-snap` on
 ## 10. Don't
 
 - No gradients, glassmorphism, or big hero images.
-- Nothing loaded from a CDN or Google Fonts (Google's Maps API script is the one exception, PRD.md 9.1). The only fonts are the bundled Caveat and Nunito files in `fonts/`. Google's text attribution names Roboto first but allows the sans-serif fallback, so no Roboto is loaded.
+- Nothing loaded from a CDN or Google Fonts (Google's Maps API script is the one exception, PRD.md 9.1). The only font is the bundled Nunito family in `fonts/`. Google's text attribution names Roboto first but allows the sans-serif fallback, so no Roboto is loaded.
 - No CSS framework or component library.
 - No decorative animation.
 - No all-caps text.
 - No Google Maps look-alike chrome: no floating search bar over the map, no side drawer, no layer switcher, no Street View.
 - No ratings, stars, reviews, opening hours or prices on cards.
 - Never hide, cover or restyle Google's logo and attributions.
+
+## 11. Print
+
+Print My Week (PRD.md 7.9) and Print Adventure Guide (PRD.md 7.14, 7.20) use the same visual language as the rest of the page, carried into a printed, mostly-black-and-white field guide rather than a screen-style layout: native `window.print()`, `@media print`, `@page` and print-only DOM in `#print-area` — no PDF library, no second design system.
+
+- **Typography and color:** the same Nunito/system-Chinese fonts and `--ink`/`--ink-soft` text colors as on screen, at slightly larger, ink-efficient sizes (15–16px body, 18–26px headings) for a comfortable read on paper. Color is used sparingly: the perspective pill ("First visit") keeps `--selected`/`--accent` (`print-color-adjust: exact` makes it render), and weather icons keep their native emoji color; everything else prints in ink-efficient black and gray.
+- **Branding:** the same header lockup as the app (the sprout `logo-mark` SVG + "Little Days" wordmark), once at the top of every printed page.
+- **Layout:** a single column, generous line-height, and the same gentle borders and rounded corners (`--radius-small`) as on-screen cards — but no shadows (wasted ink) and no background tint behind the whole page (stays `#FFF` so `@page` margins and any printer's own header/footer sit cleanly outside it).
+- **A nature-journal feel, not a spreadsheet:** short prose and short bulleted lists, generous whitespace between sections, and two deliberately plain, undecorated spaces for the family to fill in by hand — a ruled note box ("What did we notice?") on every My Week day and the Adventure Guide, and a plain dashed drawing box ("Draw what you noticed") on the Adventure Guide only.
+- **Pagination:** a My Week day, a planned item, and a guide section each use `break-inside: avoid` so the browser never splits one across a page boundary. `@page` sets only a margin (14mm), never a fixed `size`, so the browser's own US Letter/A4 choice and "Save as PDF" are respected.
+- **What's left out of print:** everything else on the page (header, bottom nav, maps, dialogs, filters) is hidden under `@media print`; the private exploration journal is never printed; a missing forecast or missing place detail shows the same plain-text fallback as on screen, never a guess or a blank gap.

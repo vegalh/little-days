@@ -42,7 +42,7 @@ Version 1 is built first for ages 2–6. Children under 2 are supported with age
 - Booking, or saying a business accepts classroom visits
 - Claiming a walking route suits strollers, toddlers or groups
 - AI-written text. Exploration guides are written and reviewed by hand (7.14).
-- Sharing, printing or exporting
+- Sharing or exporting beyond the printable pages (7.9, 7.14) and the existing JSON backup (7.18)
 - Notifications or reminders
 - New RootMap activities: all activities still come from RootMap
 
@@ -318,6 +318,7 @@ My week holds two kinds of entries: **place visits** and **at-home activities** 
 - A place entry shows the place's name (a button that opens its details), time and theme, notes, and **Edit** and **Remove**. Edit turns the entry into a small form (date, time, theme, notes) with "Save changes" and "Cancel"; moving it to a date where the same place is already planned is refused. Names come from Google this visit (7.17), fetched only once My week is on screen; if that fails it shows "Saved place (details unavailable right now)". When a place entry is listed, My week shows the Google Maps text attribution (9.4).
 - **Planning a visit never marks the place explored.** Only recording a visit does (7.17).
 - Before any search, or if the weather fails, My week still lists saved dates from today on, without weather.
+- **Print My Week:** a "Print My Week" button renders a printable weekly planner (branding, "Our Little Adventures", the date range, each planned day's places and activities, times, themes, preparation notes, that day's real forecast or "Weather forecast not available yet.", and a ruled space for a handwritten observation) and calls `window.print()`. Only days with at least one entry print — no page for an empty forecast day. The private exploration journal (7.17's `observation`/`next`) is never printed, only the adult's own preparation notes. See 7.20.
 
 Saved in `localStorage` under `littleDays.plan.v2`. Activities stay exactly as in v1 (their RootMap ID as a string), and place visits are objects beside them:
 
@@ -454,6 +455,7 @@ nature: {
 - **Perspectives:** each guide has three sets, one per visit, each with its own focus (for a bakery: shapes and colors, then smells and ingredients, then people and their jobs). Place details show them as three tabs, "First visit", "Second visit", "Third visit", with the first chosen. From Phase 4 the starting tab is the number of recorded visits to that place (7.17) modulo three, so each visit brings the next perspective.
 - The card shows one "notice" line as its exploration idea. The detail shows the full set.
 - `activities` are hand-picked RootMap IDs. In the detail they appear under "At home afterwards", filtered by weather and age (7.5), and open the activity details (7.8).
+- **Print Adventure Guide:** a button in the place details prints this same guide content (not a new guide system) for the currently-shown perspective: branding, place name and address, weather for the selected day or "Weather forecast not available yet.", the perspective label, every guide section above, and a ruled space for a handwritten observation plus a small drawing box. See 7.20.
 
 ### 7.15 Weather-aware discovery
 
@@ -510,7 +512,8 @@ The walking-time limit is the 7.1 input (7.12). There's no age filter on places:
 5. Little Days ideas: Why explore this place?, What children might notice, Before you go, During the visit, After the visit, Practical Life, At home afterwards (7.14)
 6. Buttons: Save / Mark as explored / Revisit (7.17)
 7. Add to My Week: date, time, theme, notes, and the button (7.9)
-8. Close
+8. Print Adventure Guide (7.14, 7.20)
+9. Close
 
 Focus behaves as in 7.8: it moves into the dialog on open, Escape and Close close it, and focus returns to what opened it.
 
@@ -581,6 +584,18 @@ The whole page works in **English** and **Simplified Chinese**.
 - **Dates and times** use `zh-CN` formatting (`11月6日周五`, `下午6时`). Units stay °F/°C, mph/km/h, mi/km.
 - **Weather warnings** keep the same cautious meaning in Chinese, and the page never says "safe" (安全) about play, a place or a route.
 - **Chinese typography:** the system's Chinese font (PingFang SC, Hiragino Sans GB, Microsoft YaHei, Noto Sans SC), never a downloaded one, at sizes suited to Chinese (DESIGN.md 3).
+
+### 7.20 Printable planning pages
+
+Two printable formats, both native-browser printing: no PDF library, just a hidden `#print-area` filled with the print markup, `@media print`/`@page` in `style.css`, and `window.print()`. Design is in DESIGN.md 11.
+
+- **Print My Week** (7.9) and **Print Adventure Guide** (7.14) only read state already in memory (the loaded plan, My Places, forecast and guide content). Printing never makes a new Google, weather or holiday request, and never generates a map image; Google's "Google Maps" text attribution is shown instead when a printed page includes a Google place.
+- **Weather accuracy:** a printed day or guide only ever shows the real forecast for its own date, from the already-loaded week; it's never substituted with today's weather. When that date isn't in the loaded forecast, the page shows "Weather forecast not available yet." instead of a guess.
+- **Missing place details:** if a saved place's name and address haven't loaded (or failed to), the print page shows "Saved place (details unavailable right now)" rather than nothing or stale data.
+- **Never printed automatically:** the private exploration journal (7.17's `observation` and `next`). Only the adult's own preparation notes (My week) or the hand-written guide content (Adventure Guide) print.
+- **Layout:** no `@page size`, so the browser's own US Letter/A4 choice and "Save as PDF" are respected; a day, a planned item, and a guide section each use `break-inside: avoid` so they aren't split awkwardly across a page break; everything else on the page (header, nav, map, dialogs, bottom bar) is hidden while printing.
+- Each printed page includes a ruled space for a handwritten observation ("What did we notice?"); the Adventure Guide also includes a small plain drawing box ("Draw what you noticed").
+- Both features are available, and fully translated, in English and Chinese (7.19).
 
 ## 8. Page states
 
@@ -814,6 +829,8 @@ Every logic file has Node tests, using fakes for storage. Run after any change t
 
 Journeys: location permission denied; manual address selection; places success; places empty; places failure; weather success; weather failure; routes success; routes failure (and "Walking time unavailable"); walking-time filter; saving a place; marking explored; revisiting (a new guide set); adding a place to My week and seeing its weather; a refresh keeps everything; delete my data; desktop layout (list and map side by side); phone layout (List/Map switch, no sideways page scroll, 44px targets).
 
+`tests/e2e/print.spec.js` (7.9, 7.14, 7.20): Print My Week with activities and a place visit together, grouped by day, with weather and notes; several plans on one day; a date past the forecast window showing the required fallback text; a saved place whose Google fetch failed still printing its own notes; an empty week; a long preparation note printing in full; Print Adventure Guide with the place, the selected day's weather and the currently-chosen perspective; Print Adventure Guide with no forecast loaded; and the same checks with the Chinese interface. Every test stubs `window.print()` and asserts no extra Google, weather or holiday request happens.
+
 ### 10.3 Live check (manual, real APIs)
 
 `tests/LIVE-CHECK.md` is a checklist run by hand with the dev key on `localhost:8000`, and with the prod key on the published site. Each run is recorded with the date, browser and result. For each API it says how to confirm a real response (DevTools Network panel and the Phase 2 `console.log`s):
@@ -825,6 +842,7 @@ Journeys: location permission denied; manual address selection; places success; 
 - Open-Meteo: the "Now" temperature matches open-meteo.com for the same place.
 - Geolocation: allowing it searches from the device location; denying it shows 8.3's message.
 - Restrictions: the prod key, used from `localhost`, is refused (expected).
+- Print preview: open each browser's print preview (Ctrl/Cmd+P) for Print My Week and Print Adventure Guide at both US Letter and A4; confirm no clipped content, no unexpected blank pages, no section split mid-list, and that "Save as PDF" produces a readable file.
 
 Reports always say which results come from mocked tests and which from a live check. A feature is "live-verified" only after a live check passes.
 
