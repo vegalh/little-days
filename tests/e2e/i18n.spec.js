@@ -1,6 +1,6 @@
 // Chinese (PRD.md 7.19). Mocked APIs and the fake Google library, as in the other journeys.
 const { test, expect } = require("@playwright/test");
-const { mockApis, showView, GOOGLE_CONFIG } = require("./mock-apis.js");
+const { mockApis, showView, chooseInterest, GOOGLE_CONFIG } = require("./mock-apis.js");
 
 test.afterEach(async ({}, testInfo) => {
   expect(testInfo.api?.unmocked ?? []).toEqual([]);
@@ -16,19 +16,19 @@ test("中文: the switch saves the choice, and the whole page comes back in Chin
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
   await expect(page.locator("#lang-switch")).toHaveText("EN");
   await expect(page.locator(".site-nav")).toContainText("探索");
-  await expect(page.locator(".hero h1")).toHaveText("家门口，处处都是小小的发现。");
-  await expect(page.getByRole("button", { name: "寻找小小冒险" })).toBeVisible();
+  await expect(page.locator("h1")).toHaveText("发现身边的小小冒险");
+  await expect(page.getByRole("button", { name: "探索附近" })).toBeVisible();
   expect(await page.evaluate(() => window.fakeGoogleLanguage)).toBe("zh-CN");
   expect(JSON.parse(await page.evaluate(() => localStorage.getItem("littleDays.settings.v2"))).lang).toBe("zh");
 
   await page.evaluate(() => window.fakePickAddress());
-  await expect(page.locator("#now-line")).toContainText("现在");
-  await page.locator("#interest-chips label", { hasText: "自然" }).click();
-  await page.getByRole("button", { name: "寻找小小冒险" }).click();
+  await expect(page.locator("#now-line")).toContainText("预报有雾");
+  await chooseInterest(page, "自然");
+  await page.getByRole("button", { name: "探索附近" }).click();
   await expect(page.locator(".place-card").first()).toContainText("步行");
-  await expect(page.locator(".place-card").first()).toContainText("是否对外开放尚未核实");
   await page.getByRole("button", { name: "Test Park的详情" }).click();
   await expect(page.locator("#place-dialog")).toContainText("孩子们可能会注意到");
+  await expect(page.locator("#place-dialog")).toContainText("是否对外开放尚未核实");
   await expect(page.locator("#place-dialog .perspective-focus")).toHaveText("重点：叶子和树");
   await page.locator("#place-dialog [data-place-close]").first().click();
 

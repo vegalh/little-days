@@ -194,6 +194,8 @@ async function createMap(element, center, mapId) {
     mapId,
     disableDefaultUI: true,
     zoomControl: true,
+    // Top right, so the preview card at the bottom of the map never covers it.
+    zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_TOP },
     clickableIcons: false,
   });
 }
@@ -247,7 +249,8 @@ async function syncMarkers(map, origin, places, onChoose, markers = {}) {
     const bounds = new google.maps.LatLngBounds();
     if (origin) bounds.extend(origin);
     for (const place of places) bounds.extend(place.location);
-    map.fitBounds(bounds, 48);
+    // Room for a pin above its point; the sides stay tight so a phone's small map can zoom in.
+    map.fitBounds(bounds, { top: 48, right: 24, bottom: 24, left: 24 });
   }
   return markers;
 }

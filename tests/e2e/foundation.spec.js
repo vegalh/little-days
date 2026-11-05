@@ -1,7 +1,7 @@
 // Phase 2 journeys: location, weather and Google setup states (PRD.md 10.2).
 // All outside requests are mocked. These tests don't show that the real APIs work.
 const { test, expect } = require("@playwright/test");
-const { mockApis, showView, FORECAST, GOOGLE_CONFIG } = require("./mock-apis.js");
+const { mockApis, showView, openFilters, FORECAST, GOOGLE_CONFIG } = require("./mock-apis.js");
 
 const fahrenheit = (c) => `${Math.round(c * 9 / 5 + 32)}°`;
 const NEWTON_MA = "Newton, Massachusetts, United States";
@@ -43,8 +43,7 @@ test("manual city entry: current weather, the next six hours from now, and seven
 
   await expect(page.locator("#location-line")).toHaveText(`📍 ${NEWTON_MA}`);
   const now = FORECAST.current;
-  await expect(page.locator("#now-line")).toContainText(`Now ${fahrenheit(now.temperature_2m)}`);
-  await expect(page.locator("#now-line")).toContainText(`feels like ${fahrenheit(now.apparent_temperature)}`);
+  await expect(page.locator("#now-line")).toContainText(`${fahrenheit(now.temperature_2m)} · Fog forecast`);
   await expect(page.locator(".now-temp")).toHaveText(fahrenheit(now.temperature_2m));
 
   // current.time is 18:15 and hourly starts at midnight: the row starts at 18:00.
@@ -74,6 +73,7 @@ test("°F/°C changes the weather shown without a new request", async ({ page },
   await page.getByLabel("City (for weather)").fill(NEWTON_MA);
   await page.getByRole("button", { name: "Show weather" }).click();
   await expect(page.locator(".now-temp")).toHaveText(fahrenheit(FORECAST.current.temperature_2m));
+  await openFilters(page);
   await page.locator("label", { hasText: "°C" }).click();
   await expect(page.locator(".now-temp")).toHaveText(`${Math.round(FORECAST.current.temperature_2m)}°`);
   expect(api.requests.filter((url) => url.includes("/v1/forecast"))).toHaveLength(1);
@@ -166,6 +166,7 @@ test("saved v2 settings survive a reload", async ({ page }, testInfo) => {
   await open(page, testInfo);
   await page.getByLabel("City (for weather)").fill(NEWTON_MA);
   await page.getByRole("button", { name: "Show weather" }).click();
+  await openFilters(page);
   await page.locator("label", { hasText: "°C" }).click();
   await expect(page.locator(".now-temp")).toBeAttached();
   await page.reload();
@@ -176,7 +177,7 @@ test("saved v2 settings survive a reload", async ({ page }, testInfo) => {
 test.describe("with Google configured (fake Maps library)", () => {
   test("picking an address loads its weather and saves only the place ID; no place search", async ({ page }, testInfo) => {
     const api = await open(page, testInfo, { config: GOOGLE_CONFIG });
-    await expect(page.locator("#explore-status")).toHaveText("Choose a location and what you'd like to explore, then press Find Little Adventures.");
+    await expect(page.locator("#explore-status")).toHaveText("Enter an address or use your location, then press Explore nearby.");
     await expect(page.getByLabel("City (for weather)")).toBeHidden();
     await expect(page.locator("#address-label")).toHaveText("Address or place");
     await page.evaluate(() => window.fakePickAddress());
@@ -240,15 +241,15 @@ test.describe("with Google configured (fake Maps library)", () => {
 });
 
 test.describe("layout", () => {
-  test("desktop: search controls beside the results, tabs in the top bar, and Now beside Next hours", async ({ page }, testInfo) => {
+  test("desktop: search beside the map, tabs in the top bar, and Now beside Next hours", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "desktop layout");
     await open(page, testInfo);
     await page.getByLabel("City (for weather)").fill(NEWTON_MA);
     await page.getByRole("button", { name: "Show weather" }).click();
     await expect(page.locator(".now-temp")).toBeAttached();
     const side = await page.locator(".explore-side").boundingBox();
-    const results = await page.locator("#explore").boundingBox();
-    expect(results.x).toBeGreaterThan(side.x + side.width - 1);
+    const map = await page.locator("#place-map-box").boundingBox();
+    expect(map.x).toBeGreaterThan(side.x + side.width - 1);
     await expect(page.locator(".site-nav a[aria-current=page]")).toHaveText("Explore");
     // Only the chosen view shows.
     await expect(page.locator("#my-week")).toBeHidden();
@@ -280,7 +281,7 @@ test.describe("layout", () => {
       expect(box.height, await button.innerText()).toBeGreaterThanOrEqual(44);
     }
     // The location and the compact weather stack.
-    const location = await page.locator(".field-location").boundingBox();
+    const location = await page.locator(".search-row").boundingBox();
     const nowLine = await page.locator("#now-line").boundingBox();
     expect(nowLine.y).toBeGreaterThan(location.y + location.height - 1);
     await showView(page, "weather");

@@ -13,6 +13,7 @@ const FIXTURE_NOW = new Date("2026-11-04T18:15:00-05:00");
 // options:
 //   config      what config.js says: null (missing, 404) or { googleMapsKey, googleMapId }
 //   forecast    "ok" (default), a status code, or "offline", or a list used one per request
+//   forecastData a changed copy of FORECAST to answer with instead
 //   geolocation "denied" to make getCurrentPosition fail with code 1
 //   storage     { key: value } put in localStorage before the page loads
 //   google      options for the fake Google script (authFailure, failFetch)
@@ -37,7 +38,7 @@ async function mockApis(page, options = {}) {
     const answer = forecastAnswers.length > 1 ? forecastAnswers.shift() : forecastAnswers[0];
     if (answer === "offline") return route.abort("internetdisconnected");
     if (answer !== "ok") return route.fulfill({ status: answer, json: { error: true, reason: "Mocked failure" } });
-    return route.fulfill({ json: FORECAST });
+    return route.fulfill({ json: options.forecastData || FORECAST });
   });
 
   await page.route("https://geocoding-api.open-meteo.com/v1/search?**", (route) => {
@@ -83,4 +84,15 @@ async function showView(page, name) {
   await page.locator(`.view[data-view="${name}"]`).waitFor();
 }
 
-module.exports = { mockApis, showView, FORECAST, NEWTON, GOOGLE_CONFIG };
+// The settings in the Filters panel are out of sight until it's opened.
+async function openFilters(page) {
+  const toggle = page.locator("#filters-toggle");
+  if (await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
+}
+
+async function chooseInterest(page, label) {
+  await openFilters(page);
+  await page.locator("#interest-chips label", { hasText: label }).click();
+}
+
+module.exports = { mockApis, showView, openFilters, chooseInterest, FORECAST, NEWTON, GOOGLE_CONFIG };

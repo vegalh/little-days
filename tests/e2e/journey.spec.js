@@ -2,7 +2,7 @@
 // deleting saved data (PRD.md 7.9, 7.16–7.18). Google is the fake and every other
 // request is mocked: these show the page's behavior, not that the real APIs work.
 const { test, expect } = require("@playwright/test");
-const { mockApis, showView, GOOGLE_CONFIG } = require("./mock-apis.js");
+const { mockApis, showView, openFilters, chooseInterest, GOOGLE_CONFIG } = require("./mock-apis.js");
 
 test.afterEach(async ({}, testInfo) => {
   expect(testInfo.api?.unmocked ?? []).toEqual([]);
@@ -16,8 +16,8 @@ async function start(page, testInfo, storage = {}) {
   await expect(page.locator(".now-temp")).toBeAttached();
 }
 async function search(page, label) {
-  await page.locator("#interest-chips label", { hasText: label }).click();
-  await page.getByRole("button", { name: "Find Little Adventures" }).click();
+  await chooseInterest(page, label);
+  await page.getByRole("button", { name: "Explore nearby" }).click();
   await expect(page.locator(".place-card").first()).toBeVisible();
 }
 const count = (page, name) => page.evaluate((n) => window.fakeGoogleCalls.filter((c) => c.call === n).length, name);
@@ -50,6 +50,7 @@ test("one detail map is reused; routes and markers aren't redone for small chang
 
   // Changing units or the day updates the list without rebuilding the markers.
   const markersBefore = await page.evaluate(() => window.fakeMarkers.length);
+  await openFilters(page);
   await page.locator("label", { hasText: "°C" }).click();
   await showView(page, "weather");
   await page.locator("#week .day").nth(1).click();
@@ -84,15 +85,16 @@ test("journal: each visit is kept, the card shows Explored, and the next perspec
 
   const card = page.locator(".place-card", { hasText: "Test Bakery" });
   await expect(card).toContainText("Explored · 2 visits");
-  await expect(card).toContainText("Next visit:");
+  await expect(card).toContainText("Little Days idea for next visit:");
   const saved = JSON.parse(await page.evaluate(() => localStorage.getItem("littleDays.places.v2")));
   expect(saved["fake-bakery-1"].visits.map((v) => v.observation)).toEqual(["The children noticed round and braided loaves.", "They smelled cinnamon."]);
   expect(JSON.stringify(saved)).not.toContain("Test Bakery");
 
   // Explored places stay in results, and the Explored filter finds them.
+  await openFilters(page);
   await page.locator("label", { hasText: "Not explored yet" }).click();
   await expect(page.locator(".place-card")).toHaveCount(0);
-  await page.locator(".explore-tools label", { hasText: /^Explored$/ }).click();
+  await page.locator("#filters-panel label", { hasText: /^Explored$/ }).click();
   await expect(page.locator(".place-card")).toHaveCount(1);
 });
 
@@ -212,7 +214,7 @@ test("Delete my saved data removes everything Little Days stored", async ({ page
   await expect(page.locator(".your-data")).toContainText("never stores your device's position");
   await page.locator("#delete-data").click();
   await page.waitForLoadState("load");
-  await expect(page.locator("#location-status")).toContainText("Enter an address or use your location");
+  await expect(page.locator("#explore-status")).toContainText("Enter an address or use your location");
   const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("littleDays.")));
   // After the reload only defaults may be written again: no places, journal, plan or location.
   expect(keys.filter((k) => !/settings|plan|places/.test(k))).toEqual([]);
@@ -221,19 +223,15 @@ test("Delete my saved data removes everything Little Days stored", async ({ page
   expect(JSON.parse(await page.evaluate(() => localStorage.getItem("littleDays.settings.v2"))).location).toBeNull();
 });
 
-test("one results map for the whole visit, and the example address is looked up once", async ({ page }, testInfo) => {
+test("one results map for the whole visit", async ({ page }, testInfo) => {
   await start(page, testInfo);
   await search(page, "Nature");
   // A new walking time starts a new search, but the map stays the same one.
+  await openFilters(page);
   await page.locator("label", { hasText: /^20$/ }).click();
-  await page.getByRole("button", { name: "Find Little Adventures" }).click();
+  await page.getByRole("button", { name: "Explore nearby" }).click();
   await expect(page.locator(".place-card").first()).toBeVisible();
   expect(await page.evaluate(() => window.fakeMapCount)).toBe(1);
-  await page.getByRole("button", { name: "Try an example address" }).click();
-  await expect(page.locator("#location-line")).toContainText("Example address");
-  await page.getByRole("button", { name: "Try an example address" }).click();
-  await expect(page.locator(".now-temp")).toBeAttached();
-  expect(await count(page, "searchByText")).toBe(1);
 });
 
 test("Save a backup file downloads a backup; Restore from a backup file replaces only after confirming", async ({ page }, testInfo) => {

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Concept B: Field Guide</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+/* Concept B: a page you read. The neighborhood's kinds of places come first, the settings
+   are one sentence, and each result is an entry in a guide. */
+:root { --bg: #FBF8F1; --tint: #F3EFE4; --line: #E8E2D3; }
+body { background: var(--bg); padding-bottom: calc(var(--tabs) + 16px); }
+.page { max-width: 1240px; margin: 0 auto; }
+.top { display: flex; align-items: center; gap: 8px; height: 56px; padding: 0 8px 0 var(--gutter); }
+.top .lang { margin-left: auto; }
+.intro { padding: 8px var(--gutter) 0; }
+.intro h1 { font-size: 28px; line-height: 1.15; letter-spacing: -.01em; }
+html:lang(zh-CN) .intro h1 { letter-spacing: .02em; font-size: 26px; }
+.search { display: flex; gap: 8px; margin-top: 16px; }
+.intro-tight { padding-top: 0; }
+.intro-tight .search { margin-top: 4px; }
+.search #field { flex: 1; min-width: 0; }
+
+.lead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 20px var(--gutter) 8px; }
+.lead h2 { font-size: 18px; }
+.plates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 8px; padding: 0 var(--gutter); }
+.plate { align-self: start; min-width: 0; text-align: left; }
+.plate img { width: 100%; aspect-ratio: 1 / 1.08; object-fit: cover; border-radius: 16px; }
+.plate b { display: block; margin-top: 4px; font-size: 13px; font-weight: 700; line-height: 18px; }
+.plate[aria-pressed=true] img { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent-strong); }
+.plate[aria-pressed=true] b { color: var(--accent-strong); }
+.credit { padding: 8px var(--gutter) 0; font-size: 13px; color: var(--ink-2); }
+
+.sentence { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 0 var(--gutter); font-size: 14px; font-weight: 600; text-align: left; font-variant-numeric: tabular-nums; }
+.sentence span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sentence em { font-style: normal; font-weight: 700; color: var(--accent-strong); white-space: nowrap; }
+.go { padding: 4px var(--gutter) 0; }
+.go .btn { width: 100%; }
+.alt { display: flex; justify-content: center; gap: 16px; padding-top: 4px; }
+
+.where { padding: 0 var(--gutter); margin-top: 8px; font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.where b { font-weight: 600; color: var(--ink); }
+.here { display: flex; flex-direction: column; }
+.inset { height: clamp(200px, 30dvh, 280px); margin: 16px var(--gutter) 0; border-radius: 16px; }
+.chips { padding: 12px var(--gutter) 4px; }
+.chips .chip { background: var(--tint); }
+.chips .chip[aria-pressed=true] { background: var(--selected); }
+.note { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding: 8px var(--gutter) 4px; }
+.entries { padding: 0 var(--gutter); }
+.entry { display: grid; grid-template-columns: 104px 1fr; gap: 12px; padding: 16px 0; border-top: 1px solid var(--line); }
+.entry:first-child { border-top: 0; }
+.entry.on .name { color: var(--accent-strong); }
+.entry-photo { position: relative; display: block; }
+.entry-photo img { width: 104px; height: 128px; object-fit: cover; border-radius: 12px; }
+.entry-no { position: absolute; left: 6px; top: 6px; }
+.entry-head { display: flex; align-items: flex-start; gap: 4px; }
+.name { flex: 1; min-width: 0; margin: -9px 0; padding: 11px 0; font-size: 18px; font-weight: 700; line-height: 1.25; text-align: left; }
+.entry .save { margin: -9px -10px 0 0; }
+.entry .idea { margin-top: 4px; font-size: 14px; line-height: 20px; }
+.entry .idea b { font-weight: 700; }
+
+@media (min-width: 960px) {
+  body { padding-bottom: 32px; }
+  .top { height: 72px; padding: 0 24px; gap: 16px; }
+  .top .top-tabs { margin-left: auto; }
+  .top .lang { margin-left: 0; }
+  .intro { padding: 16px 24px 0; max-width: 640px; }
+  .intro h1 { font-size: 32px; }
+  .lead, .credit, .sentence, .go { padding-left: 24px; padding-right: 24px; }
+  .plates { grid-template-columns: repeat(6, 1fr); gap: 12px; padding: 0 24px; }
+  .plate img { aspect-ratio: 1 / 1.3; }
+  .plate b { font-size: 14px; }
+  .go, .sentence { max-width: 640px; }
+  .alt { justify-content: flex-start; padding: 4px 24px 0; }
+  .results { display: grid; grid-template-columns: minmax(420px, 5fr) 7fr; gap: 24px; padding: 0 24px; }
+  .results .col { min-width: 0; }
+  .results .intro, .results .where, .results .sentence, .results .chips, .results .note, .results .entries { padding-left: 0; padding-right: 0; }
+  .inset { position: sticky; top: 24px; height: calc(100vh - 120px); max-height: 760px; margin: 16px 0 0; border-radius: 16px; }
+  .entry { grid-template-columns: 128px 1fr; }
+  .entry-photo img { width: 128px; height: 136px; }
+}
+</style>
+</head>
+<body>
+<div class="page" id="page"></div>
+<script src="shared.js"></script>
+<script>
+const page = document.querySelector("#page");
+mountTabs();
+
+const header = () => `<header class="top">${brand}${protoTag()}${topTabs()}${langButton()}</header>`;
+const searchRow = () => `<div class="search"><div id="field"></div><button class="square" type="button" data-locate aria-label="${t("Use my location")}">${icon("locate")}</button></div>`;
+const sentence = () => `<button class="sentence" type="button" data-filters><span>${askSummary()}</span><em>${t("Filters")}${filterCount() ? ` · ${filterCount()}` : ""}</em></button>`;
+
+function plates() {
+  return `<div class="lead"><h2>${LANG === "zh" ? "这附近可能有什么？" : "What might be nearby?"}</h2></div>
+    <div class="plates">${CATEGORIES.map((c) => `<button class="plate" type="button" data-interest="${c.key}" aria-pressed="${state.interest === c.key}"><img src="${photoSrc(c.photo)}" alt=""><b>${t(c.label)}</b></button>`).join("")}</div>
+    <p class="credit">${LANG === "zh" ? "照片来自 RootMap 活动" : "Photos from RootMap activities"}</p>`;
+}
+function home() {
+  const located = Boolean(state.location);
+  return `${header()}<main>
+    <div class="intro"><h1>${t("Little adventures, close to home.")}</h1>${searchRow()}</div>
+    ${located ? `<p class="where"><b>${weatherLine()}</b></p>` : ""}
+    ${plates()}
+    ${sentence()}
+    ${located ? `<div class="go"><button class="btn btn-primary" type="button" id="find">${icon("compass")}${t("Explore nearby")}</button></div>`
+      : `<div class="alt"><button class="btn-text" type="button" data-example>${t("Try an example address")}</button></div>`}
+  </main>`;
+}
+function entry(place, i) {
+  return `<article class="entry ${state.selected === place.id ? "on" : ""}" data-card="${place.id}">
+    <button class="entry-photo" type="button" data-open="${place.id}" tabindex="-1" aria-hidden="true"><img src="${photoSrc(place.photo)}" alt="" loading="lazy"><span class="pin-num entry-no">${i + 1}</span></button>
+    <div><div class="entry-head"><button class="name" type="button" data-open="${place.id}">${place.name}</button>${saveButton(place)}</div>
+      <p class="meta">${walkLabel(place.walk)} · ${place.miles} mi · ${categoryLabel(place.category)}</p>
+      <p class="idea"><b>${t("Little Days idea:")}</b> ${pick(place.idea)}</p>${classLine(place)}</div></article>`;
+}
+function results() {
+  const list = visiblePlaces();
+  const rows = [["all", "All"], ...CATEGORIES.map((c) => [c.key, c.label])];
+  return `${header()}<main class="results">
+    <div class="col">
+      <div class="intro intro-tight"><div class="search"><div id="field"></div><button class="square" type="button" data-locate aria-label="${t("Use my location")}">${icon("locate")}</button></div></div>
+      <p class="where"><b>${weatherLine()}</b></p>
+      <div class="inset mobile-map" id="map-m"></div>
+      <div class="chips scroll-x">${rows.map(([key, label]) => `<button class="chip" type="button" data-interest="${key}" aria-pressed="${state.interest === key}">${t(label)}</button>`).join("")}</div>
+      ${sentence()}
+      <div class="note"><span class="g-attr" translate="no">Google Maps</span><span class="sample">${t("Sample places, not real results")}</span></div>
+      <div class="entries">${list.length ? list.map(entry).join("") : `<p class="entry">${t("No places match these filters.")}</p>`}</div>
+      <p class="credit" style="padding-left:0">${LANG === "zh" ? "照片展示的是 RootMap 活动，并非这些地点" : "Photos show RootMap activities, not these places"}</p>
+    </div>
+    <div class="inset desktop-map" id="map-d"></div>
+  </main>`;
+}
+function paintMap() {
+  const wide = matchMedia("(min-width: 960px)").matches;
+  const phone = document.querySelector("#map-m");
+  const desk = document.querySelector("#map-d");
+  if (!phone) return;
+  phone.hidden = wide;
+  desk.hidden = !wide;
+  drawMap(wide ? desk : phone, wide ? { zoom: 1.2, cy: 430 } : { zoom: 0.66, cy: 436, cx: 400 });
+}
+function render(reason) {
+  const y = scrollY;
+  const value = state.location?.address || "";
+  page.innerHTML = state.searched ? results() : home();
+  mountField(document.querySelector("#field"));
+  document.querySelector("#field input").value = value;
+  paintMap();
+  if (reason) scrollTo(0, y);
+}
+function choose(id) {
+  state.selected = id;
+  render("pin");
+  const card = document.querySelector(`[data-card="${id}"]`);
+  if (matchMedia("(min-width: 960px)").matches) card?.scrollIntoView({ block: "center" });
+}
+document.addEventListener("click", (event) => {
+  const plate = event.target.closest("[data-interest]");
+  if (plate) {
+    const key = plate.dataset.interest;
+    state.interest = !state.searched && state.interest === key ? "all" : key;
+    render("interest");
+  }
+  if (event.target.closest("#find")) { state.searched = true; render(); scrollTo(0, 0); }
+});
+document.addEventListener("click", (event) => {
+  const pin = event.target.closest("[data-pin]");
+  if (pin) choose(+pin.dataset.pin);
+});
+addEventListener("resize", paintMap);
+setRender(render);
+startFromParams();
+render();
+openFromParams();
+</script>
+</body>
+</html>

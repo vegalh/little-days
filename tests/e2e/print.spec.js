@@ -3,7 +3,7 @@
 // holiday request. Google is the fake and every other request is mocked, as in the other
 // journeys; window.print is stubbed so the OS print dialog never actually opens.
 const { test, expect } = require("@playwright/test");
-const { mockApis, showView, GOOGLE_CONFIG } = require("./mock-apis.js");
+const { mockApis, showView, GOOGLE_CONFIG, chooseInterest } = require("./mock-apis.js");
 
 test.afterEach(async ({}, testInfo) => {
   expect(testInfo.api?.unmocked ?? []).toEqual([]);
@@ -152,8 +152,8 @@ test("Print My Week: a long preparation note prints in full", async ({ page }, t
 
 test("Print Adventure Guide: place, weather for the selected day, and the chosen perspective", async ({ page }, testInfo) => {
   await start(page, testInfo);
-  await page.locator("#interest-chips label", { hasText: "Nature" }).click();
-  await page.getByRole("button", { name: "Find Little Adventures" }).click();
+  await chooseInterest(page, "Nature");
+  await page.getByRole("button", { name: "Explore nearby" }).click();
   await page.getByRole("button", { name: "Details for Test Park" }).click();
   await dialog(page).getByRole("button", { name: "Second visit" }).click();
 
@@ -189,8 +189,8 @@ test("Print Adventure Guide: no forecast loaded shows the required fallback text
   await page.evaluate(() => window.fakePickAddress());
   await expect(page.locator("#weather-status")).toContainText("We couldn't load the weather right now.");
 
-  await page.locator("#interest-chips label", { hasText: "Nature" }).click();
-  await page.getByRole("button", { name: "Find Little Adventures" }).click();
+  await chooseInterest(page, "Nature");
+  await page.getByRole("button", { name: "Explore nearby" }).click();
   await page.getByRole("button", { name: "Details for Test Park" }).click();
   await dialog(page).getByRole("button", { name: "Print Adventure Guide" }).click();
   await expect(printArea(page)).toContainText("Weather forecast not available yet.");
@@ -211,8 +211,8 @@ test("中文: Print My Week and Print Adventure Guide show the Chinese interface
   await expect(printArea(page)).toContainText("来自 RootMap"); // translated "from RootMap" label
 
   await showView(page, "explore");
-  await page.locator("#interest-chips label", { hasText: "自然" }).click();
-  await page.getByRole("button", { name: "寻找小小冒险" }).click();
+  await chooseInterest(page, "自然");
+  await page.getByRole("button", { name: "探索附近" }).click();
   await page.getByRole("button", { name: "Test Park的详情" }).click();
   await dialog(page).getByRole("button", { name: "打印探索指南" }).click();
   await expect(printArea(page)).toContainText("为什么来这里探索");

@@ -256,7 +256,7 @@ const SETTING_CHOICES = {
   mode: ["family", "classroom"],
   ages: ["2-6", "under-2", "2-3", "4-6"],
   minutes: [15, 5, 10, 20, 30],
-  interest: [null, "nature", "everyday-life", "community-helpers", "art-culture", "animals-wildlife", "movement", "all"],
+  interest: ["all", "nature", "everyday-life", "community-helpers", "art-culture", "animals-wildlife", "movement"],
   lang: [null, "en", "zh"], // null: follow the browser's language
 };
 

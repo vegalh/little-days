@@ -2,7 +2,7 @@
 // Google is the fake in fake-google-maps.js and every other request is mocked, so these
 // show the page handles responses. They don't show that the real APIs work.
 const { test, expect } = require("@playwright/test");
-const { mockApis, GOOGLE_CONFIG } = require("./mock-apis.js");
+const { mockApis, openFilters, chooseInterest, GOOGLE_CONFIG } = require("./mock-apis.js");
 
 test.afterEach(async ({}, testInfo) => {
   expect(testInfo.api?.unmocked ?? []).toEqual([]);
@@ -16,20 +16,20 @@ async function start(page, testInfo, google = {}, storage = {}) {
   await expect(page.locator(".now-temp")).toBeAttached();
 }
 const calls = (page, name) => page.evaluate((n) => window.fakeGoogleCalls.filter((c) => c.call === n), name);
-const interest = (page, label) => page.locator("#interest-chips label", { hasText: label }).click();
+const interest = chooseInterest;
 
-test("nothing is searched until Find Little Adventures, and an interest is required", async ({ page }, testInfo) => {
+test("nothing is searched until Explore nearby, and no setting has to be chosen first", async ({ page }, testInfo) => {
   await start(page, testInfo);
   expect(await calls(page, "searchNearby")).toHaveLength(0);
-  await page.getByRole("button", { name: "Find Little Adventures" }).click();
-  await expect(page.locator("#interest-message")).toHaveText("⚠︎ Choose what you'd like to explore.");
-  expect(await calls(page, "searchNearby")).toHaveLength(0);
+  await page.getByRole("button", { name: "Explore nearby" }).click();
+  await expect(page.locator(".place-card").first()).toBeVisible();
+  expect(await calls(page, "searchNearby")).toHaveLength(6);
 });
 
 test("one interest: one search, a list with map markers, and at most 5 walking times", async ({ page }, testInfo) => {
   await start(page, testInfo);
   await interest(page, "Nature");
-  await page.getByRole("button", { name: "Find Little Adventures" }).click();
+  await page.getByRole("button", { name: "Explore nearby" }).click();
 
   const cards = page.locator(".place-card");
   await expect(cards).toHaveCount(2);
@@ -42,7 +42,7 @@ test("one interest: one search, a list with map markers, and at most 5 walking t
 
   // Google's walking time, or "unavailable" when there's no route. Never a guess.
   await expect(cards.filter({ hasText: "Test Park" })).toContainText("min walk");
-  await expect(cards.filter({ hasText: "Test Park" })).toContainText("Google walking estimate");
+  await expect(page.locator("#explore-notes")).toContainText("walking times from Google, ideas from Little Days");
   await expect(cards.filter({ hasText: "Test Garden" })).toContainText("Walking time unavailable");
   const matrix = await calls(page, "computeRouteMatrix");
   expect(matrix).toHaveLength(1);
@@ -52,15 +52,14 @@ test("one interest: one search, a list with map markers, and at most 5 walking t
   // Markers: the start plus one per place, numbered like the list.
   expect(await page.evaluate(() => window.fakeMarkers.filter((m) => m.map).map((m) => m.title))).toEqual(["Start", "Test Park", "Test Garden"]);
   // Little Days notes are labelled apart from Google's data.
-  await expect(cards.first().locator(".notes-label")).toHaveText("Little Days notes");
-  await expect(cards.first()).toContainText("Access not verified.");
+  await expect(cards.first().locator(".idea-label")).toHaveText("Little Days idea:");
 });
 
 test("All: the first 5 get walking times; the rest can be checked one at a time", async ({ page }, testInfo) => {
   await start(page, testInfo);
   await interest(page, "All");
   await expect(page.locator(".all-note")).toBeVisible();
-  await page.getByRole("button", { name: "Find Little Adventures" }).click();
+  await page.getByRole("button", { name: "Explore nearby" }).click();
   await expect(page.locator(".place-card")).toHaveCount(6);
   expect(await calls(page, "searchNearby")).toHaveLength(6);
   expect((await calls(page, "computeRouteMatrix"))[0].destinations).toBe(5);
@@ -82,7 +81,7 @@ test("All: the first 5 get walking times; the rest can be checked one at a time"
 test("place details: route, weather, guide perspectives, at-home idea, and Save stores only the ID", async ({ page }, testInfo) => {
   await start(page, testInfo);
   await interest(page, "Everyday Life");
-  await page.getByRole("button", { name: "Find Little Adventures" }).click();
+  await page.getByRole("button", { name: "Explore nearby" }).click();
   await page.getByRole("button", { name: "Details for Test Bakery" }).click();
 
   const dialog = page.locator("#place-dialog");
@@ -114,7 +113,7 @@ test("place details: route, weather, guide perspectives, at-home idea, and Save 
 test("errors: places failure, no places, and walking times failure", async ({ page }, testInfo) => {
   await start(page, testInfo, { failNearby: true });
   await interest(page, "Nature");
-  await page.getByRole("button", { name: "Find Little Adventures" }).click();
+  await page.getByRole("button", { name: "Explore nearby" }).click();
   await expect(page.locator("#explore-status")).toContainText("We couldn't load nearby places right now.");
   await expect(page.locator("#explore-status").getByRole("button", { name: "Try again" })).toBeVisible();
   await expect(page.locator(".place-card")).toHaveCount(0);
@@ -123,14 +122,14 @@ test("errors: places failure, no places, and walking times failure", async ({ pa
 test("no places found shows the empty state", async ({ page }, testInfo) => {
   await start(page, testInfo, { emptyNearby: true });
   await interest(page, "Movement");
-  await page.getByRole("button", { name: "Find Little Adventures" }).click();
+  await page.getByRole("button", { name: "Explore nearby" }).click();
   await expect(page.locator("#explore-status")).toHaveText("We didn't find movement places within about a 15-minute walk. Try a longer walk or another interest.");
 });
 
 test("walking times failing shows unavailable, never a time", async ({ page }, testInfo) => {
   await start(page, testInfo, { failRoutes: true });
   await interest(page, "Nature");
-  await page.getByRole("button", { name: "Find Little Adventures" }).click();
+  await page.getByRole("button", { name: "Explore nearby" }).click();
   await expect(page.locator(".place-card", { hasText: "Walking time unavailable" })).toHaveCount(2);
   await expect(page.locator("#explore-notes")).toContainText("Walking times couldn't be checked right now");
   await expect(page.locator("#place-list")).not.toContainText("min walk");
@@ -138,31 +137,30 @@ test("walking times failing shows unavailable, never a time", async ({ page }, t
 
 test("classroom mode shows the walking-estimate note and the contact line on every place", async ({ page }, testInfo) => {
   await start(page, testInfo);
+  await openFilters(page);
   await page.locator("label", { hasText: "Classroom" }).click();
   await expect(page.locator(".controls .classroom-note")).toHaveText("Google walking estimates may not reflect the time needed when accompanying young children. Check crossings and the route before visiting.");
   await interest(page, "Nature");
-  await page.getByRole("button", { name: "Find Little Adventures" }).click();
+  await page.getByRole("button", { name: "Explore nearby" }).click();
   await expect(page.locator("#explore-notes")).toContainText("Google walking estimates may not reflect the time needed");
   await expect(page.locator(".place-card", { hasText: "Contact before a classroom visit." })).toHaveCount(2);
   await expect(page.locator("#place-list")).not.toContainText(/\bsafe\b/i);
 });
 
-test("phone: list first, a List/Map switch, the Google attribution on the list, and a marker preview", async ({ page }, testInfo) => {
+test("phone: the map and the cards together, the Google attribution on the list, and a marker preview", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "phone", "phone layout");
   await start(page, testInfo);
   await interest(page, "Nature");
-  await page.getByRole("button", { name: "Find Little Adventures" }).click();
+  await page.getByRole("button", { name: "Explore nearby" }).click();
   await expect(page.locator(".place-card").first()).toBeVisible();
-  await expect(page.locator("#place-map-box")).toBeHidden();
-  await expect(page.locator("#place-list-box .google-attribution")).toHaveText("Google Maps");
-  await expect(page.locator("#place-list-box .google-attribution")).toHaveAttribute("translate", "no");
+  await expect(page.locator("#explore-map")).toBeVisible();
+  await expect(page.locator("#explore-results .google-attribution")).toHaveText("Google Maps");
+  await expect(page.locator("#explore-results .google-attribution")).toHaveAttribute("translate", "no");
 
-  await page.locator(".view-switch label", { hasText: "Map" }).click();
-  await expect(page.locator("#place-map-box")).toBeVisible();
-  await expect(page.locator("#place-list-box")).toBeHidden();
   await page.evaluate(() => window.fakeMarkers.find((m) => m.title === "Test Park").listeners["gmp-click"]());
   await expect(page.locator("#map-peek")).toContainText("Test Park");
-  await page.locator("#map-peek").getByRole("button", { name: "Details" }).click();
+  await expect(page.locator(".place-card", { hasText: "Test Park" })).toHaveClass(/is-selected/);
+  await page.locator("#map-peek").getByRole("button", { name: "View details" }).click();
   await expect(page.locator("#place-dialog")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
@@ -171,9 +169,9 @@ test("desktop: list and map side by side, and a card highlights its marker", asy
   test.skip(testInfo.project.name !== "desktop", "desktop layout");
   await start(page, testInfo);
   await interest(page, "Nature");
-  await page.getByRole("button", { name: "Find Little Adventures" }).click();
+  await page.getByRole("button", { name: "Explore nearby" }).click();
   await expect(page.locator(".place-card").first()).toBeVisible();
-  const list = await page.locator("#place-list-box").boundingBox();
+  const list = await page.locator("#place-list").boundingBox();
   const map = await page.locator("#place-map-box").boundingBox();
   expect(map.x).toBeGreaterThan(list.x + list.width - 1);
   await page.locator(".place-card").first().hover();

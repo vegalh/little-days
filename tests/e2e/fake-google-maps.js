@@ -62,6 +62,7 @@
       if (this.input) return;
       this.input = document.createElement("input");
       this.input.setAttribute("aria-label", "Address or place");
+      this.input.style.cssText = "width: 100%; min-height: 46px; padding: 0 12px; font: inherit; border: 0; background: transparent;";
       this.append(this.input);
     }
     get value() { return this.input ? this.input.value : ""; }
@@ -139,6 +140,7 @@
   window.google = {
     maps: {
       LatLngBounds,
+      ControlPosition: { RIGHT_TOP: "RIGHT_TOP" },
       importLibrary: async (name) => {
         window.fakeGoogleCalls.push({ call: "importLibrary", name });
         if (name === "places") return { Place, PlaceAutocompleteElement, SearchNearbyRankPreference: { DISTANCE: "DISTANCE" } };

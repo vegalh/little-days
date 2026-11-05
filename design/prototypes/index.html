@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Little Days Design Review</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+body { background: #FBF8F1; }
+.page { max-width: 1280px; margin: 0 auto; padding: 32px 24px 64px; }
+header h1 { font-size: 32px; }
+header p { max-width: 680px; margin-top: 8px; color: var(--ink-2); }
+h2 { margin: 48px 0 12px; font-size: 24px; }
+h3 { font-size: 18px; }
+p + p { margin-top: 8px; }
+.prose { max-width: 720px; }
+.controls { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin: 24px -24px 0; padding: 8px 24px; background: #FBF8F1; }
+.controls .seg { background: var(--tint); }
+.controls .seg label { min-width: 88px; }
+.frames { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 16px; }
+.frame { min-width: 0; }
+.frame-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.frame-head a { font-size: 14px; font-weight: 700; color: var(--accent-strong); white-space: nowrap; }
+.device { position: relative; width: 100%; max-width: 390px; aspect-ratio: 390 / 844; margin: 0 auto; border-radius: 24px; overflow: hidden; background: #fff; box-shadow: 0 0 0 1px var(--line), var(--lift); }
+.device iframe { position: absolute; top: 0; left: 0; width: 390px; height: 844px; border: 0; transform-origin: 0 0; }
+.frame > p { margin-top: 12px; font-size: 14px; }
+.cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.cols ul, .prose ul { margin-top: 4px; }
+.cols li, .prose li { position: relative; padding-left: 16px; font-size: 14px; margin-top: 4px; }
+.cols li::before, .prose li::before { content: ""; position: absolute; left: 2px; top: .65em; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.cols h4 { margin: 12px 0 0; font-size: 14px; }
+.verdict { padding: 16px; border-radius: 16px; background: var(--selected); }
+.verdict p { max-width: 720px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--surface); border-radius: 16px; overflow: hidden; }
+th, td { padding: 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font-weight: 700; }
+.table-scroll { overflow-x: auto; }
+.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+.shots figure, .evidence figure { margin: 0; }
+.shots img { width: 100%; border-radius: 12px; box-shadow: 0 0 0 1px var(--line); }
+figcaption { margin-top: 4px; font-size: 13px; color: var(--ink-2); }
+.evidence { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px 24px; margin-top: 16px; max-width: 860px; }
+.evidence img { width: 100%; max-width: 390px; border-radius: 12px; background: #fff; }
+pre { overflow-x: auto; margin: 12px 0; padding: 12px; border-radius: 12px; background: var(--surface); font: 13px/1.5 ui-monospace, Menlo, monospace; box-shadow: 0 0 0 1px var(--line); }
+code { font: 13px ui-monospace, Menlo, monospace; }
+@media (max-width: 1000px) { .frames, .cols { grid-template-columns: 1fr; } .evidence { grid-template-columns: 1fr; } .page { padding: 24px 16px 48px; } .controls { margin: 16px -16px 0; padding: 8px 16px; } }
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+  <span class="tag-proto">Prototype review · sample data throughout</span>
+  <h1 style="margin-top:8px">Three directions for Little Days</h1>
+  <p>Each prototype below is live: type in the search, tap a map pin, open Filters, open a place. Nothing here touches the working app or calls an API.</p>
+</header>
+
+<div class="controls" role="group" aria-label="Preview options">
+  <div class="seg" id="lang"><label><input type="radio" name="l" value="en" checked><span>English</span></label><label><input type="radio" name="l" value="zh"><span>中文</span></label></div>
+  <div class="seg" id="state"><label><input type="radio" name="s" value="" checked><span>First screen</span></label><label><input type="radio" name="s" value="results"><span>Results</span></label></div>
+</div>
+
+<section class="frames" aria-label="Prototypes">
+  <div class="frame"><div class="frame-head"><h3>A · Map First</h3><a href="concept-a.html" data-link="a">Open full size</a></div><div class="device"><iframe title="Concept A" data-concept="a" src="concept-a.html"></iframe></div><p>The map is the page. Results live in a sheet you slide up.</p></div>
+  <div class="frame"><div class="frame-head"><h3>B · Field Guide</h3><a href="concept-b.html" data-link="b">Open full size</a></div><div class="device"><iframe title="Concept B" data-concept="b" src="concept-b.html"></iframe></div><p>A page you read. Six kinds of place come first, and results are guide entries.</p></div>
+  <div class="frame"><div class="frame-head"><h3>C · Minimal</h3><a href="concept-c.html" data-link="c">Open full size</a></div><div class="device"><iframe title="Concept C" data-concept="c" src="concept-c.html"></iframe></div><p>One question, then the answer. Picking an address goes straight to results.</p></div>
+</section>
+
+<h2>Recommendation: B, the Field Guide</h2>
+<div class="verdict">
+  <p><strong>B suits a teacher best, and it's the only one that works within today's cost and search rules.</strong></p>
+  <p>A teacher's real question is "what is worth a walk with this group?", not "what is at this coordinate?". B answers that on the first screen, before any address is entered, using content you already own. Its result entries also have room for the things a teacher weighs: the walk, the round trip, the idea and the access note.</p>
+  <p>Two things worth borrowing from the others: A's link between pins and places, already in B, and C's restraint in the number of controls. B has a real cost too: results are a longer scroll than A or C, so the map scrolls away on phones.</p>
+</div>
+
+<h2>Tradeoffs</h2>
+<div class="cols">
+  <div><h3>A · Map First</h3>
+    <h4>Strengths</h4><ul><li>Strongest sense of place, and distance is obvious at a glance</li><li>Pin and card stay in sync, so comparing nearby options is quick</li><li>Familiar to anyone who uses a maps app</li></ul>
+    <h4>Weaknesses</h4><ul><li>Looks empty until there's a location, and says the least about why you're here</li><li>Reads as a utility, which is the "map app" feeling DESIGN.md warns against</li><li>Ideas get two lines, and reading the full list takes an extra gesture</li></ul>
+    <h4>Rule changes needed</h4><ul><li>A map before any search: one billed map load per visit (PRD 7.16, 9.3)</li><li>Drops DESIGN.md's "no floating search bar over the map"</li><li>The full list covers the map, but PRD 7.16 says the two are always shown together</li></ul></div>
+  <div><h3>B · Field Guide</h3>
+    <h4>Strengths</h4><ul><li>Purpose is clear in seconds, even before searching</li><li>Warmest and most distinctive, and clearly not a dashboard</li><li>Room for ideas and classroom notes without feeling cramped</li><li>Settings become one readable sentence</li></ul>
+    <h4>Weaknesses</h4><ul><li>Longest page, and the map scrolls away on phones</li><li>Photos show activities, not the places, and that needs a clear label</li><li>Photo quality sets the tone, so a weak photo hurts more here</li></ul>
+    <h4>Rule changes needed</h4><ul><li>None for cost or search. It keeps the "Explore nearby" press and creates no map early.</li><li>DESIGN.md needs updating: warm paper background, category photos</li></ul></div>
+  <div><h3>C · Minimal</h3>
+    <h4>Strengths</h4><ul><li>Lowest effort: the fewest steps from opening to results</li><li>Walking time reads fastest, thanks to the right-aligned column</li><li>Easiest of the three to build and maintain</li></ul>
+    <h4>Weaknesses</h4><ul><li>Least personality: the first screen could belong to any app</li><li>Gives no reason to explore before you commit to an address</li><li>A mistaken address runs a full paid search straight away</li></ul>
+    <h4>Rule changes needed</h4><ul><li>Drops the rule that only the button starts a search (AGENTS.md, PRD 7.1). With All as the default, each address picked costs up to 6 nearby searches.</li></ul></div>
+</div>
+
+<h2>The search bar: what went wrong and how it's fixed</h2>
+<div class="prose">
+  <p><strong>Cause.</strong> The committed CSS styled the wrong layer. Google's element draws its own box on the host: <code>:host { border: 1px solid black; border-radius: 3px }</code>. Our CSS left that alone and drew a second, rounded box on <code>::part(input)</code>. That gives the rectangle with a rounded input inside it.</p>
+  <p><strong>What's left.</strong> Your uncommitted working copy already moved the border to the host, which fixes the resting state. The focused state still shows two edges, because Google's focus ring sits inside our pale 1px border.</p>
+  <p><strong>Which layers are whose.</strong></p>
+  <ul>
+    <li><strong>Google's:</strong> the outer box defaults, the search icon in a 48px slot, the input, the focus ring, the clear button, the suggestion list and its attribution, and the phone dialog.</li>
+    <li><strong>Ours:</strong> anything we set on the element and on its documented parts. There should be exactly one edge, and it belongs on the element.</li>
+  </ul>
+  <p><strong>The fix.</strong> It uses only what Google documents: the element's own CSS properties and its <code>input</code> and <code>focus-ring</code> parts. The element gets no border, a shadow draws the resting edge, and on focus that edge gives way to Google's ring, so only one line ever shows.</p>
+<pre>gmp-place-autocomplete {
+  display: block; width: 100%; height: 52px;
+  color-scheme: light;
+  font-family: var(--font-body); font-size: 16px;
+  color: var(--ink); background-color: #fff;
+  border: 0; border-radius: 16px;
+  box-shadow: 0 0 0 1px var(--line), 0 6px 18px rgba(38,37,31,.08);
+}
+gmp-place-autocomplete:focus-within { box-shadow: 0 6px 18px rgba(38,37,31,.08); }
+gmp-place-autocomplete::part(input) { background: transparent !important; border: 0 !important; text-overflow: ellipsis; }
+gmp-place-autocomplete::part(focus-ring) { border-color: var(--accent) !important; }</pre>
+</div>
+<div class="evidence">
+  <figure><img src="screenshots/widget-1-committed.png" alt="Rectangular black border around a rounded input"><figcaption>Before: committed CSS, real widget</figcaption></figure>
+  <figure><img src="screenshots/widget-2-current-focus.png" alt="Green focus ring inside a pale border"><figcaption>Working copy, focused: two edges remain</figcaption></figure>
+  <figure><img src="screenshots/widget-3-fixed-rest.png" alt="One clean rounded field"><figcaption>Fixed, at rest: real widget, 52px</figcaption></figure>
+  <figure><img src="screenshots/widget-4-fixed-focus.png" alt="One clean green focus ring"><figcaption>Fixed, focused: one ring</figcaption></figure>
+  <figure><img src="screenshots/widget-5-fixed-long-en.png" alt="Long English address cut with an ellipsis"><figcaption>Fixed, long English address</figcaption></figure>
+  <figure><img src="screenshots/widget-6-fixed-long-zh.png" alt="Long Chinese address cut with an ellipsis"><figcaption>Fixed, long Chinese address</figcaption></figure>
+</div>
+<div class="prose" style="margin-top:16px">
+  <p><strong>Limits of Google's widget.</strong></p>
+  <ul>
+    <li><strong>Phones:</strong> at 450px and under, the first typed character opens Google's own full-screen dialog, with suggestions directly under the input and so above the keyboard. We keep it as it is. It can't take our styling, and any layout must expect it.</li>
+    <li><strong>Location button:</strong> the widget has no documented place for one, so it sits beside the field or on the map, never inside.</li>
+    <li><strong>Height:</strong> 52px isn't a documented setting. It worked in testing, but it could change with a Google update.</li>
+    <li><strong>Chinese suggestions:</strong> suggestion rows use Google's fonts unless we style them further.</li>
+  </ul>
+  <p><strong>Tested so far:</strong> the real element at 360, 390 and 430 wide, in English and Chinese, at rest, focused and with long addresses, plus the phone dialog with an empty reply. Places requests were blocked or answered locally, so nothing billable ran.</p>
+  <p><strong>Not tested yet:</strong> real suggestions, and real iPhone and Android keyboards. Those need a short live check before final sign-off.</p>
+</div>
+
+<h2>What the research changed</h2>
+<div class="prose"><ul>
+  <li><strong>Google Maps:</strong> search is a single object, and content sits in a sheet that slides over the map. That shaped A.</li>
+  <li><strong>Airbnb:</strong> one search capsule, then categories, then real content straight away. Filters are never the first thing you see. That shaped B's first screen.</li>
+  <li><strong>Google's Autocomplete reference:</strong> style the element and its documented parts, and leave the internals alone.</li>
+  <li><strong>Nielsen Norman Group:</strong> two levels at most, with a clearly labeled way to the second. All three concepts use one Filters sheet, and nothing sits deeper than that.</li>
+</ul></div>
+
+<h2>Decisions for you</h2>
+<div class="table-scroll"><table>
+  <thead><tr><th>Decision</th><th>Why it matters</th><th>My suggestion</th></tr></thead>
+  <tbody>
+    <tr><td>Which direction?</td><td>Sets the rebuild of the Explore view.</td><td>B</td></tr>
+    <tr><td>Default mode: Family or Classroom?</td><td>Your brief names teachers as the main user, but the PRD starts in Family.</td><td>Keep Family, and remember the last choice as it does today</td></tr>
+    <tr><td>Use Google place photos?</td><td>Real place photos would make B stronger, but they're currently off limits, cost more and bring attribution rules.</td><td>Not for now. Start with RootMap photos, clearly labeled.</td></tr>
+    <tr><td>Warm map colors?</td><td>The drawn map here is warmer than a default Google map. Matching it needs cloud styling on your map ID.</td><td>Try it after the rebuild. DESIGN.md says default style today.</td></tr>
+  </tbody>
+</table></div>
+
+<h2>Also found while inspecting</h2>
+<div class="prose"><ul>
+  <li><strong>One failed suggestion request drops the whole address field.</strong> <code>gmp-error</code> triggers the weather-only fallback, so a brief network blip while typing replaces the search with the city box.</li>
+  <li><strong>White on <code>--accent</code> is 3.79:1</strong>, below the 4.5:1 AA level, and that's the "Explore nearby" button. The prototypes use the existing <code>--leaf-ink</code> (6.10:1) instead.</li>
+  <li><strong>The phone bottom bar stops 24px short of the right edge</strong> at 390px wide (366px of 390px).</li>
+  <li><strong><code>refreshPartStyles()</code> may no longer be needed.</strong> Removing it made no visible difference in headless Chromium, though that's one browser, so check it live.</li>
+</ul></div>
+
+<h2>Screenshots</h2>
+<p class="prose" style="margin-bottom:12px">All at 390 × 844 unless labeled.</p>
+<div class="shots" id="shots"></div>
+</div>
+<script>
+const frames = [...document.querySelectorAll("iframe[data-concept]")];
+function query() {
+  const lang = document.querySelector("input[name=l]:checked").value;
+  const state = document.querySelector("input[name=s]:checked").value;
+  const q = new URLSearchParams();
+  if (lang === "zh") q.set("lang", "zh");
+  if (state) q.set("state", state);
+  return q.toString();
+}
+function update() {
+  const q = query();
+  frames.forEach((frame) => { frame.src = `concept-${frame.dataset.concept}.html${q ? `?${q}` : ""}`; });
+  document.querySelectorAll("[data-link]").forEach((a) => { a.href = `concept-${a.dataset.link}.html${q ? `?${q}` : ""}`; });
+}
+function fit() {
+  frames.forEach((frame) => { frame.style.transform = `scale(${frame.parentElement.clientWidth / 390})`; });
+}
+document.querySelector(".controls").addEventListener("change", update);
+addEventListener("resize", fit);
+fit();
+const names = { a: "A", b: "B", c: "C" };
+const views = [["en-start", "English, first screen"], ["zh-start", "中文, first screen"], ["en-results", "English, results"], ["zh-results", "中文, results"], ["en-filters", "Filters"], ["zh-details", "中文, place details"], ["zh-360", "中文, 360 × 800"], ["en-430", "430 × 932"], ["desktop", "Desktop, 1280 × 800"]];
+document.querySelector("#shots").innerHTML = Object.keys(names).flatMap((c) => views.map(([file, label]) =>
+  `<figure><a href="screenshots/${c}-${file}.png"><img src="screenshots/${c}-${file}.png" alt="Concept ${names[c]}: ${label}" loading="lazy"></a><figcaption>${names[c]} · ${label}</figcaption></figure>`)).join("");
+</script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Concept A: Map First</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+/* Concept A: the map is the page. Everything else floats on it or slides over it. */
+html, body { height: 100%; overflow: hidden; }
+#map { position: fixed; inset: 0 0 var(--tabs) 0; }
+.bar { position: fixed; z-index: 10; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 8px; height: calc(52px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 8px 0 var(--gutter); background: var(--surface); }
+.bar .lang { margin-left: auto; }
+.float { position: fixed; z-index: 11; top: calc(60px + env(safe-area-inset-top)); left: 0; right: 0; }
+.float #field { margin: 0 var(--gutter); }
+.chips { margin-top: 8px; padding: 2px var(--gutter) 8px; }
+.chips .chip { background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--lift); }
+.chips .chip[aria-pressed=true] { background: var(--selected); }
+.fab { position: fixed; z-index: 12; right: var(--gutter); width: 48px; height: 48px; border-radius: 50%; }
+
+.sheet { position: fixed; z-index: 20; left: 0; right: 0; bottom: var(--tabs); display: flex; flex-direction: column; background: var(--surface); border-radius: 24px 24px 0 0; box-shadow: 0 -6px 24px rgba(38, 37, 31, .12); transition: height .22s ease; }
+.grab { display: flex; flex: none; justify-content: center; align-items: center; width: 100%; height: 44px; margin-bottom: -20px; touch-action: none; }
+.grab::before { content: ""; width: 36px; height: 4px; border-radius: 2px; background: var(--line); }
+.head { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 8px; padding: 0 var(--gutter) 8px; }
+.head h2 { font-size: 18px; }
+.head p { font-size: 13px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.head > div { min-width: 0; }
+
+.start { padding: 0 var(--gutter) 16px; }
+.start h2 { font-size: 22px; }
+.start .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.start .row .btn { flex: 1; font-size: 14px; }
+.start .where { font-size: 14px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.start .weather { margin: 4px 0 12px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.start .btn-primary { width: 100%; }
+
+.cards { flex: none; gap: 12px; padding: 2px var(--gutter) 16px; scroll-snap-type: x mandatory; scroll-padding: var(--gutter); }
+.card { position: relative; flex: 0 0 min(300px, calc(100vw - 56px)); scroll-snap-align: start; padding: 12px 8px 12px 12px; border-radius: 16px; background: var(--tint); text-align: left; }
+.card.on { background: var(--selected); }
+.card-top { display: flex; gap: 8px; align-items: flex-start; }
+.card-name { flex: 1; min-width: 0; margin: -10px 0; padding: 10px 0; font-size: 16px; font-weight: 700; line-height: 24px; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.card .save { margin: -10px 0 -10px 0; }
+.card .meta { margin-top: 2px; padding-right: 4px; }
+.card .idea { margin-top: 4px; padding-right: 4px; font-size: 14px; line-height: 20px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.list { flex: 1; min-height: 0; overflow-y: auto; padding: 0 var(--gutter) 16px; }
+.row-place { display: flex; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.row-place .body { flex: 1; min-width: 0; }
+.row-place .name { display: block; margin: -10px 0 -8px; padding: 10px 0 8px; font-size: 16px; font-weight: 700; text-align: left; }
+.row-place .idea { font-size: 14px; line-height: 20px; }
+.row-place.on .name { color: var(--accent-strong); }
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding: 4px var(--gutter) 8px; }
+
+@media (min-width: 960px) {
+  #map { inset: 0; }
+  .panel { position: fixed; z-index: 15; top: 0; left: 0; bottom: 0; width: 420px; display: flex; flex-direction: column; background: var(--surface); box-shadow: 4px 0 24px rgba(38, 37, 31, .08); }
+  .bar, .float, .sheet { position: static; }
+  .bar { flex: none; height: 64px; padding: 0 12px 0 24px; }
+  .float { flex: none; padding-top: 4px; }
+  .float #field { margin: 0 24px; }
+  .chips { flex-wrap: wrap; padding: 4px 24px 12px; overflow: visible; }
+  .chips .chip { box-shadow: none; background: var(--tint); }
+  .sheet { flex: 1; min-height: 0; height: auto !important; box-shadow: none; border-radius: 0; border-top: 1px solid var(--line); padding-top: 12px; }
+  .grab, .toggle, .cards { display: none; }
+  .head, .start, .list, .foot { padding-left: 24px; padding-right: 24px; }
+  #list-box[hidden] { display: flex !important; }
+  #list-box { display: flex; flex: 1; min-height: 0; flex-direction: column; }
+  .fab { right: 24px; bottom: 24px; }
+  .top-tabs { position: fixed; z-index: 16; top: 12px; right: 24px; height: 44px; padding: 0 16px; align-items: center; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--lift); }
+  .bar .lang { margin-left: auto; }
+  .row-place:hover { background: var(--tint); }
+}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<aside class="panel" aria-label="Search and places">
+  <header class="bar" id="bar"></header>
+  <div class="float"><div id="field"></div><div class="chips scroll-x" id="chips"></div></div>
+  <section class="sheet" id="sheet"></section>
+</aside>
+<button class="square fab" id="fab" type="button" data-locate></button>
+<script src="shared.js"></script>
+<script>
+const mapEl = document.querySelector("#map");
+const sheetEl = document.querySelector("#sheet");
+const wide = () => matchMedia("(min-width: 960px)").matches;
+let size = "peek"; // peek shows the carousel, full shows the list
+
+document.querySelector("#bar").innerHTML = `${brand}${protoTag()}${topTabs()}${langButton()}`;
+document.querySelector("#fab").innerHTML = icon("locate");
+document.querySelector("#fab").setAttribute("aria-label", t("Use my location"));
+mountField(document.querySelector("#field"));
+mountTabs();
+
+function chips() {
+  const rows = [["all", "All"], ...CATEGORIES.map((c) => [c.key, c.label])];
+  const count = filterCount();
+  document.querySelector("#chips").innerHTML =
+    `<button class="chip" type="button" data-filters aria-label="${t("Filters")}">${icon("filters", "icon-sm")}${count ? `<span class="num">${count}</span>` : ""}</button>` +
+    rows.map(([key, label]) => `<button class="chip" type="button" data-interest="${key}" aria-pressed="${state.interest === key}">${t(label)}</button>`).join("");
+}
+function card(place, i) {
+  return `<article class="card ${state.selected === place.id ? "on" : ""}" data-card="${place.id}">
+    <div class="card-top"><span class="pin-num">${i + 1}</span><button class="card-name" type="button" data-open="${place.id}">${place.name}</button>${saveButton(place)}</div>
+    <p class="meta">${walkLabel(place.walk)} · ${categoryLabel(place.category)}</p>
+    <p class="idea">${pick(place.idea)}</p>${classLine(place)}</article>`;
+}
+function listRow(place, i) {
+  return `<article class="row-place ${state.selected === place.id ? "on" : ""}" data-card="${place.id}"><span class="pin-num">${i + 1}</span>
+    <div class="body"><button class="name" type="button" data-open="${place.id}">${place.name}</button>
+    <p class="meta">${walkLabel(place.walk)} · ${categoryLabel(place.category)}</p>
+    <p class="idea"><b>${t("Little Days idea:")}</b> ${pick(place.idea)}</p>${classLine(place)}</div>${saveButton(place)}</article>`;
+}
+function sheetContent() {
+  if (!state.location) {
+    return `<button class="grab" type="button" tabindex="-1" aria-hidden="true"></button><div class="start"><h2>${t("Places to explore with children")}</h2>
+      <div class="row"><button class="btn btn-quiet" type="button" data-locate>${icon("locate", "icon-sm")}${t("Use my location")}</button>
+      <button class="btn btn-quiet" type="button" data-example>${t("Try an example")}</button></div></div>`;
+  }
+  if (!state.searched) {
+    return `<button class="grab" type="button" tabindex="-1" aria-hidden="true"></button><div class="start"><p class="where">${state.location.address}${state.location.example ? ` · ${t("Example address")}` : ""}</p>
+      <p class="weather">${weatherLine()}</p>
+      <button class="btn btn-primary" type="button" id="find">${icon("compass")}${t("Explore nearby")}</button></div>`;
+  }
+  const list = visiblePlaces();
+  if (!list.length) {
+    return `<button class="grab" type="button" tabindex="-1" aria-hidden="true"></button><div class="start"><p>${t("No places match these filters.")}</p><div class="row"><button class="btn btn-quiet" type="button" data-filters>${t("Filters")}</button></div></div>`;
+  }
+  return `<button class="grab" type="button" id="grab" aria-label="${t("Filters")}"></button>
+    <div class="head"><div><h2>${placesLabel(list.length)} · ${walkLabel(state.minutes)}</h2><p>${weatherLine()}</p></div></div>
+    <div class="cards scroll-x" id="cards" ${size === "full" ? "hidden" : ""}>${list.map(card).join("")}</div>
+    <div id="list-box" ${size === "full" ? "" : "hidden"}><div class="list">${list.map(listRow).join("")}</div></div>
+    <div class="foot"><span class="g-attr" translate="no">Google Maps</span><span class="sample">${t("Sample places, not real results")}</span></div>`;
+}
+function layoutSheet() {
+  const full = size === "full" && state.searched && !wide();
+  sheetEl.style.height = full ? `calc(100dvh - var(--tabs) - 124px)` : "auto";
+  const top = sheetEl.getBoundingClientRect().top;
+  const fab = document.querySelector("#fab");
+  fab.hidden = full;
+  if (!wide()) fab.style.bottom = `${innerHeight - top + 12}px`; else fab.style.bottom = "";
+  const clearTop = wide() ? 0 : 180;
+  const clearBottom = wide() ? innerHeight : top;
+  const centerY = (clearTop + clearBottom) / 2;
+  const mapHeight = mapEl.clientHeight;
+  const offsetX = wide() ? -210 : 0;
+  const zoom = wide() ? 1.15 : 0.92;
+  drawMap(mapEl, {
+    zoom, cx: 400 + offsetX / zoom, cy: 430 + (mapHeight / 2 - centerY) / zoom,
+    showPlaces: state.searched, showStart: Boolean(state.location), mark: false,
+  });
+  // Google's logo must stay in view: it moves up with the sheet, as map padding would do.
+  const mark = document.createElement("span");
+  mark.className = "map-mark";
+  mark.style.left = wide() ? "436px" : "8px";
+  mark.style.bottom = `${wide() ? 8 : mapHeight - top + 8}px`;
+  mark.textContent = t("Sample map · Google logo stays here");
+  mapEl.append(mark);
+}
+function render() {
+  chips();
+  sheetEl.innerHTML = sheetContent();
+  layoutSheet();
+  const selected = sheetEl.querySelector(`.cards [data-card="${state.selected}"]`);
+  if (selected && !wide()) selected.scrollIntoView({ inline: "start", block: "nearest" });
+}
+function choose(id) {
+  state.selected = id;
+  size = "peek";
+  render();
+}
+pinClicks(mapEl, choose);
+document.addEventListener("click", (event) => {
+  const chip = event.target.closest("[data-interest]");
+  if (chip) { state.interest = chip.dataset.interest; state.selected = null; render(); }
+  if (event.target.closest("#find")) { state.searched = true; render(); }
+  if (event.target.closest("#grab")) { size = size === "peek" ? "full" : "peek"; render(); }
+});
+let dragFrom = null;
+sheetEl.addEventListener("pointerdown", (event) => { if (event.target.closest(".grab")) dragFrom = event.clientY; });
+addEventListener("pointerup", (event) => {
+  if (dragFrom === null) return;
+  const moved = event.clientY - dragFrom;
+  dragFrom = null;
+  if (moved < -24) { size = "full"; render(); }
+  if (moved > 24) { size = "peek"; render(); }
+});
+addEventListener("resize", render);
+setRender(render);
+startFromParams();
+if (params.get("size") === "full") size = "full";
+document.querySelectorAll(".gf input").forEach((i) => { if (state.location) i.value = state.location.address; });
+render();
+openFromParams();
+</script>
+</body>
+</html>

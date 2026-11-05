@@ -1,0 +1,172 @@
+/* Shared by the three Little Days prototypes. Design review only: nothing here is loaded
+   by the working app. One set of standards, so the concepts differ in composition only.
+   Type 13 / 14 / 16 / 18 / 22 / 28. Space 4 / 8 / 12 / 16 / 24 / 32.
+   Radius 12 controls, 16 search and cards, 24 sheets. Controls 44, search 52. Icons 20 / 24. */
+@font-face { font-family: "Nunito"; font-weight: 400; font-display: swap; src: url("../../fonts/nunito-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 600; font-display: swap; src: url("../../fonts/nunito-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 700; font-display: swap; src: url("../../fonts/nunito-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Caveat"; font-weight: 700; font-display: swap; src: url("../../fonts/caveat-latin-700-normal.woff2") format("woff2"); }
+
+:root {
+  --bg: #FFFFFF;
+  --surface: #FFFFFF;
+  --tint: #F6F5EF;
+  --ink: #26251F;
+  --ink-2: #66655C;
+  --line: #E7E4DB;
+  --accent: #718C43;
+  --accent-strong: #4B6B2E; /* the existing --leaf-ink: passes AA for text and white-on-fill */
+  --selected: #EAF0D8;
+  --apricot: #FBEFD9;
+  --warning: #8A5A00;
+  --lift: 0 1px 2px rgba(38, 37, 31, .05), 0 6px 18px rgba(38, 37, 31, .09);
+  --font: "Nunito", system-ui, sans-serif;
+  --gutter: 16px;
+  --tabs: calc(64px + env(safe-area-inset-bottom));
+}
+
+html:lang(zh-CN) {
+  --font: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  text-autospace: normal;
+  line-break: strict;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+html:lang(zh-CN) body { line-height: 1.6; }
+h1, h2, h3, p, ul, ol, fieldset { margin: 0; padding: 0; border: 0; }
+h1, h2, h3 { line-height: 1.2; font-weight: 700; text-wrap: balance; }
+html:lang(zh-CN) h1, html:lang(zh-CN) h2, html:lang(zh-CN) h3 { font-weight: 600; letter-spacing: .01em; }
+ul, ol { list-style: none; }
+button, input { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+img { display: block; max-width: 100%; }
+:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
+.icon { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon-sm { width: 20px; height: 20px; }
+.num { font-variant-numeric: tabular-nums; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Identity */
+.brand { min-width: 44px; min-height: 44px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 18px; color: var(--ink); white-space: nowrap; }
+.brand svg { width: 24px; height: 24px; }
+.brand .leaf { fill: var(--accent); }
+.brand .stem { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; }
+.lang { min-width: 44px; height: 44px; padding: 0 8px; border-radius: 12px; font-size: 14px; font-weight: 700; color: var(--accent-strong); }
+.tag-proto { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--apricot); color: #6B4700; font-size: 12px; font-weight: 700; line-height: 18px; white-space: nowrap; }
+
+/* The search field. Same box as the real <gmp-place-autocomplete> with the tested CSS:
+   52px tall, a 48px icon slot, one shape, one edge. Rest: the shadow is the edge. Focus: the
+   ring replaces it, so there is never a second line. */
+.gf { position: relative; display: flex; align-items: center; height: 52px; width: 100%; background: var(--surface); border-radius: 16px; box-shadow: 0 0 0 1px var(--line), var(--lift); }
+.gf:focus-within { box-shadow: inset 0 0 0 2px var(--accent-strong), var(--lift); }
+.gf-icon { display: grid; place-items: center; width: 48px; height: 48px; flex: none; color: #5E5E5E; }
+.gf-icon svg { width: 24px; height: 24px; fill: currentColor; }
+.gf input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; padding: 0 2px; font-size: 16px; text-overflow: ellipsis; }
+.gf input::placeholder { color: var(--ink-2); opacity: 1; }
+.gf-clear { display: grid; place-items: center; width: 48px; height: 48px; flex: none; }
+.gf-clear svg { width: 20px; height: 20px; fill: var(--ink); }
+.gf-list { position: absolute; z-index: 40; top: 56px; left: 0; right: 0; background: var(--surface); border-radius: 16px; box-shadow: 0 0 0 1px var(--line), var(--lift); overflow: hidden; }
+.gf-row { display: block; width: 100%; min-height: 56px; padding: 8px 16px; text-align: left; border-bottom: 1px solid var(--line); }
+.gf-row:hover { background: var(--tint); }
+.gf-row b { display: block; font-size: 14px; font-weight: 600; }
+.gf-row span { display: block; font-size: 13px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gf-attr { padding: 8px 16px; text-align: right; font-size: 12px; color: #5E5E5E; }
+
+/* Google's own phone mode, as observed at 450px and under: a full-window dialog whose
+   suggestions sit directly under the input, above the keyboard. Not ours to restyle. */
+.gf-full { position: fixed; inset: 0; z-index: 90; background: #fff; display: flex; flex-direction: column; padding: env(safe-area-inset-top) 0 0; }
+.gf-full-bar { display: flex; align-items: center; height: 48px; border-bottom: 1px solid #D9D9D9; }
+.gf-full-bar input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; font-size: 16px; }
+.gf-full .gf-row { border-bottom-color: #D9D9D9; }
+.gf-back { display: grid; place-items: center; width: 48px; height: 48px; flex: none; color: #5E5E5E; }
+.gf-note { margin: auto 16px 16px; padding: 8px 12px; border-radius: 12px; background: var(--apricot); font-size: 13px; }
+
+/* Shared controls */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 16px; border-radius: 12px; font-size: 16px; font-weight: 700; white-space: nowrap; }
+.btn-primary { background: var(--accent-strong); color: #fff; }
+.btn-quiet { background: var(--tint); color: var(--ink); }
+.btn-text { min-width: 44px; min-height: 44px; padding: 0 4px; font-size: 14px; font-weight: 700; color: var(--accent-strong); }
+.square { display: grid; place-items: center; flex: none; width: 52px; height: 52px; border-radius: 16px; background: var(--surface); color: var(--accent-strong); box-shadow: 0 0 0 1px var(--line), var(--lift); }
+.chip { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 44px; min-height: 44px; padding: 0 12px; border-radius: 12px; font-size: 14px; font-weight: 600; white-space: nowrap; background: var(--tint); color: var(--ink); }
+.chip[aria-pressed=true], .chip:has(input:checked) { background: var(--selected); color: var(--accent-strong); font-weight: 700; }
+.chip input { position: absolute; opacity: 0; }
+.chip:has(input:focus-visible) { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
+.scroll-x { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.scroll-x::-webkit-scrollbar { display: none; }
+.save { display: grid; place-items: center; width: 44px; height: 44px; flex: none; color: var(--ink-2); border-radius: 12px; }
+.save[aria-pressed=true] { color: var(--accent-strong); }
+.save[aria-pressed=true] svg { fill: var(--accent-strong); }
+.pin-num { display: inline-grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-strong); color: #fff; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.meta { font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.g-attr { font: 400 14px/1.4 Roboto, var(--font); color: #5E5E5E; white-space: nowrap; }
+.sample { font-size: 13px; color: var(--ink-2); }
+.class-note { margin-top: 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
+
+/* Phone tabs, unchanged in purpose */
+.tabs { position: fixed; z-index: 30; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr); height: var(--tabs); padding-bottom: env(safe-area-inset-bottom); background: var(--surface); border-top: 1px solid var(--line); }
+.tabs button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.tabs button[aria-current=page] { color: var(--accent-strong); font-weight: 700; }
+.top-tabs { display: none; }
+@media (min-width: 960px) {
+  .tabs { display: none; }
+  :root { --tabs: 0px; }
+  .top-tabs { display: flex; gap: 16px; font-size: 14px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+  .top-tabs button { min-height: 44px; }
+  .top-tabs button[aria-current=page] { color: var(--accent-strong); font-weight: 700; }
+}
+
+/* The drawn map stands in for a Google map */
+.draw-map { position: relative; overflow: hidden; background: #EFEBDF; }
+.draw-map svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.draw-map [data-pin] { cursor: pointer; outline: none; }
+.draw-map [data-pin]:focus-visible circle { stroke: var(--ink); }
+.map-mark { position: absolute; left: 8px; bottom: 8px; padding: 2px 8px; border-radius: 8px; background: rgba(255,255,255,.92); font-size: 12px; font-weight: 600; color: #5E5E5E; white-space: nowrap; }
+
+/* Sheets: bottom sheet on phones, centered from 720px */
+dialog.sheet-d { position: fixed; inset: auto 0 0; width: 100%; max-width: none; max-height: 88dvh; margin: 0; padding: 0; border: 0; border-radius: 24px 24px 0 0; background: var(--surface); color: var(--ink); overflow: hidden; }
+dialog.sheet-d[open] { display: flex; flex-direction: column; }
+dialog.sheet-d::backdrop { background: rgba(38, 37, 31, .32); }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; min-height: 56px; padding: 4px 8px 4px 16px; flex: none; }
+.sheet-head h2 { font-size: 18px; }
+.sheet-head [tabindex="-1"]:focus { outline: 0; }
+.sheet-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 16px 16px; overscroll-behavior: contain; }
+.sheet-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: none; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+.sheet-foot .btn-primary { flex: 1; max-width: 240px; }
+.close { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; }
+@media (min-width: 720px) {
+  dialog.sheet-d { inset: 0; margin: auto; width: 520px; height: fit-content; max-height: 86vh; border-radius: 24px; }
+}
+
+.f-group { padding: 12px 0 16px; }
+.f-group + .f-group { border-top: 1px solid var(--line); }
+.f-group > legend { float: left; width: 100%; padding: 0; margin-bottom: 8px; font-size: 14px; font-weight: 700; }
+.f-group > legend + * { clear: both; }
+.seg { display: flex; padding: 2px; border-radius: 12px; background: var(--tint); }
+.seg label { position: relative; flex: 1; min-width: 0; }
+.seg input { position: absolute; opacity: 0; inset: 0; }
+.seg span { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 4px; border-radius: 10px; font-size: 14px; font-weight: 600; color: var(--ink-2); white-space: nowrap; text-align: center; }
+.seg input:checked + span { background: var(--surface); color: var(--accent-strong); font-weight: 700; box-shadow: 0 1px 2px rgba(38,37,31,.12); }
+.seg input:focus-visible + span { outline: 2px solid var(--accent-strong); outline-offset: 1px; }
+.wrap-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.f-note { margin-top: 8px; font-size: 13px; color: var(--ink-2); }
+
+/* Place details */
+.d-map { height: 180px; border-radius: 16px; margin: 4px 0 12px; }
+.d-title { font-size: 22px; }
+.d-sub { margin-top: 4px; }
+.d-remind { margin: 12px 0; padding: 12px; border-radius: 12px; background: var(--apricot); font-size: 14px; }
+.d-section { padding: 12px 0; border-top: 1px solid var(--line); }
+.d-section h3 { font-size: 14px; margin-bottom: 4px; }
+.d-section li { position: relative; padding-left: 16px; font-size: 14px; }
+.d-section li::before { content: ""; position: absolute; left: 2px; top: .65em; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.d-act { display: flex; gap: 12px; align-items: center; }
+.d-act img { width: 72px; height: 72px; object-fit: cover; border-radius: 12px; flex: none; }
+.d-act p { font-size: 14px; }
+.d-label { font-size: 13px; color: var(--ink-2); }
+
+.toast { position: fixed; z-index: 95; left: 50%; bottom: calc(var(--tabs) + 16px); transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px); padding: 8px 16px; border-radius: 12px; background: var(--ink); color: #fff; font-size: 14px; text-align: center; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
