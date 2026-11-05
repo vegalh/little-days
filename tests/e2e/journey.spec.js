@@ -178,7 +178,7 @@ test("My week: add a place with time, theme and notes, see its weather, edit it,
   const day = page.locator("#plan .plan > li", { hasText: "Fri, Nov 6" });
   await expect(day).toContainText("Duck Walk"); // the migrated v1 activity is still there
   await expect(day).toContainText("Test Park");
-  await expect(day).toContainText("10:00 · Leaves and trees");
+  await expect(day).toContainText("10:00 AM · Leaves and trees");
   await expect(day).toContainText("Bring a bag");
   await expect(day.locator(".plan-weather")).toContainText("Rain");
   // Planning doesn't mark the place explored.

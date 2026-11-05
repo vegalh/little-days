@@ -6,8 +6,27 @@ const {
   CATEGORIES, CATEGORY_KEYS, searchRadius, categoriesToSearch, shortlist, routeTargets, byWalkingTime,
   walkingMinutes, accessFor, settingFor, filterBySetting, ageNotes,
 } = require("../explore.js");
-const { GUIDES, CATEGORY_GUIDES, GUIDE_FOR_TYPE, guideFor, perspectiveFor } = require("../guides.js");
-const { rainSoon, orderForWeather, weatherFor } = require("../recommend.js");
+const { GUIDES, CATEGORY_GUIDES, GUIDE_FOR_TYPE, guideFor, perspectiveFor, forGroup } = require("../guides.js");
+
+test("forGroup: no guide line still speaks to one child", () => {
+  assert.equal(forGroup("If your child is curious, look closer."), "If the children are curious, look closer.");
+  assert.equal(forGroup("Let your child choose."), "Let the children choose.");
+  assert.equal(forGroup("Follow your child's lead."), "Follow the children's lead.");
+  const guides = [...Object.values(GUIDES), ...Object.values(CATEGORY_GUIDES).filter((g) => typeof g !== "string")];
+  const lines = guides.flatMap((g) => [g.why, ...g.sets.flatMap((s) => [...s.notice, ...s.before, ...s.during, ...s.after, s.practical])]);
+  for (const line of lines) {
+    assert.doesNotMatch(forGroup(line), /your child/i, line);
+    assert.doesNotMatch(forGroup(line), /the children (is|does|has|was|wants|knows|likes|loves|enjoys|notices)\b/i, line);
+  }
+});
+const { rainSoon, orderForWeather, weatherFor, hourForecast } = require("../recommend.js");
+
+test("hourForecast: finds the visit's hour, and returns null outside the forecast", () => {
+  const hourly = { time: ["2026-11-07T09:00", "2026-11-07T10:00"], temperature_2m: [8, null], precipitation_probability: [20, 30] };
+  assert.deepEqual(hourForecast(hourly, "2026-11-07", "09:30"), { temperature: 8, rainChance: 20 });
+  assert.equal(hourForecast(hourly, "2026-11-07", "10:00"), null);
+  assert.equal(hourForecast(hourly, "2026-11-20", "09:00"), null);
+});
 const { formatDistance } = require("../advice.js");
 
 const ORIGIN = { lat: 42.35, lng: -71.21 };

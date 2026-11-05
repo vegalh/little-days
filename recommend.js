@@ -46,7 +46,9 @@ function weatherFor(day) {
   const snowy = SNOW_CODES.includes(day.code) || HAZARD_CODES.heavySnow.includes(day.code);
   if (SNOW_CODES.includes(day.code)) cautions.push("snow");
   // Precipitation chance counts as rain unless the forecast says it falls as snow.
-  if (RAIN_CODES.includes(day.code) || (day.rainChance >= LIMITS.rainChance && !snowy)) {
+  // A wet hazard already says more, and "works in rain gear" would contradict it.
+  const wetHazard = hazards.some((name) => ["storm", "heavyRain", "freezingRain"].includes(name));
+  if (!wetHazard && (RAIN_CODES.includes(day.code) || (day.rainChance >= LIMITS.rainChance && !snowy))) {
     cautions.push("rain");
   }
 
@@ -161,6 +163,14 @@ function nextHours(hourly, currentTime, count = 6) {
   }));
 }
 
+// The forecast for one hour of one date, or null if it's outside the forecast.
+// time is "HH:MM"; the entry for that hour is used.
+function hourForecast(hourly, date, time) {
+  const i = hourly.time.indexOf(`${date}T${time.slice(0, 2)}:00`);
+  if (i === -1 || hourly.temperature_2m[i] == null) return null;
+  return { temperature: hourly.temperature_2m[i], rainChance: hourly.precipitation_probability[i] };
+}
+
 // The highest rain chance in the next three hours, when it reaches the rain caution
 // level (PRD.md 7.15), or null. hours come from nextHours.
 function rainSoon(hours) {
@@ -178,7 +188,7 @@ function orderForWeather(places, weather, settingOf) {
 
 if (typeof module !== "undefined") {
   module.exports = {
-    LIMITS, weatherFor, seasonFor, canDo, canGoOutside, matchesHoliday, pickIdeas, planWeek, nextHours,
+    LIMITS, weatherFor, seasonFor, canDo, canGoOutside, matchesHoliday, pickIdeas, planWeek, nextHours, hourForecast,
     rainSoon, orderForWeather,
   };
 }

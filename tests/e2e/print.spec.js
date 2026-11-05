@@ -63,7 +63,7 @@ test("Print My Week: activities and a place visit together, grouped by day, with
   await expect(friday).toContainText("Duck Walk");
   await expect(friday).toContainText("from RootMap");
   await expect(friday).toContainText("Test Park");
-  await expect(friday).toContainText("10:00 · Leaves and trees");
+  await expect(friday).toContainText("10:00 AM · Leaves and trees");
   await expect(friday).toContainText("Bring a bag and a water bottle.");
   await expect(friday).toContainText("Heavy showers · 66° / 61°"); // a real forecast for this in-range date
   await expect(area.locator(".google-attribution")).toHaveText("Google Maps");

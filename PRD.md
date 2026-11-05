@@ -81,7 +81,7 @@ All inputs sit in the controls card. Nothing about the child is collected beyond
 | Interests | Seven radio buttons styled as chips: the six categories (7.10) and **All** | One is chosen at a time. **None is chosen at first**, so nothing is searched by default. A category is one search; All is one search per category not yet loaded (7.10). |
 | Temperature | °F / °C switch | Changes every temperature, wind speed (mph / km/h), rain amount (in / mm) and distance (mi / km). Doesn't refetch anything. Saved. |
 | Search | Primary button "Find Little Adventures" | Starts the place search (8.2). This is the **only** thing that starts a Google Places search. |
-| Day | Each day card in the seven-day strip is a button | Selects the day used for weather notes on places, What to wear, and at-home ideas. Today after a search. |
+| Day | Each day card in the seven-day strip (Weather) and in the day picker above the results (Explore, "Which day are you planning for?", 7.16) is a button | Selects the day used for weather notes on places, What to wear, and at-home ideas. The chosen day is kept: it stays selected across a search and when moving between Weather and Explore; only choosing a new location resets it to today. |
 
 **Choosing a location fetches the weather right away** (Open-Meteo and Nager.Date, no Google request). **Places are fetched only when the adult presses "Find Little Adventures"**, never on page load, never on a return visit, and never just because a location or interest changed. Changing mode, ages, units, the day or filters never makes a request. Changing the location or walking time clears the places loaded so far; the next search starts fresh.
 
@@ -163,6 +163,7 @@ How each API behaves:
 - Days are matched by date string (`YYYY-MM-DD`) across the forecast, public holidays, celebrations and My Week.
 - If the seven days span two years, fetch holidays for both years.
 - Hourly entries are matched to "now" by comparing `hourly.time` with `current.time` (both local to the place, `YYYY-MM-DDTHH:MM`). `hourly` starts at local midnight, so its first entries are usually in the past and are never shown as "next". The "Next hours" row starts at the entry for the hour containing `current.time` (for `17:15`, the `17:00` entry, labelled "5 PM": every column is labelled with its hour, because the Now card shows the 15-minute `current` values, which can differ slightly from the hourly ones) and shows the next six entries from there (fewer if the forecast runs out). The browser's own clock and time zone are never used for this. Code: `nextHours` in `recommend.js`.
+- The full `hourly` forecast is kept for the whole visit, not just the "Next hours" slice, so a planned visit's own time can be looked up against it later, however far ahead it's planned (7.9). Code: `hourForecast` in `recommend.js`.
 - Places from different category searches are merged by `id`. A place found by two searches belongs to the first category in the order of 7.10.
 - Walking times are matched to places by their position in the destinations list sent to `computeRouteMatrix`.
 
@@ -195,6 +196,8 @@ On a hazard day the page also says "Outdoor ideas are left out today."
 | Cold | feels-like high < 5°C (41°F) | "It may feel like {x}° at the warmest part of the day. Keep outdoor time short and dress warmly." |
 | Hot | feels-like high 27–31°C (81–89°F) | "It may feel like {x}°. Play outside early or late, in the shade, with water and sun protection." |
 | Wind | gusts 50–69 km/h (31–42 mph) | "Gusts may reach {x}. Stay clear of trees and loose branches." |
+
+No rain caution is added on a day that already has a storm, heavy-rain or freezing-rain hazard: "works in rain gear" would contradict a warning to stay indoors, and the hazard warning already says more.
 
 **Notes: a warning only.** Fog (code 45, 48): "Fog is forecast. Stay close together near roads."
 
@@ -311,11 +314,14 @@ Clicking an activity's title (in the ideas or in My week) opens its details in a
 
 My week holds two kinds of entries: **place visits** and **at-home activities** (RootMap).
 
-- **Add a place** from its details (7.16): date (`<input type="date">`, today or later), optional time, optional exploration theme (up to 80 characters), optional preparation notes (up to 500). "Add to My Week" saves it. The same place can be added to the same date only once.
+- **Add a place** from its details (7.16): date (`<input type="date">`, today or later), optional time, optional exploration theme (up to 80 characters, starting with the suggested focus from the guide perspective that would show next, 7.14), optional preparation notes (up to 500). "Add to My Week" saves it. The same place can be added to the same date only once.
 - **Add an activity** with "Add to my week", as before (7.5, 7.8). The same activity can't be added twice to the same date ("Added ✓", disabled).
-- My week lists the seven forecast days plus any later saved dates. Each date shows its entries with a "Remove" button. Days with nothing say "Nothing planned".
-- **Weather for a date:** when the date is in `daily.time`, its row shows the icon, condition, high/low and "Rain {n}%", plus any hazard or caution word from 7.4. Otherwise it says "Forecast not available yet for this date." Nothing is estimated for dates outside the forecast.
+- My week lists the seven forecast days plus any later saved dates. Each date shows its entries with a "Remove" button. Days with nothing say "Nothing planned". **In Classroom mode, a Saturday or Sunday with nothing planned isn't listed at all.**
+- **Entry order within a date:** place visits with a time come first, earliest first; everything else (activities, and place visits without a time) follows in the order it was added.
+- **Weather for a date:** when the date is in `daily.time`, its row shows the icon, condition, high/low and "Rain {n}%", the day's public holidays, and — only on a date with at least one entry — that day's weather warnings as full sentences (7.4). Otherwise it says "Forecast not available yet for this date." Nothing is estimated for dates outside the forecast.
 - A place entry shows the place's name (a button that opens its details), time and theme, notes, and **Edit** and **Remove**. Edit turns the entry into a small form (date, time, theme, notes) with "Save changes" and "Cancel"; moving it to a date where the same place is already planned is refused. Names come from Google this visit (7.17), fetched only once My week is on screen; if that fails it shows "Saved place (details unavailable right now)". When a place entry is listed, My week shows the Google Maps text attribution (9.4).
+- **Time display:** a visit's time is stored as `"HH:MM"` and shown formatted for the page's own locale (for example "1:30 PM"); the stored value never changes with locale or units.
+- **Forecast at the visit's time:** a place visit with a time, on a date inside the loaded hourly forecast, also shows that hour's own forecast ("Forecast at 1:30 PM: 52°, Rain 10%"), read from the hourly data kept for the visit (7.3). Outside the hourly forecast, or without a time, nothing extra is shown.
 - **Planning a visit never marks the place explored.** Only recording a visit does (7.17).
 - Before any search, or if the weather fails, My week still lists saved dates from today on, without weather.
 - **Print My Week:** a "Print My Week" button renders a printable weekly planner (branding, "Our Little Adventures", the date range, each planned day's places and activities, times, themes, preparation notes, that day's real forecast or "Weather forecast not available yet.", and a ruled space for a handwritten observation) and calls `window.print()`. Only days with at least one entry print — no page for an empty forecast day. The private exploration journal (7.17's `observation`/`next`) is never printed, only the adult's own preparation notes. See 7.20.
@@ -343,10 +349,10 @@ Saved in `localStorage` under `littleDays.plan.v2`. Activities stay exactly as i
 | Category | Google place types (`includedTypes`) |
 |---|---|
 | Nature | `park`, `botanical_garden`, `garden`, `hiking_area` |
-| Everyday Life | `bakery`, `grocery_store`, `supermarket`, `market`, `florist`, `hardware_store`, `book_store` |
-| Community Helpers | `fire_station`, `police`, `post_office`, `city_hall` |
+| Everyday Life | `bakery`, `grocery_store`, `supermarket`, `market`, `farmers_market`, `florist`, `hardware_store`, `book_store` |
+| Community Helpers | `fire_station`, `police`, `post_office`, `city_hall`, `community_center` |
 | Art & Culture | `library`, `museum`, `art_gallery`, `performing_arts_theater`, `cultural_center` |
-| Animals & Wildlife | `zoo`, `aquarium`, `farm`, `pet_store`, `dog_park`, `wildlife_park` |
+| Animals & Wildlife | `zoo`, `aquarium`, `farm`, `pet_store`, `dog_park`, `wildlife_park`, `wildlife_refuge` |
 | Movement | `playground`, `athletic_field`, `sports_complex` |
 
 The category shown on a card comes from this table (the search that found it), so it is a **Little Days label**, not Google's.
@@ -354,7 +360,7 @@ The category shown on a card comes from this table (the search that found it), s
 **Search.** Only when "Find Little Adventures" is pressed (7.1). A category means one `Place.searchNearby`; **All** means one per category not loaded yet, all at once. Each search:
 
 - `locationRestriction`: a circle around the search location with radius = walking minutes × 80 m (5 → 400 m, 10 → 800 m, 15 → 1200 m, 20 → 1600 m, 30 → 2400 m). 80 m a minute is an adult's walking pace. This only sets the search area; walking times come from routes (7.12).
-- `includedTypes`: the category's types. `maxResultCount`: 10. `rankPreference`: distance.
+- `includedPrimaryTypes`: the category's types, sent as **primary** types so a place with several Google types (for example a supermarket that also lists "bakery") is matched only by its actual primary type, not shown under every category it merely mentions. `maxResultCount`: 10. `rankPreference`: distance.
 - `fields`: only those in 7.2.
 
 No place details are fetched for search results: the search fields are enough for cards.
@@ -390,7 +396,7 @@ The page never says a place is public, open to visitors, or accepts organized or
 
 | Setting | Types |
 |---|---|
-| Outdoors | `park`, `playground`, `dog_park`, `hiking_area`, `athletic_field`, `garden`, `botanical_garden`, `farm`, `zoo`, `wildlife_park` |
+| Outdoors | `park`, `playground`, `dog_park`, `hiking_area`, `athletic_field`, `garden`, `botanical_garden`, `farm`, `zoo`, `wildlife_park`, `wildlife_refuge`, `farmers_market` |
 | Indoors | everything else |
 
 Never shown: opening hours, prices, "free", entry rules, accessibility, or whether a place welcomes children or classes. Each card and detail instead has **"Check hours and details on Google Maps"**, a plain link to `https://www.google.com/maps/search/?api=1&query={name}&query_place_id={id}`.
@@ -402,6 +408,7 @@ Never shown: opening hours, prices, "free", entry rules, accessibility, or wheth
 - A destination whose element has a duration (and a condition saying a route exists) shows **"{n} min walk · {distance}"**, with minutes rounded up and the label "Google walking estimate".
 - Anything else shows **"Walking time unavailable"**. Its straight-line distance may be shown as "About {d} away in a straight line", never as a time.
 - While the request runs, cards show "Checking walking time…".
+- **Classroom mode** also shows a round-trip time on the card wherever a one-way time is known: "Round trip at Google's pace: {n} min. Allow more with a group." It's built only by doubling Google's one-way walking estimate — never a separate Google request, and never adjusted for a group's actual pace.
 
 **Walking-time filter.** A place with a walking time over the chosen limit is hidden, and a line says "{n} places are more than a {limit}-minute walk." Places with no walking time aren't hidden (Little Days can't tell), but are listed after the others under "Walking time unavailable".
 
@@ -419,6 +426,8 @@ Both modes show the same places. Mode and ages only change the notes, all labell
 - Under the walking-time choice, above the place list, and in place details: "Google walking estimates may not reflect the time needed when accompanying young children. Check crossings and the route before visiting."
 - On every place, whatever its access estimate: "Contact before a classroom visit." (if the access line doesn't already say it). Little Days never knows whether a place accepts organized visits.
 - The extra route line in 7.12.
+- The round-trip time in 7.12.
+- **Wording:** every exploration guide (7.14) and activity detail (7.8) says "the children" instead of "your child" ("the children's", "the children are/do/want/know/notice/enjoy/point/practice" for the matching verb), so the same guide content reads naturally for a group instead of one family.
 
 **Age notes** (one per card and in details):
 
@@ -459,7 +468,7 @@ nature: {
 
 ### 7.15 Weather-aware discovery
 
-Places use the same weather rules as 7.4, for the **selected day**. The thresholds stay in one place (`recommend.js`, `WEAR_LIMITS` in `advice.js`), so they can be changed in one spot.
+Places use the same weather rules as 7.4, for the **selected day** — chosen either from the seven-day strip (Weather) or from the day picker above the results (Explore, 7.16); both control the same selection. The thresholds stay in one place (`recommend.js`, `WEAR_LIMITS` in `advice.js`), so they can be changed in one spot.
 
 | Day | Outdoor places | Indoor places | Order |
 |---|---|---|---|
@@ -488,6 +497,7 @@ Places use the same weather rules as 7.4, for the **selected day**. The threshol
 - Weather note (7.15) and age note (7.13)
 - One exploration idea (7.14)
 - Status: a "Save" button (sets "Want to explore"), or the current status as a tag
+- An "Add to {day}" button for the selected day (7.9), or "Added ✓" (disabled) once that place is already planned for that day; opens no dialog
 - The name is a button that opens the details
 
 **Map:** a Google map with one marker for the search location ("Start") and one numbered marker per place in the filtered list, numbered like the list. Choosing a marker selects it and shows a preview. The map keeps Google's logo and attributions visible. **Markers are reused:** a redraw (units, day, filters, walking times arriving) only adds markers for new places, removes those no longer listed, and updates a changed number; the map is refit only when the set of places changes.
@@ -497,6 +507,8 @@ Places use the same weather rules as 7.4, for the **selected day**. The threshol
 **Layout:** on desktop (720px and up) the list and map sit side by side. On phones a **List / Map** switch (two radio buttons) shows one at a time, List first. Details are specified in DESIGN.md.
 
 **Interest tabs** (top of Explore, after the first search): the seven interests again, with the searched one chosen. Choosing one shows it from memory if it's loaded (7.10); otherwise it does nothing until "Find Little Adventures" (repeated next to the tabs) is pressed. Loaded interests carry a "✓".
+
+**Day picker** (above the filters, once results are shown): "Which day are you planning for?" with one button per forecast day — the same seven days and the same selection as the Weather strip (7.1, 7.15). Each button shows the day's icon, high temperature, an "Indoor day" tag on a hazard day, and any public holiday. Choosing a day changes the weather notes shown on every card and the "Add to {day}" wording, with no new request.
 
 **Filters** (above the list, applied on the page with no new request):
 - Setting: All / Indoors / Outdoors
@@ -509,9 +521,9 @@ The walking-time limit is the 7.1 input (7.12). There's no age filter on places:
 2. A map with the walking route (7.12), walking time and distance, Google's warnings, the route reminder
 3. Weather for the selected day and the weather note (7.15)
 4. Access and setting (7.11), age note (7.13), and the Google Maps link
-5. Little Days ideas: Why explore this place?, What children might notice, Before you go, During the visit, After the visit, Practical Life, At home afterwards (7.14)
-6. Buttons: Save / Mark as explored / Revisit (7.17)
-7. Add to My Week: date, time, theme, notes, and the button (7.9)
+5. Add to My Week: date, time, theme, notes, and the button (7.9)
+6. Little Days ideas: Why explore this place?, What children might notice, Before you go, During the visit, After the visit, Practical Life, At home afterwards (7.14)
+7. Buttons: Save / Mark as explored / Revisit (7.17)
 8. Print Adventure Guide (7.14, 7.20)
 9. Close
 
@@ -590,8 +602,9 @@ The whole page works in **English** and **Simplified Chinese**.
 Two printable formats, both native-browser printing: no PDF library, just a hidden `#print-area` filled with the print markup, `@media print`/`@page` in `style.css`, and `window.print()`. Design is in DESIGN.md 11.
 
 - **Print My Week** (7.9) and **Print Adventure Guide** (7.14) only read state already in memory (the loaded plan, My Places, forecast and guide content). Printing never makes a new Google, weather or holiday request, and never generates a map image; Google's "Google Maps" text attribution is shown instead when a printed page includes a Google place.
-- **Weather accuracy:** a printed day or guide only ever shows the real forecast for its own date, from the already-loaded week; it's never substituted with today's weather. When that date isn't in the loaded forecast, the page shows "Weather forecast not available yet." instead of a guess.
+- **Weather accuracy:** a printed day or guide only ever shows the real forecast for its own date, from the already-loaded week; it's never substituted with today's weather. When that date isn't in the loaded forecast, the page shows "Weather forecast not available yet." instead of a guess. Each printed day's weather line also shows "Rain {n}%", any public holiday, and that day's weather warnings as full sentences (7.4), not just the icon and temperature.
 - **Missing place details:** if a saved place's name and address haven't loaded (or failed to), the print page shows "Saved place (details unavailable right now)" rather than nothing or stale data.
+- **Classroom checklist:** in Classroom mode, Print My Week adds a blank checklist ("Adults: ______ Children: ______" and five checkboxes — permission slips, first-aid kit, emergency contacts, head count before leaving, head count before returning) under every printed day that has at least one place visit. It's for filling in by hand; nothing on it is stored.
 - **Never printed automatically:** the private exploration journal (7.17's `observation` and `next`). Only the adult's own preparation notes (My week) or the hand-written guide content (Adventure Guide) print.
 - **Layout:** no `@page size`, so the browser's own US Letter/A4 choice and "Save as PDF" are respected; a day, a planned item, and a guide section each use `break-inside: avoid` so they aren't split awkwardly across a page break; everything else on the page (header, nav, map, dialogs, bottom bar) is hidden while printing.
 - Each printed page includes a ruled space for a handwritten observation ("What did we notice?"); the Adventure Guide also includes a small plain drawing box ("Draw what you noticed").

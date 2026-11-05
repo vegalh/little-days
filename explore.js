@@ -119,7 +119,7 @@ const ACCESS = {
 
 const OUTDOOR_TYPES = [
   "park", "playground", "dog_park", "hiking_area", "athletic_field", "garden", "botanical_garden",
-  "farm", "zoo", "wildlife_park", "wildlife_refuge",
+  "farm", "zoo", "wildlife_park", "wildlife_refuge", "farmers_market",
 ];
 
 // The place's own primary type, or the first of its types that Little Days knows.

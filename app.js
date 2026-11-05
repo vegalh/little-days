@@ -278,6 +278,7 @@ async function loadWeather(location) {
       location,
       now: data.current,
       hours: nextHours(data.hourly, data.current.time),
+      hourly: data.hourly,
       days: buildDays(location, data.daily, holidays.holidays),
       holidayProblem: holidays.problem,
     };
@@ -452,6 +453,7 @@ function buildDays(location, daily, holidays) {
       low: daily.temperature_2m_min[i],
       ...forecast,
       weather: weatherFor(forecast),
+      publicHolidays,
       season: seasonFor(date, location.latitude),
       celebrations,
       holidays: [...new Set([...publicHolidays, ...celebrations])],
@@ -501,6 +503,8 @@ document.addEventListener("change", (event) => {
     saveSettings(storage, settings);
     showChoices();
     renderPlaces();
+    if (placeDialog.open && openPlaceId && findPlace(openPlaceId)) renderPlaceDetails(findPlace(openPlaceId));
+    renderPlan();
   }
   if (name === "minutes") {
     settings.minutes = Number(value);
@@ -752,6 +756,14 @@ document.addEventListener("click", (event) => {
   if (add) addActivity(add.dataset.add, add.dataset.date);
   if (remove) removeActivity(remove.dataset.remove, remove.dataset.date);
   if (event.target.closest("[data-print-week]")) printWeek();
+  const quickPlan = event.target.closest("[data-quick-plan]");
+  if (quickPlan) quickPlanPlace(quickPlan.dataset.quickPlan);
+  const exploreDay = event.target.closest("[data-explore-day]");
+  if (exploreDay) {
+    selectedDay = Number(exploreDay.dataset.exploreDay);
+    render();
+    document.querySelector(`[data-explore-day="${selectedDay}"]`).focus();
+  }
   const printGuideButton = event.target.closest("[data-print-guide]");
   if (printGuideButton) printGuideFor(printGuideButton.dataset.printGuide);
 });
@@ -831,7 +843,7 @@ async function findAdventures() {
     return;
   }
   if (!settings.interest) {
-    interestMessage.textContent = "⚠︎ Choose what you'd like to explore.";
+    interestMessage.textContent = `⚠︎ ${tr("Choose what you'd like to explore.")}`;
     interestMessage.hidden = false;
     document.querySelector("input[name=interest]").focus();
     return;
@@ -921,6 +933,7 @@ function settingFilter() {
 async function renderPlaces() {
   if (!explore || exploreResults.hidden) return;
   const day = current ? current.days[selectedDay] : null;
+  renderExploreDays();
   for (const p of explore.shortlist) placeInfo[p.id] = p;
   const exploredOnly = document.querySelector("input[name=explored-filter]:checked").value;
   const filtered = filterBySetting(explore.shortlist, settingFilter())
@@ -932,6 +945,10 @@ async function renderPlaces() {
 
   const notes = [tr(shown.length === 1 ? "{count} place near {place} · walking times from Google" : "{count} places near {place} · walking times from Google",
     { count: shown.length, place: escapeHtml(placeLabel()) })];
+  if (day) notes.push(tr("Weather notes below are for {day}.", { day: formatDay(day.date) }));
+  for (const holiday of day ? day.publicHolidays : []) {
+    notes.push(tr("{holiday} falls on this day. Many services close, so check hours before you go.", { holiday: escapeHtml(tr(holiday)) }));
+  }
   if (over) notes.push(tr(over === 1 ? "{count} place is more than a {minutes}-minute walk." : "{count} places are more than a {minutes}-minute walk.",
     { count: over, minutes: settings.minutes }));
   if (explore.partial) notes.push(tr("Some kinds of places couldn't be loaded right now."));
@@ -963,6 +980,24 @@ async function renderPlaces() {
   }
 }
 
+// The forecast days as buttons above the results, so the day can be chosen while looking
+// at places. It's the same selectedDay the Weather view uses.
+function renderExploreDays() {
+  const box = document.querySelector("#explore-days-box");
+  box.hidden = !current;
+  if (!current) return;
+  document.querySelector("#explore-days").innerHTML = current.days.map((day, i) => {
+    const [icon, label] = weatherOf(day.code);
+    return `
+      <button type="button" class="explore-day" data-explore-day="${i}" aria-pressed="${i === selectedDay}">
+        <span class="explore-day-name">${formatDay(day.date)}</span>
+        <span><span aria-hidden="true">${icon}</span> <span class="visually-hidden">${label}</span> ${temp(day.high)}</span>
+        ${day.weather.hazards.length ? `<span class="tag tag-warning">${tr("Indoor day")}</span>` : ""}
+        ${day.publicHolidays.map((h) => `<span class="tag tag-holiday">${escapeHtml(tr(h))}</span>`).join("")}
+      </button>`;
+  }).join("");
+}
+
 const CLASSROOM_WALKING = tr("Google walking estimates may not reflect the time needed when accompanying young children. Check crossings and the route before visiting.");
 
 function walkHtml(placeItem) {
@@ -974,7 +1009,8 @@ function walkHtml(placeItem) {
   if (route.status === "pending") return `<span class="walk-pending">${tr("Checking walking time…")}</span>`;
   if (route.status !== "ok") return tr("Walking time unavailable");
   return `<span aria-hidden="true">🚶</span> ${tr("{minutes} min walk", { minutes: walkingMinutes(route.durationMillis) })} · ${formatDistance(route.distanceMeters, settings.unit)}
-    <span class="walk-source">${tr("Google walking estimate")}</span>`;
+    <span class="walk-source">${tr("Google walking estimate")}</span>
+    ${settings.mode === "classroom" ? `<span class="walk-source walk-round">${tr("Round trip at Google's pace: {minutes} min. Allow more with a group.", { minutes: walkingMinutes(route.durationMillis) * 2 })}</span>` : ""}`;
 }
 
 function accessHtml(placeItem) {
@@ -1010,7 +1046,7 @@ function placeCardHtml(placeItem, day) {
   const category = CATEGORIES[placeItem.category];
   const guide = guideFor(placeType(placeItem), placeItem.category);
   const visits = visitCount(savedPlaces, placeItem.id);
-  const idea = tr(guide.sets[perspectiveFor(guide, visits)].notice[0]);
+  const idea = guideText(guide.sets[perspectiveFor(guide, visits)].notice[0]);
   const name = escapeHtml(placeItem.name || tr("Unnamed place"));
   const initial = escapeHtml((placeItem.name || "?").trim()[0] || "?");
   const saved = savedPlaces[placeItem.id];
@@ -1045,6 +1081,9 @@ function placeCardHtml(placeItem, day) {
       </div>
       <div class="place-actions">
         <button type="button" class="button-secondary" data-place-open="${placeItem.id}" aria-label="${tr("Details for {name}", { name })}">${tr("Details")}</button>
+        ${!day ? "" : isPlacePlanned(plan, day.date, placeItem.id)
+          ? `<button type="button" class="button-added" disabled>${tr("Added ✓")}</button>`
+          : `<button type="button" data-quick-plan="${placeItem.id}" aria-label="${tr("Add {title} to my week", { title: name })}">${tr("Add to {day}", { day: formatDay(day.date) })}</button>`}
       </div>
     </article>`;
 }
@@ -1178,7 +1217,7 @@ function renderPlaceDetails(placeItem, perspective) {
     <section class="place-section" aria-labelledby="weather-detail-heading">
       <h3 id="weather-detail-heading">${day ? tr("Weather on {day}", { day: formatDay(day.date) }) : tr("Weather")}</h3>
       ${day ? `<p>${(weatherOf(day.code)).map((part, i) => i ? part : `<span aria-hidden="true">${part}</span>`).join(" ")} ·
-        ${temp(day.high)} / ${temp(day.low)} · ${day.rainChance == null ? tr("Rain –") : `Rain ${day.rainChance}%`}</p>` : ""}
+        ${temp(day.high)} / ${temp(day.low)} · ${day.rainChance == null ? tr("Rain –") : tr("Rain {chance}%", { chance: day.rainChance })}</p>` : ""}
       <ul class="place-weather">${placeWeatherLines(placeItem, day).map((line) => `<li>${line}</li>`).join("")}</ul>
     </section>
 
@@ -1189,11 +1228,13 @@ function renderPlaceDetails(placeItem, perspective) {
       <p><a href="${mapsUrl}" target="_blank" rel="noopener">${tr("Check hours and details on Google Maps")}<span aria-hidden="true"> ↗</span></a></p>
     </section>
 
+    ${planFormHtml(placeItem, guide.sets[suggested].focus, day)}
+
     <section class="place-section ideas-panel" aria-labelledby="ideas-detail-heading">
       <p class="notes-label">${tr("Little Days ideas")}</p>
       <h3 id="ideas-detail-heading">${tr("Why explore this place?")}</h3>
-      <p>${escapeHtml(tr(guide.why))}</p>
-      <p class="guide-note">${tr(GUIDE_NOTE)}</p>
+      <p>${escapeHtml(guideText(guide.why))}</p>
+      <p class="guide-note">${guideText(GUIDE_NOTE)}</p>
       ${visits ? `<p class="perspective-note">${tr(visits === 1 ? "You've recorded {count} visit, so a new perspective comes first." : "You've recorded {count} visits, so a new perspective comes first.", { count: visits })}</p>` : ""}
       <div class="perspectives" role="group" aria-label="${tr("Visit")}">
         ${guide.sets.map((set, i) => `<button type="button" class="perspective" data-perspective="${i}" data-place-id="${id}"
@@ -1204,7 +1245,6 @@ function renderPlaceDetails(placeItem, perspective) {
     </section>
 
     ${visitsHtml(placeItem)}
-    ${planFormHtml(placeItem, guide.sets[suggested].focus, day)}
 
     <div class="place-actions">
       <button type="button" class="button-secondary" data-print-guide="${id}">${tr("Print Adventure Guide")}</button>
@@ -1273,7 +1313,7 @@ function planFormHtml(placeItem, focus, day) {
           <label>${tr("Time")} <span class="optional">${tr("(optional)")}</span> <input type="time" name="time"></label>
         </div>
         <label>${tr("Exploration theme")} <span class="optional">${tr("(optional)")}</span>
-          <input type="text" name="theme" maxlength="80" placeholder="${escapeHtml(focus)}"></label>
+          <input type="text" name="theme" maxlength="80" value="${escapeHtml(tr(focus))}"></label>
         <label>${tr("Preparation notes")} <span class="optional">${tr("(optional)")}</span>
           <textarea name="notes" rows="2" maxlength="500" placeholder="${tr("Bring a bag for treasures.")}"></textarea></label>
         <p class="field-message" data-form-message hidden></p>
@@ -1281,6 +1321,11 @@ function planFormHtml(placeItem, focus, day) {
         <p class="form-done" data-form-done role="status"></p>
       </form>
     </section>`;
+}
+
+// Guide text in the chosen language, worded for a class in Classroom mode.
+function guideText(text) {
+  return settings.mode === "classroom" ? forGroup(tr(text)) : tr(text);
 }
 
 // Switching perspective changes only the guide.
@@ -1294,14 +1339,14 @@ function showPerspective(id, perspective) {
 }
 
 function guideSetHtml(set) {
-  const list = (items) => `<ul>${items.map((item) => `<li>${escapeHtml(tr(item))}</li>`).join("")}</ul>`;
+  const list = (items) => `<ul>${items.map((item) => `<li>${escapeHtml(guideText(item))}</li>`).join("")}</ul>`;
   return `
     <p class="perspective-focus">${escapeHtml(tr("Focus: {focus}", { focus: tr(set.focus) }))}</p>
     <h4>${tr("What children might notice")}</h4>${list(set.notice)}
     <h4>${tr("Before you go")}</h4>${list(set.before)}
     <h4>${tr("During the visit")}</h4>${list(set.during)}
     <h4>${tr("After the visit")}</h4>${list(set.after)}
-    <h4>${tr("Practical life")}</h4><p>${escapeHtml(tr(set.practical))}</p>`;
+    <h4>${tr("Practical life")}</h4><p>${escapeHtml(guideText(set.practical))}</p>`;
 }
 
 // RootMap activities for afterwards, for the chosen ages and the day's weather (PRD.md 7.5).
@@ -1325,9 +1370,9 @@ function renderRoute(route) {
     return;
   }
   routeBox.innerHTML = `
-    <p class="place-walk"><span aria-hidden="true">🚶</span> ${walkingMinutes(route.durationMillis)} min walk · ${formatDistance(route.distanceMeters, settings.unit)}
+    <p class="place-walk"><span aria-hidden="true">🚶</span> ${tr("{minutes} min walk", { minutes: walkingMinutes(route.durationMillis) })} · ${formatDistance(route.distanceMeters, settings.unit)}
       <span class="walk-source">${tr("Google walking estimate")}</span></p>
-    ${route.warnings.length ? `<p class="route-warnings">From Google: ${route.warnings.map(escapeHtml).join(" ")}</p>` : ""}`;
+    ${route.warnings.length ? `<p class="route-warnings">${tr("From Google:")} ${route.warnings.map(escapeHtml).join(" ")}</p>` : ""}`;
 }
 
 // After a change to My Places: the cards, the section, and the open dialog.
@@ -1388,6 +1433,19 @@ function submitVisit(form) {
 
 function newEntryId() {
   return `v${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
+// The card's button: the selected day, no time yet, and the next visit's focus as the theme.
+function quickPlanPlace(id) {
+  const placeItem = findPlace(id);
+  const day = current.days[selectedDay];
+  const guide = guideFor(placeType(placeItem), placeItem.category);
+  const focus = guide.sets[perspectiveFor(guide, visitCount(savedPlaces, id))].focus;
+  plan = addPlaceToPlan(plan, day.date, { placeId: id, category: placeItem.category, time: "", theme: tr(focus), notes: "" }, newEntryId());
+  savePlan(storage, plan);
+  renderPlan();
+  renderPlaces();
+  announce(tr("Added to {day}.", { day: formatDay(day.date) }));
 }
 
 function submitPlanForm(form) {
@@ -1543,7 +1601,8 @@ function announce(text) {
 function planDates() {
   const dates = new Set(Object.keys(plan));
   if (current) current.days.forEach((d) => dates.add(d.date));
-  return [...dates].filter((d) => d >= isoToday()).sort();
+  const schoolDay = (d) => settings.mode !== "classroom" || plan[d] || ![0, 6].includes(toDate(d).getDay());
+  return [...dates].filter((d) => d >= isoToday() && schoolDay(d)).sort();
 }
 
 // The planned visit being edited in My week, by its entry ID.
@@ -1564,7 +1623,7 @@ function renderPlan() {
   planBox.innerHTML = `
     ${placeIds.length ? `<p class="google-attribution" translate="no">Google Maps</p>` : ""}
     <ul class="plan">${dates.map((date) => {
-      const entries = plan[date] || [];
+      const entries = dayEntries(date);
       const items = entries.map((entry) => typeof entry === "string" ? activityItemHtml(entry, date) : placeItemHtml(entry, date)).join("");
       return `
         <li>
@@ -1587,9 +1646,40 @@ function planWeatherHtml(date) {
   const day = current.days.find((d) => d.date === date);
   if (!day) return `<p class="plan-weather">${tr("Forecast not available yet for this date.")}</p>`;
   const [icon, label] = weatherOf(day.code);
-  const words = [...day.weather.hazards, ...day.weather.cautions].length ? " · Check the warnings" : "";
+  const alerts = (plan[date] || []).length ? dayAlerts(day) : [];
   return `<p class="plan-weather"><span aria-hidden="true">${icon}</span> ${label} · ${temp(day.high)} / ${temp(day.low)} ·
-    ${day.rainChance == null ? tr("Rain –") : `Rain ${day.rainChance}%`}${words}</p>`;
+    ${day.rainChance == null ? tr("Rain –") : tr("Rain {chance}%", { chance: day.rainChance })}</p>
+    ${day.holidays.map((h) => `<span class="tag tag-holiday">${escapeHtml(tr(h))}</span>`).join("")}
+    ${alerts.map((line) => `<p class="plan-alert">${line}</p>`).join("")}`;
+}
+
+// The day's warnings as full sentences, worst first (PRD.md 7.4).
+function dayAlerts(day) {
+  const { hazards, cautions, notes } = day.weather;
+  return [...hazards, ...cautions, ...notes].map((key) => WARNINGS[key](day));
+}
+
+// True when an outdoor place is planned on a day with a hazard (PRD.md 7.15).
+function outdoorOnHazardDay(info, date) {
+  const day = current ? current.days.find((d) => d.date === date) : null;
+  return Boolean(info && day && day.weather.hazards.length && settingFor(info) === "outdoors");
+}
+
+// A day's entries: visits with a time first, earliest first, then everything else.
+function dayEntries(date) {
+  const timeOf = (entry) => (typeof entry === "object" && entry.time) || "99";
+  return [...(plan[date] || [])].sort((a, b) => timeOf(a).localeCompare(timeOf(b)));
+}
+
+// "Forecast at 9:30 AM: 52°, Rain 10%" for a visit with a time, or "".
+function visitForecast(visit, date) {
+  const hour = current && visit.time ? hourForecast(current.hourly, date, visit.time) : null;
+  if (!hour) return "";
+  return tr("Forecast at {time}: {temp}, {rain}", {
+    time: formatTime(visit.time),
+    temp: temp(hour.temperature),
+    rain: hour.rainChance == null ? tr("Rain –") : tr("Rain {chance}%", { chance: hour.rainChance }),
+  });
 }
 
 function activityItemHtml(id, date) {
@@ -1626,14 +1716,16 @@ function placeItemHtml(visit, date) {
         </form>
       </li>`;
   }
-  const meta = [visit.time, visit.theme].filter(Boolean).map(escapeHtml).join(" · ");
+  const meta = [formatTime(visit.time), visit.theme].filter(Boolean).map(escapeHtml).join(" · ");
   return `
     <li class="plan-place">
       <div>
         ${PIN_ICON}
         ${info ? `<button type="button" class="link-button" data-place-open="${visit.placeId}">${name}</button>` : `<span>${name}</span>`}
         ${meta ? `<p class="plan-meta">${meta}</p>` : ""}
+        ${visitForecast(visit, date) ? `<p class="plan-meta">${visitForecast(visit, date)}</p>` : ""}
         ${visit.notes ? `<p class="plan-notes">${escapeHtml(visit.notes)}</p>` : ""}
+        ${outdoorOnHazardDay(info, date) ? `<p class="plan-alert">${tr("Outdoor place on a day with a weather warning. Consider moving this visit.")}</p>` : ""}
       </div>
       <div class="plan-place-actions">
         <button type="button" class="link-button" data-edit-visit="${visit.entry}" aria-label="${tr("Edit the visit to {name}", { name })}">${tr("Edit")}</button>
@@ -1698,7 +1790,10 @@ function printHeaderHtml() {
 function printWeatherHtml(day) {
   if (!day) return tr("Weather forecast not available yet.");
   const [icon, label] = weatherOf(day.code);
-  return `<span aria-hidden="true">${icon}</span> ${label} · ${temp(day.high)} / ${temp(day.low)}`;
+  const rain = day.rainChance == null ? tr("Rain –") : tr("Rain {chance}%", { chance: day.rainChance });
+  const holidays = day.holidays.map((h) => ` · ${escapeHtml(tr(h))}`).join("");
+  return `<span aria-hidden="true">${icon}</span> ${label} · ${temp(day.high)} / ${temp(day.low)} · ${rain}${holidays}
+    ${dayAlerts(day).map((line) => `<br><strong>${line}</strong>`).join("")}`;
 }
 
 // Only days with something actually planned: a printed planner of the week's real
@@ -1727,19 +1822,30 @@ function printWeekRange(dates) {
 
 // Only called for dates that have at least one entry (printWeek filters to those).
 function printWeekDayHtml(date) {
-  const entries = plan[date] || [];
+  const entries = dayEntries(date);
   const day = current ? current.days.find((d) => d.date === date) : null;
-  const items = entries.map((entry) => typeof entry === "string" ? printActivityItemHtml(entry) : printPlaceItemHtml(entry)).join("");
+  const items = entries.map((entry) => typeof entry === "string" ? printActivityItemHtml(entry) : printPlaceItemHtml(entry, date)).join("");
   return `
     <section class="print-day">
       <h2>${formatDay(date)}</h2>
       <p class="print-weather">${printWeatherHtml(day)}</p>
       <ul class="print-items">${items}</ul>
+      ${settings.mode === "classroom" && entries.some((entry) => typeof entry === "object") ? printChecklistHtml() : ""}
       <div class="print-notes">
         <p class="print-notes-label">${tr("What did we notice?")}</p>
         <div class="print-notes-box" aria-hidden="true"></div>
       </div>
     </section>`;
+}
+
+// Blank lines and boxes to fill in by hand. Nothing here is stored.
+function printChecklistHtml() {
+  const checks = ["Permission slips collected", "First-aid kit packed", "Emergency contacts with us", "Head count before leaving", "Head count before returning"];
+  return `
+    <div class="print-checklist">
+      <p>${tr("Adults:")} ______ &nbsp; ${tr("Children:")} ______</p>
+      <ul>${checks.map((check) => `<li>☐ ${tr(check)}</li>`).join("")}</ul>
+    </div>`;
 }
 
 function printActivityItemHtml(id) {
@@ -1754,15 +1860,16 @@ function printActivityItemHtml(id) {
 
 // A planned visit: the place's name/address (Google content, so the attribution above
 // covers it) and only the adult's own preparation notes, never the private journal.
-function printPlaceItemHtml(visit) {
+function printPlaceItemHtml(visit, date) {
   const info = findPlace(visit.placeId);
   const name = info ? escapeHtml(info.name || tr("Unnamed place")) : tr("Saved place (details unavailable right now)");
-  const meta = [visit.time, visit.theme].filter(Boolean).map(escapeHtml).join(" · ");
+  const meta = [formatTime(visit.time), visit.theme].filter(Boolean).map(escapeHtml).join(" · ");
   return `
     <li class="print-item">
       <p class="print-item-title">${name}</p>
       ${info && info.address ? `<p class="print-item-address">${escapeHtml(info.address)}</p>` : ""}
       ${meta ? `<p class="print-item-meta">${meta}</p>` : ""}
+      ${visitForecast(visit, date) ? `<p class="print-item-meta">${visitForecast(visit, date)}</p>` : ""}
       ${visit.notes ? `<p class="print-item-notes">${escapeHtml(visit.notes)}</p>` : ""}
     </li>`;
 }
@@ -1780,7 +1887,7 @@ function printGuideFor(id) {
 function printGuide(placeItem, shown, day) {
   const guide = guideFor(placeType(placeItem), placeItem.category);
   const set = guide.sets[shown];
-  const list = (items) => `<ul>${items.map((item) => `<li>${escapeHtml(tr(item))}</li>`).join("")}</ul>`;
+  const list = (items) => `<ul>${items.map((item) => `<li>${escapeHtml(guideText(item))}</li>`).join("")}</ul>`;
   printArea.innerHTML = `
     <article class="print-page print-guide">
       ${printHeaderHtml()}
@@ -1794,7 +1901,7 @@ function printGuide(placeItem, shown, day) {
       <p class="print-perspective">${tr(["First visit", "Second visit", "Third visit"][shown])}</p>
       <section class="print-section">
         <h2>${tr("Why explore this place?")}</h2>
-        <p>${escapeHtml(tr(guide.why))}</p>
+        <p>${escapeHtml(guideText(guide.why))}</p>
       </section>
       <section class="print-section">
         <h2>${tr("Exploration focus")}</h2>
@@ -1818,7 +1925,7 @@ function printGuide(placeItem, shown, day) {
       </section>
       <section class="print-section">
         <h2>${tr("Practical life extension")}</h2>
-        <p>${escapeHtml(tr(set.practical))}</p>
+        <p>${escapeHtml(guideText(set.practical))}</p>
       </section>
       <section class="print-section print-observations">
         <h2>${tr("What did we notice?")}</h2>
@@ -1850,7 +1957,7 @@ function openDetails(id, date, opener) {
     </div>
     <h3>${tr("Steps")}</h3>
     <ol>${details.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ol>
-    <h3>${tr("What your child practices")}</h3>
+    <h3>${guideText("What your child practices")}</h3>
     <ul>${details.practices.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ul>
     ${details.safety ? `<h3>${tr("Safety")}</h3><p>${escapeHtml(details.safety)}</p>` : ""}
     <p class="source-note">${tr("From the RootMap activity collection.")}</p>`;
@@ -2197,6 +2304,11 @@ function formatDay(isoDate) {
 // so the visitor's own time zone doesn't shift it.
 function formatHour(isoTime) {
   return new Date(isoTime).toLocaleTimeString(LOCALE, { hour: "numeric" });
+}
+
+// "13:30" → "1:30 PM". Empty stays empty.
+function formatTime(time) {
+  return time ? new Date(`2000-01-01T${time}`).toLocaleTimeString(LOCALE, { hour: "numeric", minute: "2-digit" }) : "";
 }
 
 // Today's date in the visitor's time zone, as YYYY-MM-DD.

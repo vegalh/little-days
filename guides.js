@@ -403,11 +403,21 @@ function guideFor(type, category) {
   return typeof fallback === "string" ? GUIDES[fallback] : fallback;
 }
 
+// Classroom wording (PRD.md 7.13): "your child" becomes "the children", with the verbs that
+// follow changed to match. Only the verbs the guides really use are listed.
+function forGroup(text) {
+  return text
+    .replace(/\b([Yy])our child's\b/g, (_, y) => `${y === "Y" ? "The" : "the"} children's`)
+    .replace(/\b([Yy])our child (is|does|wants|knows|notices|enjoys|points|practices)\b/g, (_, y, verb) =>
+      `${y === "Y" ? "The" : "the"} children ${{ is: "are", does: "do", wants: "want", knows: "know", notices: "notice", enjoys: "enjoy", points: "point", practices: "practice" }[verb]}`)
+    .replace(/\b([Yy])our child\b/g, (_, y) => `${y === "Y" ? "The" : "the"} children`);
+}
+
 // From Phase 4: the perspective for a place's next visit (PRD.md 7.14).
 function perspectiveFor(guide, visits) {
   return visits % guide.sets.length;
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { GUIDES, CATEGORY_GUIDES, GUIDE_FOR_TYPE, GUIDE_NOTE, guideFor, perspectiveFor };
+  module.exports = { GUIDES, CATEGORY_GUIDES, GUIDE_FOR_TYPE, GUIDE_NOTE, guideFor, perspectiveFor, forGroup };
 }

@@ -1796,6 +1796,22 @@ textarea {
    no PDF library, just window.print(), @media print and @page (DESIGN.md "Don't"). */
 #print-area { display: none; }
 
+.walk-round { display: block; }
+.plan-alert { margin: 4px 0 0; font-size: .85rem; color: var(--warning); }
+.plan-alert::before { content: "⚠︎ "; }
+/* min-width: a fieldset otherwise grows to fit the row and widens the page on phones. */
+.explore-days-box { margin: 0 0 16px; padding: 0; border: 0; min-width: 0; }
+.explore-days-box legend { margin-bottom: 6px; padding: 0; font-size: 14px; font-weight: 600; }
+/* position: keeps the visually hidden labels inside the scrolling row. */
+.explore-days { position: relative; display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.explore-day {
+  flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  min-width: 104px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: none;
+}
+.explore-day[aria-pressed="true"] { background: var(--selected); border-color: var(--accent); }
+.explore-day-name { font-size: .85rem; }
+
 @media print {
   /* Nothing else on the page prints: no header, nav, dialogs, maps or bottom bar. */
   body > :not(#print-area) { display: none !important; }
@@ -1806,6 +1822,10 @@ textarea {
   @page { margin: 14mm; }
 
   html, body { background: #FFF; }
+
+  .print-checklist { break-inside: avoid; margin: 8px 0; font-size: 10pt; }
+  .print-checklist p { margin: 0 0 4px; }
+  .print-checklist ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; }
 
   .print-page {
     max-width: 100%;
