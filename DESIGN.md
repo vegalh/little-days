@@ -107,7 +107,7 @@ The section table below lists where each part lives.
 | My week | `#my-week` | "My week" link |
 | Footer | — | — |
 
-**Header:** 🌱 Little Days logo (serif, `--accent`) on the left, links "Explore · Weather · My Places · My week" on the right. On phones the header links move to a **bottom bar** (fixed, `--surface`, top border `--line`, four equal 44px+ targets with an emoji above a 12px label: 🧭 Explore, ☀️ Weather, 📍 My Places, 🗓️ My week, `env(safe-area-inset-bottom)` padding), so they're reachable with a thumb. The page gets matching bottom padding so nothing hides behind it.
+**Header:** an original two-leaf sprout mark (inline SVG, `--heading` gold, `.logo-mark`) next to the "Little Days" wordmark (serif, `--accent`) on the left, links "Explore · Weather · My Places · My week" on the right. On phones the header links move to a **bottom bar** (fixed, `--surface`, top border `--line`, four equal 44px+ targets with an emoji above a 12px label: 🧭 Explore, ☀️ Weather, 📍 My Places, 🗓️ My week, `env(safe-area-inset-bottom)` padding), so they're reachable with a thumb. The page gets matching bottom padding so nothing hides behind it.
 
 ### Page order
 
@@ -125,7 +125,7 @@ The section table below lists where each part lives.
 5. **Ideas for {day}** (`#ideas`): optional at-home ideas: three activities and "Why these activities?".
 6. **My Places** (`#my-places`).
 7. **My week** (`#my-week`).
-8. **Footer**: attributions, privacy note, "Delete my saved data".
+8. **Footer**: attributions, then "Your data" in three labeled parts: Privacy, Backup & restore, Delete your data.
 
 ### Desktop (720px and up)
 
@@ -139,7 +139,7 @@ The section table below lists where each part lives.
 
 ### Phone (under 720px): designed on its own
 
-- **Hero** is short: 32px title, subheading, then the controls card stacked. The location field is full width with "Use my location" as a full-width secondary button under it. Ages is a full-width select. Who's exploring and Walking time are full-width segmented controls (five 44px segments fit 343px). Interest chips wrap. The primary button is full width at the bottom. The adult reaches the button after little scrolling.
+- **Hero** is short: 32px title, subheading, then the controls card stacked. The location field is full width with "Use my location" as a full-width secondary button under it. Ages is a full-width dropdown button. Who's exploring and Walking time are full-width segmented controls (five 44px segments fit 343px). Interest chips wrap. The primary button is full width at the bottom. The adult reaches the button after little scrolling.
 - **Weather:** Now on top, Next hours as a sideways-swiping row of six columns, then the seven-day strip as a sideways-swiping row of compact day cards (112px wide, `scroll-snap-type: x mandatory`, the next card peeking in). Neither wraps into a tall grid, and the page itself never scrolls sideways. Warnings and "What to wear" follow, stacked.
 - **Explore:** a **List / Map switch** (two radio buttons styled as a segmented control) sticks to the top of the section while scrolling it. List is shown first. Only one of list and map is visible at a time; the hidden one uses `hidden`, so it isn't reachable by keyboard or screen reader.
   - **List:** full-width place cards, 12px apart.
@@ -157,7 +157,7 @@ The section table below lists where each part lives.
 **Controls card**: `--surface`, 20px radius, 16px padding (24px from 720px up), the one soft shadow. Labels above fields, 14px / 600. Inputs 44px tall on `--bg` with a `--line` border, 12px radius.
 
 **Location**
-- Google's `<gmp-place-autocomplete>` sits under a visible `<label>` "Address or place". It's styled to match the other inputs using only what Google exposes: on the element, `font-family: var(--font-body)`, `color-scheme: light`; `::part(input)` gets the 44px height, `--bg` background, `--line` border and 12px radius; `::part(prediction-list)` gets `--surface`, a `--line` border and 12px radius; `::part(prediction-item-selected)` gets `--selected`. Google's own icon and suggestion attribution inside the list are left as they are.
+- Google's `<gmp-place-autocomplete>` sits under a visible `<label>` "Address or place". It's styled to match the other inputs using only what Google exposes: on the element, `font-family: var(--font-body)`, `color-scheme: light`; `::part(input)` gets the 44px height, `--bg` background, `--line` border and 12px radius (`!important`, needed to win over Google's own part styles); `::part(focus-ring)` gets `--accent` as a `border-color` (not `outline-color`, which the part doesn't expose); `::part(prediction-list)` gets `--surface`, a `--line` border and 12px radius; `::part(prediction-item-selected)` gets `--selected`. Google's own icon and suggestion attribution inside the list are left as they are. Chromium only applies `::part()` rules from a `<link>` stylesheet once that stylesheet is toggled after the custom element upgrades, so `google.js` briefly disables and re-enables the stylesheet (`refreshPartStyles()`) once the Autocomplete element is ready.
 - **"Use my location"**: secondary button with "📍" (`aria-hidden`). While asking: disabled, "Finding you…".
 - **"Try an example address"** (only while Google Maps is available): a text button (underlined, `--accent`, 14px) under the field. Pressing it fills the field with "221 Washington Street, Newton, MA 02458", sets the location with one Google text search (PRD.md 7.1), and marks the line under it "Example address", in `--ink-soft`, so it's never mistaken for the adult's own location.
 - **Location chosen**: a line under the field: "📍 Your current location" or the formatted address, in 14px `--ink-soft`, with a "Change" text button.
@@ -165,7 +165,7 @@ The section table below lists where each part lives.
 
 **Compact weather line** (in the controls card, next to the location, once a location is chosen): a `--tint` strip, 12px radius, 12px padding: "☀️ Now 64° · feels like 61° · Rain 10% · Wind 9 mph", then the first weather warning for today if there is one ("⚠︎ Rain is possible (60%)…"). It links to `#weather` ("More weather"). While loading: "Getting the weather…" in `--ink-soft`.
 
-**Ages**: a native `<select>` with label "Ages".
+**Ages**: a custom dropdown ("collapsible listbox" pattern) with label "Ages": a button showing the current value with a caret, opening a themed `--surface` listbox (`--line` border, 12px radius, the one soft shadow) below it; the selected option is `--selected`. Arrow keys, Home/End, Enter/Space, Escape and outside clicks work as expected. A real `<select id="ages">` is kept `hidden` for state and fires its native `change` event when an option is picked, so the rest of the app reads Ages the same way it always has.
 
 **Who's exploring**: segmented control (two radio buttons in a `<fieldset>`, legend "Who's exploring"): Family / Classroom. Same style as the °F / °C switch. In Classroom mode, a 14px `--ink-soft` note appears under Walking time: "Google's walking times are for one adult walking steadily. A group of young children usually takes much longer, so plan extra time."
 
@@ -286,7 +286,10 @@ One `--surface` card with rows (day + date on the left, entries on the right). E
 
 **Google attribution** (where Google content is shown without a visible map: the phone List view, My Places, My week): the text "Google Maps" with `translate="no"`, `font-family: Roboto, var(--font-body)` (no font is loaded), 14px / 400, color `--google-gray`, never wrapped, at the top or bottom of the same container. Never hidden, covered or restyled beyond these rules.
 
-**Footer**: `--tint` band. Attributions ("Map data and places © Google" is shown by the map itself; the footer says "Weather by Open-Meteo · Holidays by Nager.Date · Activities from RootMap"), the privacy note in 14px, and "Delete my saved data" as a secondary button under "Your data".
+**Footer**: `--tint` band. Attributions ("Map data and places © Google" is shown by the map itself; the footer says "Weather by Open-Meteo · Holidays by Nager.Date · Activities from RootMap"), then "Your data" in three labeled `.data-group` parts so each action is easy to find:
+- **Privacy**: the existing bullet list (nothing leaves the browser, location is optional, etc.).
+- **Backup & restore**: a short paragraph explaining that a backup file can move data to another browser or serve as a copy, and that restoring replaces (not merges) what's saved; "Save a backup file" and "Restore from a backup file" buttons.
+- **Delete your data**: its own heading and paragraph, visually flagged with `--warning` text since it's destructive and irreversible; "Delete my saved data" button.
 
 ## 7. Imagery
 

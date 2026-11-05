@@ -236,10 +236,10 @@ test("one results map for the whole visit, and the example address is looked up 
   expect(await count(page, "searchByText")).toBe(1);
 });
 
-test("Export my data downloads a backup; Import my data replaces only after confirming", async ({ page }, testInfo) => {
+test("Save a backup file downloads a backup; Restore from a backup file replaces only after confirming", async ({ page }, testInfo) => {
   const places = { "fake-park-1": { status: "explored", category: "nature", saved: "2026-11-01", visits: [{ date: "2026-11-02", observation: "Leaves", next: "" }] } };
   await start(page, testInfo, { "littleDays.places.v2": JSON.stringify(places) });
-  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Export my data" }).click()]);
+  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Save a backup file" }).click()]);
   expect(download.suggestedFilename()).toBe("little-days-data-2026-11-04.json");
   const exported = JSON.parse(await (await download.createReadStream()).toArray().then((c) => Buffer.concat(c).toString()));
   expect(exported).toMatchObject({ format: "little-days-data", version: 1, places });

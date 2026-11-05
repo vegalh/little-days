@@ -520,6 +520,86 @@ agesSelect.addEventListener("change", () => {
   renderPlaces();
 });
 
+// Ages is the only dropdown in the app, so this is written just for it rather than as a
+// generic "enhance any select" helper (AGENTS.md). A native <select>'s open list can't be
+// themed, so a button + listbox (the W3C "collapsible dropdown listbox" pattern) sits on
+// top of the real, hidden #ages select, which stays the one source of truth for its value
+// and still fires "change" for the listener above.
+const agesButton = document.querySelector("#ages-button");
+const agesValue = document.querySelector("#ages-value");
+const agesListbox = document.querySelector("#ages-listbox");
+const agesOptions = [...agesListbox.querySelectorAll("[role=option]")];
+
+// Moves the hidden select and the visible button/listbox to value, without firing "change"
+// (used to reflect settings that were restored, not chosen, same as the plain select before).
+function syncAgesDisplay(value) {
+  agesSelect.value = value;
+  for (const option of agesOptions) {
+    const picked = option.dataset.value === value;
+    option.setAttribute("aria-selected", String(picked));
+    if (picked) agesValue.textContent = option.textContent;
+  }
+}
+
+function openAgesListbox() {
+  agesListbox.hidden = false;
+  agesButton.setAttribute("aria-expanded", "true");
+  const current = agesOptions.find((option) => option.getAttribute("aria-selected") === "true");
+  (current || agesOptions[0]).focus();
+}
+
+function closeAgesListbox() {
+  agesListbox.hidden = true;
+  agesButton.setAttribute("aria-expanded", "false");
+}
+
+function pickAge(option) {
+  syncAgesDisplay(option.dataset.value);
+  agesSelect.dispatchEvent(new Event("change"));
+  closeAgesListbox();
+  agesButton.focus();
+}
+
+agesButton.addEventListener("click", () => {
+  if (agesListbox.hidden) openAgesListbox();
+  else closeAgesListbox();
+});
+
+agesListbox.addEventListener("click", (event) => {
+  const option = event.target.closest("[role=option]");
+  if (option) pickAge(option);
+});
+
+agesListbox.addEventListener("keydown", (event) => {
+  const index = agesOptions.indexOf(document.activeElement);
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    agesOptions[Math.min(index + 1, agesOptions.length - 1)].focus();
+  } else if (event.key === "ArrowUp") {
+    event.preventDefault();
+    agesOptions[Math.max(index - 1, 0)].focus();
+  } else if (event.key === "Home") {
+    event.preventDefault();
+    agesOptions[0].focus();
+  } else if (event.key === "End") {
+    event.preventDefault();
+    agesOptions[agesOptions.length - 1].focus();
+  } else if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    pickAge(document.activeElement);
+  } else if (event.key === "Escape") {
+    event.preventDefault();
+    closeAgesListbox();
+    agesButton.focus();
+  } else if (event.key === "Tab") {
+    closeAgesListbox();
+  }
+});
+
+document.addEventListener("click", (event) => {
+  if (!agesListbox.hidden && !event.target.closest(".age-select")) closeAgesListbox();
+});
+
 function clearFilters() {
   document.querySelector("input[name=setting-filter][value=all]").checked = true;
   document.querySelector("input[name=explored-filter][value=all]").checked = true;
@@ -703,7 +783,7 @@ function showChoices() {
   }
   for (const input of document.querySelectorAll("input[name=mode]")) input.checked = input.value === settings.mode;
   for (const input of document.querySelectorAll("input[name=minutes]")) input.checked = Number(input.value) === settings.minutes;
-  agesSelect.value = settings.ages;
+  syncAgesDisplay(settings.ages);
   allNote.hidden = settings.interest !== "all";
   for (const note of document.querySelectorAll(".classroom-note")) note.hidden = settings.mode !== "classroom";
   for (const label of document.querySelectorAll(".chip")) {

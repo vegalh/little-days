@@ -65,7 +65,21 @@ async function setupAutocomplete(slot, labelId, onPick, onError) {
   });
   field.addEventListener("gmp-error", onError);
   slot.replaceChildren(field);
+  refreshPartStyles();
   return field;
+}
+
+// Chromium keeps using the pre-upgrade style match for this field's ::part() rules
+// (style.css, the search field), so our theming (the focus ring in particular) is
+// ignored until something forces a restyle. Briefly disabling our stylesheet forces
+// that restyle; confirmed live that this is needed only once, right after the
+// element is created.
+function refreshPartStyles() {
+  const sheet = document.querySelector('link[rel="stylesheet"][href="style.css"]');
+  if (!sheet) return;
+  sheet.disabled = true;
+  void document.body.offsetHeight;
+  sheet.disabled = false;
 }
 
 // One text search for the demo address. Returns a location, or null if Google finds nothing.
