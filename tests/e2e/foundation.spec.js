@@ -1,7 +1,7 @@
 // Phase 2 journeys: location, weather and Google setup states (PRD.md 10.2).
 // All outside requests are mocked. These tests don't show that the real APIs work.
 const { test, expect } = require("@playwright/test");
-const { mockApis, FORECAST, GOOGLE_CONFIG } = require("./mock-apis.js");
+const { mockApis, showView, FORECAST, GOOGLE_CONFIG } = require("./mock-apis.js");
 
 const fahrenheit = (c) => `${Math.round(c * 9 / 5 + 32)}°`;
 const NEWTON_MA = "Newton, Massachusetts, United States";
@@ -102,7 +102,7 @@ test("geolocation success: weather for the device location, no holidays, and the
   await page.getByRole("button", { name: "Use my location" }).click();
 
   await expect(page.locator("#location-line")).toHaveText("📍 Your current location");
-  await expect(page.locator(".now-temp")).toBeVisible();
+  await expect(page.locator(".now-temp")).toBeAttached();
   await expect(page.locator("#holiday-note")).toHaveText("Holidays show when you search an address or city.");
   const query = new URL(api.requests.find((url) => url.includes("/v1/forecast"))).searchParams;
   expect([query.get("latitude"), query.get("longitude")]).toEqual(["42.35", "-71.21"]);
@@ -133,6 +133,7 @@ test("weather API failure: the error and Try again, with nothing made up", async
   // A failed load doesn't save the city.
   expect((await savedSettings(page)).v2.location).toBeNull();
 
+  await showView(page, "weather");
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.locator(".now-temp")).toHaveText(fahrenheit(FORECAST.current.temperature_2m));
   await expect(page.locator("#weather-status")).toBeEmpty();
@@ -144,6 +145,7 @@ test("weather offline: the same error", async ({ page }, testInfo) => {
   await page.getByLabel("City (for weather)").fill(NEWTON_MA);
   await page.getByRole("button", { name: "Show weather" }).click();
   await expect(page.locator("#weather-status")).toContainText("We couldn't load the weather right now.");
+  await showView(page, "weather");
   await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
 });
 
@@ -165,7 +167,7 @@ test("saved v2 settings survive a reload", async ({ page }, testInfo) => {
   await page.getByLabel("City (for weather)").fill(NEWTON_MA);
   await page.getByRole("button", { name: "Show weather" }).click();
   await page.locator("label", { hasText: "°C" }).click();
-  await expect(page.locator(".now-temp")).toBeVisible();
+  await expect(page.locator(".now-temp")).toBeAttached();
   await page.reload();
   await expect(page.locator("#location-line")).toHaveText(`📍 ${NEWTON_MA}`);
   await expect(page.locator(".now-temp")).toHaveText(`${Math.round(FORECAST.current.temperature_2m)}°`);
@@ -180,7 +182,7 @@ test.describe("with Google configured (fake Maps library)", () => {
     await page.evaluate(() => window.fakePickAddress());
 
     await expect(page.locator("#location-line")).toHaveText("📍 221 Washington St, Newton, MA 02458, USA");
-    await expect(page.locator(".now-temp")).toBeVisible();
+    await expect(page.locator(".now-temp")).toBeAttached();
     // Holidays use the country from the address.
     expect(api.requests.some((url) => url.endsWith("/2026/US"))).toBe(true);
     expect((await savedSettings(page)).v2.location).toEqual({ kind: "place", placeId: "ChIJfakeNewtonPlaceId" });
@@ -195,7 +197,7 @@ test.describe("with Google configured (fake Maps library)", () => {
     await open(page, testInfo, { config: GOOGLE_CONFIG });
     await page.getByRole("button", { name: "Try an example address" }).click();
     await expect(page.locator("#location-line")).toHaveText("📍 221 Washington St, Newton, MA 02458, USA · Example address");
-    await expect(page.locator(".now-temp")).toBeVisible();
+    await expect(page.locator(".now-temp")).toBeAttached();
     expect((await savedSettings(page)).v2.location).toBeNull();
   });
 
@@ -204,7 +206,7 @@ test.describe("with Google configured (fake Maps library)", () => {
       config: GOOGLE_CONFIG,
       storage: { "littleDays.settings.v2": JSON.stringify({ unit: "F", location: { kind: "place", placeId: "ChIJfakeNewtonPlaceId" } }) },
     });
-    await expect(page.locator(".now-temp")).toBeVisible();
+    await expect(page.locator(".now-temp")).toBeAttached();
     await expect(page.locator("#location-line")).toHaveText("📍 221 Washington St, Newton, MA 02458, USA");
     const calls = await page.evaluate(() => window.fakeGoogleCalls.map((c) => c.call));
     expect(calls).toEqual(["importLibrary", "importLibrary", "fetchFields"]);
@@ -238,15 +240,21 @@ test.describe("with Google configured (fake Maps library)", () => {
 });
 
 test.describe("layout", () => {
-  test("desktop: the compact weather sits beside the location, and Now beside Next hours", async ({ page }, testInfo) => {
+  test("desktop: search controls beside the results, tabs in the top bar, and Now beside Next hours", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "desktop layout");
     await open(page, testInfo);
     await page.getByLabel("City (for weather)").fill(NEWTON_MA);
     await page.getByRole("button", { name: "Show weather" }).click();
-    await expect(page.locator(".now-temp")).toBeVisible();
-    const location = await page.locator(".field-location").boundingBox();
-    const nowLine = await page.locator("#now-line").boundingBox();
-    expect(nowLine.x).toBeGreaterThan(location.x + location.width - 1);
+    await expect(page.locator(".now-temp")).toBeAttached();
+    const side = await page.locator(".explore-side").boundingBox();
+    const results = await page.locator("#explore").boundingBox();
+    expect(results.x).toBeGreaterThan(side.x + side.width - 1);
+    await expect(page.locator(".site-nav a[aria-current=page]")).toHaveText("Explore");
+    // Only the chosen view shows.
+    await expect(page.locator("#my-week")).toBeHidden();
+    await showView(page, "weather");
+    await expect(page.locator(".site-nav a[aria-current=page]")).toHaveText("Weather");
+    await expect(page.locator("#explore")).toBeHidden();
     const card = await page.locator(".now-card").boundingBox();
     const hours = await page.locator(".hours").boundingBox();
     expect(hours.x).toBeGreaterThan(card.x + card.width - 1);
@@ -259,7 +267,7 @@ test.describe("layout", () => {
     await open(page, testInfo);
     await page.getByLabel("City (for weather)").fill(NEWTON_MA);
     await page.getByRole("button", { name: "Show weather" }).click();
-    await expect(page.locator(".now-temp")).toBeVisible();
+    await expect(page.locator(".now-temp")).toBeAttached();
 
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
     const nav = await page.locator(".site-nav").boundingBox();
@@ -267,7 +275,7 @@ test.describe("layout", () => {
     for (const link of await page.locator(".site-nav a").all()) {
       expect((await link.boundingBox()).height).toBeGreaterThanOrEqual(44);
     }
-    for (const button of await page.locator("#location-form button:visible, #week .day").all()) {
+    for (const button of await page.locator("#location-form button:visible").all()) {
       const box = await button.boundingBox();
       expect(box.height, await button.innerText()).toBeGreaterThanOrEqual(44);
     }
@@ -275,5 +283,10 @@ test.describe("layout", () => {
     const location = await page.locator(".field-location").boundingBox();
     const nowLine = await page.locator("#now-line").boundingBox();
     expect(nowLine.y).toBeGreaterThan(location.y + location.height - 1);
+    await showView(page, "weather");
+    for (const day of await page.locator("#week .day").all()) {
+      expect((await day.boundingBox()).height).toBeGreaterThanOrEqual(44);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
   });
 });

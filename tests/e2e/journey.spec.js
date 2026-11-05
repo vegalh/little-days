@@ -2,7 +2,7 @@
 // deleting saved data (PRD.md 7.9, 7.16–7.18). Google is the fake and every other
 // request is mocked: these show the page's behavior, not that the real APIs work.
 const { test, expect } = require("@playwright/test");
-const { mockApis, GOOGLE_CONFIG } = require("./mock-apis.js");
+const { mockApis, showView, GOOGLE_CONFIG } = require("./mock-apis.js");
 
 test.afterEach(async ({}, testInfo) => {
   expect(testInfo.api?.unmocked ?? []).toEqual([]);
@@ -13,7 +13,7 @@ async function start(page, testInfo, storage = {}) {
   page.on("dialog", (dialog) => dialog.accept());
   await page.goto("/");
   await page.evaluate(() => window.fakePickAddress());
-  await expect(page.locator(".now-temp")).toBeVisible();
+  await expect(page.locator(".now-temp")).toBeAttached();
 }
 async function search(page, label) {
   await page.locator("#interest-chips label", { hasText: label }).click();
@@ -51,7 +51,9 @@ test("one detail map is reused; routes and markers aren't redone for small chang
   // Changing units or the day updates the list without rebuilding the markers.
   const markersBefore = await page.evaluate(() => window.fakeMarkers.length);
   await page.locator("label", { hasText: "°C" }).click();
+  await showView(page, "weather");
   await page.locator("#week .day").nth(1).click();
+  await showView(page, "explore");
   await expect(page.locator(".place-card").first()).toContainText("km");
   expect(await page.evaluate(() => window.fakeMarkers.length)).toBe(markersBefore);
   expect(markersBefore).toBeGreaterThanOrEqual(markersAfterSearch);
@@ -115,7 +117,7 @@ test("My Places: tabs with counts, history, visit again, and remove", async ({ p
   await close(page);
 
   const places = page.locator("#my-places");
-  await places.scrollIntoViewIfNeeded();
+  await showView(page, "my-places");
   await expect(places.locator("[data-count=want]")).toHaveText("(1)");
   await expect(places.locator("[data-count=explored]")).toHaveText("(1)");
   await expect(places.locator(".saved-place")).toHaveCount(1);
@@ -147,7 +149,7 @@ test("a saved place not in the results is fetched from Google once its section i
     "littleDays.places.v2": JSON.stringify({ "fake-library-1": { status: "want", category: "art-culture", saved: "2026-11-01", visits: [] } }),
   });
   expect(await count(page, "fetchFields")).toBe(1); // the picked address only
-  await page.locator("#my-places").scrollIntoViewIfNeeded();
+  await showView(page, "my-places");
   await expect(page.locator("#my-places .saved-place")).toContainText("Test Library");
   expect(await count(page, "fetchFields")).toBe(2);
   // Opening it works without a search, with a route from the chosen address.
@@ -172,6 +174,7 @@ test("My week: add a place with time, theme and notes, see its weather, edit it,
   await expect(form.locator("[data-form-message]")).toHaveText("⚠︎ This place is already in your week for Fri, Nov 6.");
   await close(page);
 
+  await showView(page, "my-week");
   const day = page.locator("#plan .plan > li", { hasText: "Fri, Nov 6" });
   await expect(day).toContainText("Duck Walk"); // the migrated v1 activity is still there
   await expect(day).toContainText("Test Park");
@@ -229,7 +232,7 @@ test("one results map for the whole visit, and the example address is looked up 
   await page.getByRole("button", { name: "Try an example address" }).click();
   await expect(page.locator("#location-line")).toContainText("Example address");
   await page.getByRole("button", { name: "Try an example address" }).click();
-  await expect(page.locator(".now-temp")).toBeVisible();
+  await expect(page.locator(".now-temp")).toBeAttached();
   expect(await count(page, "searchByText")).toBe(1);
 });
 

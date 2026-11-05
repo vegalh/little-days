@@ -77,4 +77,10 @@ async function mockApis(page, options = {}) {
 
 const GOOGLE_CONFIG = { googleMapsKey: "fake-test-key", googleMapId: "DEMO_MAP_ID" };
 
-module.exports = { mockApis, FORECAST, NEWTON, GOOGLE_CONFIG };
+// Switches to one of the four views (Explore, Weather, My Places, My week) the way the nav does.
+async function showView(page, name) {
+  await page.evaluate((view) => { location.hash = view; }, name);
+  await page.locator(`.view[data-view="${name}"]`).waitFor();
+}
+
+module.exports = { mockApis, showView, FORECAST, NEWTON, GOOGLE_CONFIG };

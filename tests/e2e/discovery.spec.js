@@ -13,7 +13,7 @@ async function start(page, testInfo, google = {}, storage = {}) {
   testInfo.api = await mockApis(page, { config: GOOGLE_CONFIG, google, storage });
   await page.goto("/");
   await page.evaluate(() => window.fakePickAddress());
-  await expect(page.locator(".now-temp")).toBeVisible();
+  await expect(page.locator(".now-temp")).toBeAttached();
 }
 const calls = (page, name) => page.evaluate((n) => window.fakeGoogleCalls.filter((c) => c.call === n), name);
 const interest = (page, label) => page.locator("#interest-chips label", { hasText: label }).click();
