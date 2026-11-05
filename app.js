@@ -61,34 +61,34 @@ const announcer = document.querySelector("#announce");
 
 // WMO weather codes used by Open-Meteo: [emoji, label]
 const WEATHER = {
-  0: ["☀️", tr("Clear")],
-  1: ["🌤️", tr("Mainly clear")],
-  2: ["⛅", tr("Partly cloudy")],
-  3: ["☁️", tr("Overcast")],
-  45: ["🌫️", tr("Fog")],
-  48: ["🌫️", tr("Fog")],
-  51: ["🌦️", tr("Light drizzle")],
-  53: ["🌦️", tr("Drizzle")],
-  55: ["🌦️", tr("Heavy drizzle")],
-  56: ["🌧️", tr("Freezing drizzle")],
-  57: ["🌧️", tr("Freezing drizzle")],
-  61: ["🌧️", tr("Light rain")],
-  63: ["🌧️", tr("Rain")],
-  65: ["🌧️", tr("Heavy rain")],
-  66: ["🌧️", tr("Freezing rain")],
-  67: ["🌧️", tr("Freezing rain")],
-  71: ["❄️", tr("Light snow")],
-  73: ["❄️", tr("Snow")],
-  75: ["❄️", tr("Heavy snow")],
-  77: ["❄️", tr("Snow grains")],
-  80: ["🌦️", tr("Showers")],
-  81: ["🌧️", tr("Showers")],
-  82: ["🌧️", tr("Heavy showers")],
-  85: ["❄️", tr("Snow showers")],
-  86: ["❄️", tr("Snow showers")],
-  95: ["⛈️", tr("Thunderstorm")],
-  96: ["⛈️", tr("Thunderstorm")],
-  99: ["⛈️", tr("Thunderstorm")],
+  0: ["☀️", "Clear"],
+  1: ["🌤️", "Mainly clear"],
+  2: ["⛅", "Partly cloudy"],
+  3: ["☁️", "Overcast"],
+  45: ["🌫️", "Fog"],
+  48: ["🌫️", "Fog"],
+  51: ["🌦️", "Light drizzle"],
+  53: ["🌦️", "Drizzle"],
+  55: ["🌦️", "Heavy drizzle"],
+  56: ["🌧️", "Freezing drizzle"],
+  57: ["🌧️", "Freezing drizzle"],
+  61: ["🌧️", "Light rain"],
+  63: ["🌧️", "Rain"],
+  65: ["🌧️", "Heavy rain"],
+  66: ["🌧️", "Freezing rain"],
+  67: ["🌧️", "Freezing rain"],
+  71: ["❄️", "Light snow"],
+  73: ["❄️", "Snow"],
+  75: ["❄️", "Heavy snow"],
+  77: ["❄️", "Snow grains"],
+  80: ["🌦️", "Showers"],
+  81: ["🌧️", "Showers"],
+  82: ["🌧️", "Heavy showers"],
+  85: ["❄️", "Snow showers"],
+  86: ["❄️", "Snow showers"],
+  95: ["⛈️", "Thunderstorm"],
+  96: ["⛈️", "Thunderstorm"],
+  99: ["⛈️", "Thunderstorm"],
 };
 
 // An activity's RootMap text in the page's language: RootMap has its own Chinese for each one.
@@ -103,7 +103,7 @@ function interestWord(key) {
 
 // [emoji, label] for a WMO code, with the label in the page's language.
 function weatherOf(code) {
-  const [icon, label] = WEATHER[code] || ["🌡️", tr("Unknown")];
+  const [icon, label] = WEATHER[code] || ["🌡️", "Unknown"];
   return [icon, tr(label)];
 }
 
@@ -1844,7 +1844,7 @@ function renderDayWeather(day) {
 
   const wear = whatToWear(day);
   wearBox.innerHTML = `
-    <h3><span aria-hidden="true">🧥</span> What to wear</h3>
+    <h3><span aria-hidden="true">🧥</span> ${tr("What to wear")}</h3>
     ${wear.wear.length ? `<ul>${wear.wear.map((w) => `<li>${tr(w)}</li>`).join("")}</ul>` : ""}
     ${wear.bring.length ? `<p class="panel-label">${tr("Bring")}</p><ul>${wear.bring.map((b) => `<li>${tr(b)}</li>`).join("")}</ul>` : ""}
     ${wear.notes.map((n) => `<p>${tr(n)}</p>`).join("")}
