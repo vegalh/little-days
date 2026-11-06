@@ -583,7 +583,11 @@ document.addEventListener("change", (event) => {
     if (place) resetExplore();
     else showChoices();
   }
-  if (name === "setting-filter" || name === "explored-filter") {
+  if (name === "explore-day") {
+    selectedDay = Number(value);
+    render();
+  }
+  if (name === "setting-filter" || name === "booking-filter" || name === "explored-filter") {
     renderPlaces();
     renderFilterSummary();
   }
@@ -597,89 +601,8 @@ agesSelect.addEventListener("change", () => {
   renderFilterSummary();
 });
 
-// Ages is the only dropdown in the app, so this is written just for it rather than as a
-// generic "enhance any select" helper (AGENTS.md). A native <select>'s open list can't be
-// themed, so a button + listbox (the W3C "collapsible dropdown listbox" pattern) sits on
-// top of the real, hidden #ages select, which stays the one source of truth for its value
-// and still fires "change" for the listener above.
-const agesButton = document.querySelector("#ages-button");
-const agesValue = document.querySelector("#ages-value");
-const agesListbox = document.querySelector("#ages-listbox");
-const agesOptions = [...agesListbox.querySelectorAll("[role=option]")];
-
-// Moves the hidden select and the visible button/listbox to value, without firing "change"
-// (used to reflect settings that were restored, not chosen, same as the plain select before).
-function syncAgesDisplay(value) {
-  agesSelect.value = value;
-  for (const option of agesOptions) {
-    const picked = option.dataset.value === value;
-    option.setAttribute("aria-selected", String(picked));
-    if (picked) agesValue.textContent = option.textContent;
-  }
-}
-
-function openAgesListbox() {
-  agesListbox.hidden = false;
-  agesButton.setAttribute("aria-expanded", "true");
-  const current = agesOptions.find((option) => option.getAttribute("aria-selected") === "true");
-  (current || agesOptions[0]).focus();
-}
-
-function closeAgesListbox() {
-  agesListbox.hidden = true;
-  agesButton.setAttribute("aria-expanded", "false");
-}
-
-function pickAge(option) {
-  syncAgesDisplay(option.dataset.value);
-  agesSelect.dispatchEvent(new Event("change"));
-  closeAgesListbox();
-  agesButton.focus();
-}
-
-agesButton.addEventListener("click", () => {
-  if (agesListbox.hidden) openAgesListbox();
-  else closeAgesListbox();
-});
-
-agesListbox.addEventListener("click", (event) => {
-  const option = event.target.closest("[role=option]");
-  if (option) pickAge(option);
-});
-
-agesListbox.addEventListener("keydown", (event) => {
-  const index = agesOptions.indexOf(document.activeElement);
-  if (event.key === "ArrowDown") {
-    event.preventDefault();
-    agesOptions[Math.min(index + 1, agesOptions.length - 1)].focus();
-  } else if (event.key === "ArrowUp") {
-    event.preventDefault();
-    agesOptions[Math.max(index - 1, 0)].focus();
-  } else if (event.key === "Home") {
-    event.preventDefault();
-    agesOptions[0].focus();
-  } else if (event.key === "End") {
-    event.preventDefault();
-    agesOptions[agesOptions.length - 1].focus();
-  } else if (event.key === "Enter" || event.key === " ") {
-    event.preventDefault();
-    pickAge(document.activeElement);
-  } else if (event.key === "Escape") {
-    event.preventDefault();
-    closeAgesListbox();
-    agesButton.focus();
-  } else if (event.key === "Tab") {
-    closeAgesListbox();
-  }
-});
-
-document.addEventListener("click", (event) => {
-  if (!agesListbox.hidden && !event.target.closest(".age-select")) closeAgesListbox();
-});
-
 function clearFilters() {
-  document.querySelector("input[name=setting-filter][value=all]").checked = true;
-  document.querySelector("input[name=explored-filter][value=all]").checked = true;
+  for (const id of ["setting-filter", "booking-filter", "explored-filter"]) document.querySelector(`#${id}`).value = "all";
   renderPlaces();
   renderFilterSummary();
 }
@@ -707,13 +630,15 @@ filtersPanel.addEventListener("close", () => {
 // the Classroom reminders (PRD.md 7.13).
 function changedFilters() {
   const changed = [];
-  if (settings.ages !== SETTING_CHOICES.ages[0]) changed.push(agesValue.textContent);
+  if (settings.ages !== SETTING_CHOICES.ages[0]) changed.push(agesSelect.selectedOptions[0].textContent);
   if (settings.minutes !== SETTING_CHOICES.minutes[0]) changed.push(tr("{minutes} min walk", { minutes: settings.minutes }));
   if (settings.interest !== SETTING_CHOICES.interest[0]) changed.push(tr(CATEGORIES[settings.interest].label));
   if (selectedDay && current) changed.push(formatDay(current.days[selectedDay].date));
   const setting = settingFilter();
   if (setting !== "all") changed.push(setting === "indoors" ? tr("Indoors") : tr("Outdoors"));
-  const explored = document.querySelector("input[name=explored-filter]:checked").value;
+  const booking = document.querySelector("#booking-filter").value;
+  if (booking !== "all") changed.push(booking === "walk-in" ? tr("Usually walk in") : tr("Book or call first"));
+  const explored = document.querySelector("#explored-filter").value;
   if (explored !== "all") changed.push(explored === "new" ? tr("Not explored yet") : tr("Explored"));
   return changed;
 }
@@ -889,12 +814,6 @@ document.addEventListener("click", (event) => {
   if (add) addActivity(add.dataset.add, add.dataset.date);
   if (remove) removeActivity(remove.dataset.remove, remove.dataset.date);
   if (event.target.closest("[data-print-week]")) printWeek();
-  const exploreDay = event.target.closest("[data-explore-day]");
-  if (exploreDay) {
-    selectedDay = Number(exploreDay.dataset.exploreDay);
-    render();
-    document.querySelector(`[data-explore-day="${selectedDay}"]`).focus();
-  }
   const printGuideButton = event.target.closest("[data-print-guide]");
   if (printGuideButton) printGuideFor(printGuideButton.dataset.printGuide);
 });
@@ -929,12 +848,11 @@ function interestChipsHtml(name) {
 
 // The chosen interest, ages, mode and walking time, shown on both sets of chips.
 function showChoices() {
-  for (const input of document.querySelectorAll("input[name=interest], input[name=explore-interest]")) {
-    input.checked = input.value === settings.interest;
-  }
+  for (const input of document.querySelectorAll("input[name=explore-interest]")) input.checked = input.value === settings.interest;
+  document.querySelector("#interest").value = settings.interest;
   for (const input of document.querySelectorAll("input[name=mode]")) input.checked = input.value === settings.mode;
-  for (const input of document.querySelectorAll("input[name=minutes]")) input.checked = Number(input.value) === settings.minutes;
-  syncAgesDisplay(settings.ages);
+  document.querySelector("#minutes").value = settings.minutes;
+  agesSelect.value = settings.ages;
   allNote.hidden = settings.interest !== "all";
   for (const note of document.querySelectorAll(".classroom-note")) note.hidden = settings.mode !== "classroom";
   // A ✓ only tells interests apart, so with everything loaded no chip needs one.
@@ -1056,7 +974,7 @@ async function checkWalkingTimes(targets) {
 }
 
 function settingFilter() {
-  return document.querySelector("input[name=setting-filter]:checked").value;
+  return document.querySelector("#setting-filter").value;
 }
 
 // The list and the map markers, in the same order and numbers.
@@ -1064,8 +982,8 @@ async function renderPlaces() {
   if (!explore || exploreResults.hidden) return;
   const day = current ? current.days[selectedDay] : null;
   for (const p of explore.shortlist) placeInfo[p.id] = p;
-  const exploredOnly = document.querySelector("input[name=explored-filter]:checked").value;
-  const filtered = filterBySetting(explore.shortlist, settingFilter())
+  const exploredOnly = document.querySelector("#explored-filter").value;
+  const filtered = filterByBooking(filterBySetting(explore.shortlist, settingFilter()), document.querySelector("#booking-filter").value)
     .filter((p) => exploredOnly === "all" || (visitCount(savedPlaces, p.id) > 0) === (exploredOnly === "explored"));
   const { within, unknown, over } = byWalkingTime(filtered, explore.routes, settings.minutes);
   const weather = day && day.weather;
@@ -1117,15 +1035,9 @@ function renderExploreDays() {
   const box = document.querySelector("#explore-days-box");
   box.hidden = !current;
   if (!current) return;
-  document.querySelector("#explore-days").innerHTML = current.days.map((day, i) => {
-    const [icon, label] = weatherOf(day.code);
-    return `
-      <button type="button" class="explore-day" data-explore-day="${i}" aria-pressed="${i === selectedDay}">
-        <span class="explore-day-name">${formatDay(day.date)}</span>
-        <span><span aria-hidden="true">${icon}</span> <span class="visually-hidden">${label}</span> ${temp(day.high)}</span>
-        ${day.weather.hazards.length ? `<span class="tag tag-warning">${tr("Indoor day")}</span>` : ""}
-        ${day.publicHolidays.map((h) => `<span class="tag tag-holiday">${escapeHtml(tr(h))}</span>`).join("")}
-      </button>`;
+  document.querySelector("#explore-day").innerHTML = current.days.map((day, i) => {
+    const parts = [formatDay(day.date), temp(day.high), ...(day.weather.hazards.length ? [tr("Indoor day")] : []), ...day.publicHolidays.map((h) => tr(h))];
+    return `<option value="${i}"${i === selectedDay ? " selected" : ""}>${escapeHtml(parts.join(" · "))}</option>`;
   }).join("");
 }
 
@@ -1152,7 +1064,9 @@ function roundTripHtml(placeItem) {
 function accessHtml(placeItem) {
   const access = accessFor(placeItem);
   const contact = access.contact || settings.mode === "classroom";
-  return `${access.estimate ? `${tr("{estimate} (Little Days estimate).", { estimate: tr(access.estimate) })} ` : ""}${tr("Access not verified.")}` +
+  const booking = bookingFor(placeItem) === "book" ? tr("Better to book or call first (Little Days estimate).")
+    : settings.mode === "classroom" ? "" : tr("Usually no booking needed (Little Days estimate).");
+  return `${booking ? `${booking} ` : ""}${access.estimate ? `${tr("{estimate} (Little Days estimate).", { estimate: tr(access.estimate) })} ` : ""}${tr("Access not verified.")}` +
     `${access.note ? ` ${tr(access.note)}` : ""}${contact ? ` <strong>${tr("Contact before a classroom visit.")}</strong>` : ""}`;
 }
 
@@ -2535,7 +2449,10 @@ window.addEventListener("hashchange", () => {
 
 translatePage();
 for (const input of unitInputs) input.checked = input.value === settings.unit;
-document.querySelector("#interest-chips").innerHTML = interestChipsHtml("interest");
+document.querySelector("#interest").innerHTML = [["all", "All"], ...CATEGORY_KEYS.map((key) => [key, CATEGORIES[key].label])]
+  .map(([key, label]) => `<option value="${key}">${tr(label)}</option>`).join("");
+document.querySelector("#minutes").innerHTML = [...SETTING_CHOICES.minutes].sort((a, b) => a - b)
+  .map((minutes) => `<option value="${minutes}">${tr("{minutes} min walk", { minutes })}</option>`).join("");
 document.querySelector("#explore-chips").innerHTML = interestChipsHtml("explore-interest");
 showChoices();
 renderScreen();

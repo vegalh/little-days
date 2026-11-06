@@ -92,9 +92,9 @@ test("journal: each visit is kept, the card shows Explored, and the next perspec
 
   // Explored places stay in results, and the Explored filter finds them.
   await openFilters(page);
-  await page.locator("#filters-panel label", { hasText: "Not explored yet" }).click();
+  await page.locator("#explored-filter").selectOption("new");
   await expect(page.locator(".place-card")).toHaveCount(0);
-  await page.locator("#filters-panel label", { hasText: /^Explored$/ }).click();
+  await page.locator("#explored-filter").selectOption("explored");
   await expect(page.locator(".place-card")).toHaveCount(1);
 });
 
@@ -229,7 +229,7 @@ test("one results map for the whole visit", async ({ page }, testInfo) => {
   await search(page, "Nature");
   // A new walking time starts a new search, but the map stays the same one.
   await openFilters(page);
-  await page.locator("#filters-panel label", { hasText: /^20$/ }).click();
+  await page.locator("#minutes").selectOption("20");
   await closeFilters(page);
   await expect(page.locator(".place-card").first()).toBeVisible();
   expect(await page.evaluate(() => window.fakeMapCount)).toBe(1);

@@ -96,12 +96,11 @@ test("nothing is sent to Google before there's an address, and settings that don
 
   await openFilters(page);
   await page.locator("#filters-panel label", { hasText: "Classroom" }).click();
-  await page.locator("#ages-button").click();
-  await page.locator("#ages-listbox [data-value='4-6']").click();
-  await page.locator("#interest-chips label", { hasText: "Nature" }).click();
-  await page.locator("#filters-panel label", { hasText: /^Indoors$/ }).click();
+  await page.locator("#ages").selectOption("4-6");
+  await page.locator("#interest").selectOption({ label: "Nature" });
+  await page.locator("#setting-filter").selectOption("indoors");
   await page.locator("#filters-panel label", { hasText: "°C" }).click();
-  await page.locator("[data-explore-day='1']").click();
+  await page.locator("#explore-day").selectOption("1");
   await closeFilters(page);
   expect(await googleCalls(page)).toEqual(before);
 });
@@ -290,6 +289,24 @@ test("Maps being refused is what brings the weather-only city field", async ({ p
   await expect(page.locator("#google-location")).toBeHidden();
 });
 
+test("filters: every row fits on a phone screen, and Booking narrows the places with no new search", async ({ page }, testInfo) => {
+  await open(page, testInfo);
+  await pickAddress(page);
+  await explore(page);
+  await page.locator("#filters-toggle").click();
+  for (const id of ["ages", "minutes", "interest", "explore-day", "setting-filter", "booking-filter", "explored-filter"]) {
+    await expect(page.locator(`#${id}`)).toBeInViewport({ ratio: 1 });
+  }
+  await expect(page.locator("#filters-panel input[name=unit][value=C] + span")).toBeInViewport({ ratio: 1 });
+
+  const before = (await googleCalls(page)).length;
+  const all = await page.locator(".place-card").count();
+  await page.locator("#booking-filter").selectOption("book");
+  await expect.poll(() => page.locator(".place-card").count()).toBeLessThan(all);
+  await expect(page.locator("#filters-active")).toContainText("Book or call first");
+  expect((await googleCalls(page)).length).toBe(before);
+});
+
 test("a place card shows a category icon and never a photo", async ({ page }, testInfo) => {
   await open(page, testInfo);
   await pickAddress(page);
@@ -335,7 +352,7 @@ test("the map appears with the results, and an earlier search's map doesn't outl
 
   // A new walking time starts over: the map goes until that search is back.
   await openFilters(page);
-  await page.locator("#filters-panel label", { hasText: /^20$/ }).click();
+  await page.locator("#minutes").selectOption("20");
   await expect(page.locator("#explore-map")).toBeHidden();
   await expect(page.locator(".place-card")).toHaveCount(0);
   await closeFilters(page);
@@ -397,10 +414,9 @@ test("filters: a summary of what changed, and Reset puts back the defaults", asy
   await expect(page.locator("#filters-summary")).toBeHidden();
   await openFilters(page);
   await expect(page.locator("#filters-toggle")).toHaveAttribute("aria-expanded", "true");
-  await page.locator("#ages-button").click();
-  await page.locator("#ages-listbox [data-value='2-3']").click();
-  await page.locator("#filters-panel label", { hasText: /^10$/ }).click();
-  await page.locator("#interest-chips label", { hasText: "Nature" }).click();
+  await page.locator("#ages").selectOption("2-3");
+  await page.locator("#minutes").selectOption("10");
+  await page.locator("#interest").selectOption({ label: "Nature" });
   await expect(page.locator("#filters-active")).toHaveText("2–3 · 10 min walk · Nature");
   await expect(page.locator("#filters-count")).toHaveText("3");
   await closeFilters(page);
@@ -418,7 +434,7 @@ test("Classroom: remembered across a reload, kept by Reset, with its reminders i
   await pickAddress(page);
   await openFilters(page);
   await page.locator("#filters-panel label", { hasText: "Classroom" }).click();
-  await page.locator("#filters-panel label", { hasText: /^10$/ }).click();
+  await page.locator("#minutes").selectOption("10");
   await expect(page.locator("#filters-active")).toHaveText("Classroom · 10 min walk");
   await closeFilters(page);
 
@@ -471,8 +487,8 @@ test("a refresh keeps every saved setting and opens on places", async ({ page },
   await open(page, testInfo);
   await pickAddress(page);
   await openFilters(page);
-  await page.locator("#filters-panel label", { hasText: /^20$/ }).click();
-  await page.locator("#interest-chips label", { hasText: "Movement" }).click();
+  await page.locator("#minutes").selectOption("20");
+  await page.locator("#interest").selectOption({ label: "Movement" });
   await page.locator("#filters-panel label", { hasText: "°C" }).click();
   await page.reload();
   await expect(page.locator(".now-temp")).toBeAttached();

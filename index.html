@@ -240,65 +240,55 @@
                 </div>
               </fieldset>
               <div class="field">
-                <label for="ages-button">Ages</label>
-                <div class="age-select">
-                  <button type="button" id="ages-button" class="age-select-button" aria-haspopup="listbox" aria-expanded="false" aria-controls="ages-listbox">
-                    <span id="ages-value">Mixed 2–6</span>
-                    <svg class="age-select-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-                  </button>
-                  <ul id="ages-listbox" class="age-select-list" role="listbox" aria-labelledby="ages-button" hidden>
-                    <li role="option" tabindex="-1" data-value="2-6" aria-selected="true">Mixed 2–6</li>
-                    <li role="option" tabindex="-1" data-value="under-2" aria-selected="false">Under 2</li>
-                    <li role="option" tabindex="-1" data-value="2-3" aria-selected="false">2–3</li>
-                    <li role="option" tabindex="-1" data-value="4-6" aria-selected="false">4–6</li>
-                  </ul>
-                </div>
-                <select id="ages" name="ages" hidden>
+                <label for="ages">Ages</label>
+                <select id="ages" name="ages">
                   <option value="2-6">Mixed 2–6</option>
                   <option value="under-2">Under 2</option>
                   <option value="2-3">2–3</option>
                   <option value="4-6">4–6</option>
                 </select>
               </div>
-              <fieldset class="field">
-                <legend>Walking time (minutes)</legend>
-                <div class="segmented segmented-wide">
-                  <label><input type="radio" name="minutes" value="5"><span>5</span></label>
-                  <label><input type="radio" name="minutes" value="10"><span>10</span></label>
-                  <label><input type="radio" name="minutes" value="15"><span>15</span></label>
-                  <label><input type="radio" name="minutes" value="20"><span>20</span></label>
-                  <label><input type="radio" name="minutes" value="30"><span>30</span></label>
-                </div>
-                <p class="note classroom-note" hidden>Google walking estimates may not reflect the time needed when accompanying young children. Check crossings and the route before visiting.</p>
-              </fieldset>
-              <fieldset class="field">
-                <legend>What would you like to explore?</legend>
-                <div id="interest-chips" class="chips"></div>
-                <p class="note all-note" hidden>All searches six kinds of places, so it takes a little longer.</p>
-              </fieldset>
-              <fieldset id="explore-days-box" class="field" hidden>
-                <legend>Which day are you planning for?</legend>
-                <div id="explore-days" class="explore-days"></div>
-              </fieldset>
-              <fieldset class="field">
-                <legend>Setting</legend>
-                <div class="segmented segmented-wide">
-                  <label><input type="radio" name="setting-filter" value="all" checked><span>All</span></label>
-                  <label><input type="radio" name="setting-filter" value="indoors"><span>Indoors</span></label>
-                  <label><input type="radio" name="setting-filter" value="outdoors"><span>Outdoors</span></label>
-                </div>
-              </fieldset>
-              <fieldset class="field">
-                <legend>Explored</legend>
-                <div class="segmented segmented-wide">
-                  <label><input type="radio" name="explored-filter" value="all" checked><span>All</span></label>
-                  <label><input type="radio" name="explored-filter" value="new"><span>Not explored yet</span></label>
-                  <label><input type="radio" name="explored-filter" value="explored"><span>Explored</span></label>
-                </div>
-              </fieldset>
+              <div class="field">
+                <label for="minutes">Walking time</label>
+                <select id="minutes" name="minutes"></select>
+              </div>
+              <p class="note classroom-note" hidden>Google walking estimates may not reflect the time needed when accompanying young children. Check crossings and the route before visiting.</p>
+              <div class="field">
+                <label for="interest">What to explore</label>
+                <select id="interest" name="interest"></select>
+              </div>
+              <p class="note all-note" hidden>All searches six kinds of places, so it takes a little longer.</p>
+              <div id="explore-days-box" class="field" hidden>
+                <label for="explore-day">Day</label>
+                <select id="explore-day" name="explore-day"></select>
+              </div>
+              <div class="field">
+                <label for="setting-filter">Setting</label>
+                <select id="setting-filter" name="setting-filter">
+                  <option value="all">All</option>
+                  <option value="indoors">Indoors</option>
+                  <option value="outdoors">Outdoors</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="booking-filter">Booking</label>
+                <select id="booking-filter" name="booking-filter">
+                  <option value="all">All</option>
+                  <option value="walk-in">Usually walk in</option>
+                  <option value="book">Book or call first</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="explored-filter">Explored</label>
+                <select id="explored-filter" name="explored-filter">
+                  <option value="all">All</option>
+                  <option value="new">Not explored yet</option>
+                  <option value="explored">Explored</option>
+                </select>
+              </div>
               <fieldset class="field">
                 <legend>Temperature</legend>
-                <div class="segmented">
+                <div class="segmented segmented-wide">
                   <label><input type="radio" name="unit" value="F" checked><span>°F</span></label>
                   <label><input type="radio" name="unit" value="C"><span>°C</span></label>
                 </div>

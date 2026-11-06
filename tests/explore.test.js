@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const { ACTIVITIES } = require("../activities.js");
 const {
   CATEGORIES, CATEGORY_KEYS, searchRadius, categoriesToSearch, shortlist, routeTargets, byWalkingTime,
-  walkingMinutes, accessFor, settingFor, filterBySetting, ageNotes,
+  walkingMinutes, accessFor, settingFor, filterBySetting, ageNotes, bookingFor, filterByBooking,
 } = require("../explore.js");
 const { GUIDES, CATEGORY_GUIDES, GUIDE_FOR_TYPE, guideFor, perspectiveFor, forGroup } = require("../guides.js");
 
@@ -55,6 +55,16 @@ test("shortlist: a type Google returned but wasn't asked for is left out", () =>
   const shop = { ...at("pets", 200), primaryType: "pet_store" };
   assert.deepEqual(shortlist({ "animals-wildlife": [winery, shop] }, "animals-wildlife", ORIGIN).map((p) => p.id), ["pets"]);
   assert.deepEqual(shortlist({ "animals-wildlife": [winery, shop] }, "all", ORIGIN).map((p) => p.id), ["pets"]);
+});
+
+test("booking is an estimate from the kind of place, and the filter uses it", () => {
+  const cafe = { ...at("cafe", 100), primaryType: "coffee_shop" };
+  const yoga = { ...at("yoga", 200), primaryType: "yoga_studio" };
+  assert.equal(bookingFor(cafe), "walk-in");
+  assert.equal(bookingFor(yoga), "book");
+  assert.deepEqual(filterByBooking([cafe, yoga], "book").map((p) => p.id), ["yoga"]);
+  assert.equal(filterByBooking([cafe, yoga], "all").length, 2);
+  assert.equal(accessFor(yoga).note, "Ask whether there are children's or family classes.");
 });
 
 test("shortlist: one category is closest first; All keeps two per category, up to 12", () => {

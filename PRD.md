@@ -76,11 +76,11 @@ Version 1 is built first for ages 2–6. Children under 2 are supported with age
 | Use my location | Small icon `<button>` beside the field, named "Use my location" | Asks the browser for the position **only when pressed** (`navigator.geolocation.getCurrentPosition`, once, `timeout: 10000`, `maximumAge: 300000`). Never `watchPosition`, never on page load. The location line reads "Your current location". Works with or without Google. |
 | Example | Quiet text `<button>` "Try an example" in the one-time step | Shown only when Google Maps is available and no location is chosen yet. Looks up the demo address **221 Washington Street, Newton, MA 02458** with one Google text search (7.2). It's only an example: it is never saved (7.18) and never treated as the adult's location. |
 | Who's exploring (Filters) | Two radio buttons: **Family** / **Classroom** | Changes wording and reminders (7.13). Default Family. Remembered, so a teacher picks Classroom once. Reset doesn't change it. |
-| Ages (Filters) | `<select>`: Under 2, 2–3, 4–6, Mixed 2–6 | Changes age notes (7.13) and at-home ideas (7.5). Default Mixed 2–6. |
-| Walking time (Filters) | Five radio buttons: 5, 10, 15, 20, 30 min | Sets the search area (7.10) and the walking-time filter (7.12). Default 15. |
-| Interests (Filters) | Seven radio buttons styled as chips: **All** and the six categories (7.10) | One is chosen at a time. **All is chosen at first**, so the first press shows the mix of places the neighborhood has. A category is one search; All is one search per category not yet loaded (7.10, cost in 9.3). |
+| Ages (Filters) | Dropdown: Under 2, 2–3, 4–6, Mixed 2–6 | Changes age notes (7.13) and at-home ideas (7.5). Default Mixed 2–6. |
+| Walking time (Filters) | Dropdown: 5, 10, 15, 20, 30 min walk | Sets the search area (7.10) and the walking-time filter (7.12). Default 15. |
+| Interests (Filters) | Dropdown, and the chips on Explore: **All** and the six categories (7.10) | One is chosen at a time. **All is chosen at first**, so the first press shows the mix of places the neighborhood has. A category is one search; All is one search per category not yet loaded (7.10, cost in 9.3). |
 | Temperature (Filters) | °F / °C switch | Changes every temperature, wind speed (mph / km/h), rain amount (in / mm) and distance (mi / km). Doesn't refetch anything. Saved. |
-| Day | Each day card in the seven-day strip (Weather) and in the day picker in Filters ("Which day are you planning for?", 7.16) is a button | Selects the day used for weather notes on places, What to wear, and at-home ideas. The chosen day is kept: it stays selected across a search and when moving between Weather and Explore; only choosing a new location resets it to today. |
+| Day | Each day card in the seven-day strip (Weather) and in the Day dropdown in Filters (7.16) chooses it | Selects the day used for weather notes on places, What to wear, and at-home ideas. The chosen day is kept: it stays selected across a search and when moving between Weather and Explore; only choosing a new location resets it to today. |
 
 **Filters summary.** Under the interest chips, a short line lists what differs from the defaults ("Classroom · 10 min walk · Nature"), and the Filters button shows the count. **Reset** puts ages, walking time, interest, day and the Setting and Explored filters back to their defaults. It keeps the mode, so it can never quietly drop the Classroom reminders.
 
@@ -350,7 +350,7 @@ Saved in `localStorage` under `littleDays.plan.v2`. Activities stay exactly as i
 | Category | Google place types (`includedTypes`) |
 |---|---|
 | Nature | `park`, `botanical_garden`, `garden`, `hiking_area` |
-| Everyday Life | `bakery`, `grocery_store`, `supermarket`, `market`, `farmers_market`, `florist`, `hardware_store`, `book_store` |
+| Everyday Life | `bakery`, `grocery_store`, `supermarket`, `market`, `farmers_market`, `florist`, `hardware_store`, `book_store`, `coffee_shop`, `cafe`, `tea_house`, `ice_cream_shop`, `donut_shop`, `deli`, `toy_store`, `thrift_store`, `garden_center`, `bicycle_store`, `shoe_store`, `pharmacy`, `barber_shop`, `laundry`, `yoga_studio` |
 | Community Helpers | `fire_station`, `police`, `post_office`, `city_hall`, `community_center` |
 | Art & Culture | `library`, `museum`, `art_gallery`, `performing_arts_theater`, `cultural_center` |
 | Animals & Wildlife | `zoo`, `aquarium`, `pet_store`, `dog_park`, `wildlife_park`, `wildlife_refuge` |
@@ -512,13 +512,17 @@ The address, setting, access line, age note, weather notes and "Add to my week" 
 
 **Interest tabs** (under the map, beside Filters): the seven interests again, with the searched one chosen, as the one quick filter. Choosing one shows it from memory if it's loaded (7.10); otherwise it searches that interest. Loaded interests carry a "✓", except when everything is loaded.
 
-**Day picker** (in Filters, once there's a forecast): "Which day are you planning for?" with one button per forecast day — the same seven days and the same selection as the Weather strip (7.1, 7.15). Each button shows the day's icon, high temperature, an "Indoor day" tag on a hazard day, and any public holiday. Choosing a day changes the weather notes, the order on a hazard day and the date offered in the details, with no new request.
+**Day picker** (in Filters, once there's a forecast): a "Day" dropdown with one option per forecast day — the same seven days and the same selection as the Weather strip (7.1, 7.15). Each option shows the date, the high temperature, and "Indoor day" or a holiday name when they apply.
+
+**Filters panel:** one row per filter, the label beside its control, all visible on a phone without scrolling. Choices of three or more are dropdowns; Who's exploring and Temperature stay two-way switches.
+
+**Booking** (in Filters, applied on the page with no new request): All, Usually walk in, Book or call first. This is a **Little Days estimate from the kind of place**, never checked with the place and shown with that label in place details. Book or call first: `fire_station`, `police`, `city_hall`, `community_center`, `cultural_center`, `museum`, `performing_arts_theater`, `zoo`, `aquarium`, `sports_complex`, `yoga_studio`. Everything else is Usually walk in, and in Classroom mode that line isn't shown because every group visit needs contact first. Google's `isReservable` isn't used: it would move every search to the Enterprise + Atmosphere price. A yoga studio also shows "Ask whether there are children's or family classes.": Google has no data on children's classes, so the page never says a place has them.
 
 **Setting and Explored** (in Filters, applied on the page with no new request):
 - Setting: All / Indoors / Outdoors
 - Explored: All / Not explored yet / Explored (from 7.17)
 
-The walking-time limit is the 7.1 input (7.12). There's no age filter on places: ages change the notes, not which places appear. There's no free/paid filter (7.11). Reset (7.1) clears both, and so does "Clear filters" in the "No places match these filters." state.
+The walking-time limit is the 7.1 input (7.12). There's no age filter on places: ages change the notes, not which places appear. There's no free/paid filter (7.11). Reset (7.1) clears these and Booking, and so does "Clear filters" in the "No places match these filters." state.
 
 **Place details** (`<dialog>`, a bottom sheet on phones), in this order:
 1. Name, address, category, setting (estimate)

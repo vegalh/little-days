@@ -41,7 +41,7 @@ Defined as CSS custom properties on `:root` in `style.css`. **`style.css` is the
 | `--holiday` | `#96421A` | Holiday tags |
 | `--warning` | `#8A5A00` | Warning icons, "Indoor day" tag |
 | `--google-gray` | `#5E5E5E` | Only Google's "Google Maps" text attribution |
-| `--shadow` | `0 1px 2px rgba(38,37,31,.04), 0 6px 20px rgba(38,37,31,.06)` | The one soft shadow, only on things that float: the Ages list and the map preview |
+| `--shadow` | `0 1px 2px rgba(38,37,31,.04), 0 6px 20px rgba(38,37,31,.06)` | The one soft shadow, only on things that float: the map preview |
 
 Text on a peach, apricot or tint background is `--ink`, never the accent color at small sizes.
 
@@ -83,7 +83,7 @@ English sizes were rescaled down from the earlier (Caveat) sizes to line up with
 
 - **Corners:** cards, panels and the map frame `--radius: 20px`; inputs, buttons and art tiles `--radius-small: 14px`; chips and segmented tracks 12px; tags fully rounded.
 - **Borders:** 1px `--line`, on cards and secondary buttons alike.
-- **Shadow:** cards are flat, with only their border. `--shadow` is kept for what floats above the page (Ages list, map preview).
+- **Shadow:** cards are flat, with only their border. `--shadow` is kept for what floats above the page (the map preview).
 - **Cards share one rule** in `style.css` (`.status`, `.now-card`, `.hours`, `.idea`, `.plan`, `.place-card`, `.saved-place`): `--surface`, 1px `--line`, `--radius`. No card sits inside another card on Explore.
 - **Segmented controls** (°F/°C, Family/Classroom, walking time, Setting, Explored, My Places tabs) follow RootMap's: a `--tint` track with 2px padding and 12px corners, each option 44px tall; the selected segment is `--selected` with `--accent` bold text and 9px corners. Unselected segments are `--ink-soft`.
 - **Interest chips** follow RootMap's filter pills: `--surface`, 1px `--line`, 12px corners; the selected pill is `--selected` with an `--accent` border and text.
@@ -167,9 +167,9 @@ The one-time step has no card around it: it sits on the page, 8px between its ro
 
 **Compact weather line**: one line, with no box on an ordinary day: "☀️ 73° · Nice for exploring", or the day's first warning in a few words after a `--warning` "⚠︎" ("🌧️ 52° · ⚠︎ Rain possible"), and "More weather" at the right, linking to `#weather`. On a hazard day it gets an `--apricot` box, 14px radius, with 600-weight text so it can't be missed. The friendly words only appear when today has no hazard, caution or note. While loading: "Getting the weather…" in `--ink-soft`.
 
-**Filters**: a secondary button beside the interest chips (`aria-expanded`, `aria-controls`), with a small `--accent` count badge when something differs from the defaults. It opens a `<dialog>`: a bottom sheet on phones, 16px between groups, in this order: Who's exploring, Ages, Walking time, interests, the day, Setting, Explored, Temperature, with "Show places" at the foot. Under the chips, when anything differs: the summary line ("Classroom · 10 min walk · Nature") in 14px `--ink-soft`, and "Reset" as a text button at its right. Classroom alone shows in the summary with no Reset, because Reset keeps the mode.
+**Filters**: a secondary button beside the interest chips (`aria-expanded`, `aria-controls`), with a small `--accent` count badge when something differs from the defaults. It opens a `<dialog>`: a bottom sheet on phones, in this order: Who's exploring, Ages, Walking time, What to explore, Day, Setting, Booking, Explored, Temperature, with "Show places" at the foot. Under the chips, when anything differs: the summary line ("Classroom · 10 min walk · Nature") in 14px `--ink-soft`, and "Reset" as a text button at its right. Classroom alone shows in the summary with no Reset, because Reset keeps the mode.
 
-**Ages**: a custom dropdown ("collapsible listbox" pattern) with label "Ages": a button showing the current value with a caret, opening a themed `--surface` listbox (`--line` border, 12px radius, the one soft shadow) below it; the selected option is `--selected`. Arrow keys, Home/End, Enter/Space, Escape and outside clicks work as expected. A real `<select id="ages">` is kept `hidden` for state and fires its native `change` event when an option is picked, so the rest of the app reads Ages the same way it always has.
+**Filter rows**: one row per filter, label on the left (38%), control on the right, 8px apart, so all of them show on a phone. Choices of three or more are native `<select>`s; Who's exploring and Temperature stay segmented switches.
 
 **Who's exploring**: segmented control (two radio buttons in a `<fieldset>`, legend "Who's exploring"): Family / Classroom, full width. In Classroom mode, a 14px `--ink-soft` note appears under Walking time: "Google walking estimates may not reflect the time needed when accompanying young children. Check crossings and the route before visiting."
 

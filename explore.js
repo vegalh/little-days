@@ -2,6 +2,13 @@
 // Places here are plain objects made from Google's results:
 // { id, name, address, location: { lat, lng }, primaryType, types, category }
 
+// The errands of an adult's ordinary day, where a child can come along.
+const DAILY_LIFE_TYPES = [
+  "bakery", "grocery_store", "supermarket", "market", "farmers_market", "florist", "hardware_store", "book_store",
+  "coffee_shop", "cafe", "tea_house", "ice_cream_shop", "donut_shop", "deli", "toy_store", "thrift_store",
+  "garden_center", "bicycle_store", "shoe_store", "pharmacy", "barber_shop", "laundry", "yoga_studio",
+];
+
 // Little Days categories → Google place types (all from Google's Table A, checked
 // 2026-11-04). They're searched as includedPrimaryTypes, so a supermarket that also
 // lists "bakery" among its types isn't shown as a bakery. "farm" isn't searched: it
@@ -10,7 +17,7 @@ const CATEGORIES = {
   "nature": { label: "Nature", emoji: "🌳", types: ["park", "botanical_garden", "garden", "hiking_area"] },
   "everyday-life": {
     label: "Everyday Life", emoji: "🥖",
-    types: ["bakery", "grocery_store", "supermarket", "market", "farmers_market", "florist", "hardware_store", "book_store"],
+    types: DAILY_LIFE_TYPES,
   },
   "community-helpers": {
     label: "Community Helpers", emoji: "🚒",
@@ -115,7 +122,13 @@ const ACCESS = {
   },
   business: {
     label: "Business",
-    types: ["bakery", "grocery_store", "supermarket", "market", "farmers_market", "florist", "hardware_store", "book_store", "pet_store"],
+    types: [...DAILY_LIFE_TYPES.filter((type) => type !== "yoga_studio"), "pet_store"],
+    contact: true,
+  },
+  studio: {
+    label: "Studio with classes",
+    types: ["yoga_studio"],
+    note: "Ask whether there are children's or family classes.",
     contact: true,
   },
 };
@@ -143,6 +156,22 @@ function accessFor(place) {
     note: kind && kind.note ? kind.note : null,
     contact: Boolean(kind && kind.contact),
   };
+}
+
+// Booking (PRD.md 7.11): a Little Days estimate from the kind of place, never checked with the
+// place. Google's own reservation field would move every search to its top price.
+const BOOK_FIRST_TYPES = [
+  "fire_station", "police", "city_hall", "community_center", "cultural_center", "museum", "performing_arts_theater",
+  "zoo", "aquarium", "sports_complex", "yoga_studio",
+];
+
+function bookingFor(place) {
+  return BOOK_FIRST_TYPES.includes(placeType(place)) ? "book" : "walk-in";
+}
+
+// "all", "walk-in" or "book".
+function filterByBooking(places, booking) {
+  return booking === "all" ? places : places.filter((place) => bookingFor(place) === booking);
 }
 
 // Age notes (PRD.md 7.13), by the chosen age range.
@@ -180,6 +209,6 @@ function filterBySetting(places, setting) {
 if (typeof module !== "undefined") {
   module.exports = {
     CATEGORIES, CATEGORY_KEYS, MAX_RESULTS, ROUTE_BATCH, searchRadius, categoriesToSearch, straightLine,
-    shortlist, routeTargets, byWalkingTime, walkingMinutes, placeType, accessFor, settingFor, filterBySetting, ageNotes, categoryOf, ACCESS_TEXT,
+    shortlist, routeTargets, byWalkingTime, walkingMinutes, placeType, accessFor, settingFor, filterBySetting, bookingFor, filterByBooking, ageNotes, categoryOf, ACCESS_TEXT,
   };
 }

@@ -98,7 +98,7 @@ async function closeFilters(page) {
 
 async function chooseInterest(page, label) {
   await openFilters(page);
-  await page.locator("#interest-chips label", { hasText: label }).click();
+  await page.locator("#interest").selectOption({ label });
   await closeFilters(page);
 }
 
