@@ -147,5 +147,5 @@ Use semantic HTML: `<header>`, `<main>`, `<section>` with headings, `<form>` for
 - Work one phase at a time (PRD.md section 11), and within a phase one piece at a time, as I ask for it. Don't build the whole app in one go.
 - At the end of each phase: say what changed, run the tests, report failures and limitations, and name the next step. Then stop and wait for me.
 - If a step needs a Google key I haven't provided, build it with mocked tests, then tell me exactly what to set up to check it live.
-- Don't commit, push, open a pull request, merge, or deploy unless I ask. When I ask for a commit, commit directly to `main` (no branches unless I ask), in small commits, each with a clear message saying what changed.
+- Commit and push finished work directly to `main` (no branches unless I ask), in small commits, each with a clear message saying what changed. A push to `main` deploys the site, so run the tests first. Don't open a pull request or merge unless I ask.
 - If something is broken or you skipped a step, say so plainly.

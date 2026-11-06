@@ -1,11 +1,13 @@
-# Deploys Little Days to GitHub Pages (PRD.md 9.5). PROPOSED: it runs only when started
-# by hand (Actions → "Deploy to GitHub Pages" → Run workflow), never on push.
+# Deploys Little Days to GitHub Pages (PRD.md 9.5) on every push to main. It can also be
+# started by hand (Actions → "Deploy to GitHub Pages" → Run workflow).
 # config.js is written here from repository secrets; it is never committed.
 # The browser key ends up in the published config.js, as every browser key does in its
 # page: what protects it is the website and API restrictions in Google Cloud.
 name: Deploy to GitHub Pages
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
