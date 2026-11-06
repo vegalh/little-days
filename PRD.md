@@ -67,7 +67,7 @@ Version 1 is built first for ages 2–6. Children under 2 are supported with age
 
 ### 7.1 Inputs
 
-**The starting point is set once.** Someone with no address of their own opens on the example address (221 Washington Street, Newton, MA 02458), marked "Example address" and never saved, so they see real places straight away. "Change" opens the one-time step: who's exploring (Family or Classroom) and the address ("Where's home?" or "Where's your school?"). If the example can't load, or Maps isn't available, the one-time step shows instead. A picked address is saved until the adult changes it, so every later visit opens on the neighborhood, with no search box on the main screen. A line with the address and "Change" sits on Explore and Weather, and "Change" returns to the same step, showing the current address and "Keep this address". Everything else sits in a **Filters** sheet with working defaults, so nobody has to set anything to start exploring (DESIGN.md 5). Nothing about the child is collected beyond the broad age range, and the age range and mode are never sent to any API.
+**The starting point is set once.** Someone with no address of their own opens on the example address (221 Washington Street, Newton, MA 02458), marked "Example address" and never saved. Opening asks Google for nothing: the address is fixed text and the weather uses Newton's position from Open-Meteo. The map slot says "Tap to see places to explore near this address." with **See nearby places**. That button, or "Show places" in Filters, is the first action: one text search finds the exact spot, then places load as usual. "Change" opens the one-time step: who's exploring (Family or Classroom) and the address ("Where's home?" or "Where's your school?"). If the example can't load, the map slot shows the error with **Try again**. A picked address is saved until the adult changes it, so every later visit opens on the neighborhood, with no search box on the main screen. A line with the address and "Change" sits on Explore and Weather, and "Change" returns to the same step, showing the current address and "Keep this address". Everything else sits in a **Filters** sheet with working defaults, so nobody has to set anything to start exploring (DESIGN.md 5). Nothing about the child is collected beyond the broad age range, and the age range and mode are never sent to any API.
 
 | Input | Control | Behavior |
 |---|---|---|
@@ -75,14 +75,14 @@ Version 1 is built first for ages 2–6. Children under 2 are supported with age
 | City (fallback) | Text field "City (for weather)" with the browser's suggestion list (`<datalist>`) and a "Show weather" button | Shown **only when Google Maps is unavailable** (not configured, refused, or failed to load, 8.3). Works exactly like the earlier city search: after a pause in typing (2+ letters, 300 ms) up to five Open-Meteo matches appear as "name, state/region, country"; a picked one is used as is, a typed one is geocoded and the first result is used and named. It gives **weather only**: no places and no walking routes. |
 | Use my location | Small icon `<button>` beside the field, named "Use my location" | Asks the browser for the position **only when pressed** (`navigator.geolocation.getCurrentPosition`, once, `timeout: 10000`, `maximumAge: 300000`). Never `watchPosition`, never on page load. The location line reads "Your current location". Works with or without Google. |
 | Example | Quiet text `<button>` "Try an example" in the one-time step | Shown only when Google Maps is available and no location is chosen yet. Looks up the demo address **221 Washington Street, Newton, MA 02458** with one Google text search (7.2). It's only an example: it is never saved (7.18) and never treated as the adult's location. |
-| Who's exploring (Filters) | Two radio buttons: **Family** / **Classroom** | Changes wording and reminders (7.13). Default Family. Remembered, so a teacher picks Classroom once. Reset doesn't change it. |
+| Who's exploring (Filters) | Two radio buttons: **Family** / **Classroom** | Changes wording and reminders (7.13). Default Classroom. Remembered once saved. Reset doesn't change it. |
 | Ages (Filters) | Dropdown: Under 2, 2–3, 4–6, Mixed 2–6 | Changes age notes (7.13) and at-home ideas (7.5). Default Mixed 2–6. |
 | Walking time (Filters) | Dropdown: 5, 10, 15, 20, 30 min walk | Sets the search area (7.10) and the walking-time filter (7.12). Default 15. |
 | Interests (Filters) | Dropdown: **All** and the six categories (7.10) | One is chosen at a time. **All is chosen at first**, so the first press shows the mix of places the neighborhood has. A category is one search; All is one search per category not yet loaded (7.10, cost in 9.3). |
 | Temperature (Filters) | °F / °C switch | Changes every temperature, wind speed (mph / km/h), rain amount (in / mm) and distance (mi / km). Doesn't refetch anything. Saved. |
 | Day | Each day card in the seven-day strip (Weather) and in the Day dropdown in Filters (7.16) chooses it | Selects the day used for weather notes on places, What to wear, and at-home ideas. The chosen day is kept: it stays selected across a search and when moving between Weather and Explore; only choosing a new location resets it to today. |
 
-**Filters summary.** Under the Filters button, a short line lists what differs from the defaults ("Classroom · 10 min walk · Nature"), and the Filters button shows the count. **Reset** puts ages, walking time, interest, day and the Setting and Explored filters back to their defaults. It keeps the mode, so it can never quietly drop the Classroom reminders.
+**Filters summary.** Under the Filters button, a short line lists what differs from the defaults ("10 min walk · Nature"), and the Filters button shows the count. **Reset** puts ages, walking time, interest, day and the Setting and Explored filters back to their defaults. It keeps the mode, so it can never quietly drop the Classroom reminders.
 
 **Choosing a location fetches the weather right away** (Open-Meteo and Nager.Date, no Google request). **Places load by themselves whenever Explore is on screen with a starting point**: on choosing one, on opening the page there, and on coming to Explore from another view. Opening straight on Weather, My Places or My week searches nothing. A visit searches each interest once; moving between views and interests already loaded sends nothing. Changing mode, ages, units, the day or filters never makes a request. Changing the location or walking time clears the places loaded so far and searches again, and from Filters that happens once, when the sheet closes.
 
@@ -635,9 +635,9 @@ Each part fails on its own: weather, holidays, nearby search and walking times a
 ### 8.1 Empty
 
 **First visit.**
-- The page opens in Chinese on the example address, with "Loading your starting point…" until it's found. Filters are closed, with °F, mode Family, ages Mixed 2–6, walking 15 min, All.
+- The page opens in Chinese on the example address, with the weather and **See nearby places** (7.1), and no Google request. Filters are closed, with °F, mode Classroom, ages Mixed 2–6, walking 15 min, All.
 - Location status is empty. (In the fallback: "Enter your city or use your location to see the weather.")
-- "Change", or a failed example, shows the one-time step (7.1): Who's exploring, "Where's home?", "You only need to do this once.", "Use my location this time" and "Try an example". A setup message (8.3) shows in the map slot once there's a location.
+- "Change" shows the one-time step (7.1): Who's exploring, "Where's home?", "You only need to do this once.", "Use my location this time" and "Try an example". A setup message (8.3) shows in the map slot once there's a location.
 - My Places: "No saved places yet. Save places from your search to find them here." My week: "Your week is empty." (or saved dates, 7.9).
 
 **Returning visit.** Saved choices are restored. If a location is saved, its location is fetched again and the weather loads (8.2). Explore opens on places (8.2), with no search box. While the address loads, the map slot says "Loading your starting point…". Another view opens with no search.
@@ -757,7 +757,7 @@ Project: `little-days-513800`. Done already: billing, the three APIs, and the de
    | Places API (New) | Autocomplete | 3,000 (Google's widget sends a request per typed character) |
    | Places API (New) | GetPlace (place details) | 500 |
    | Places API (New) | SearchNearby | 400 |
-   | Places API (New) | SearchText (example address) | 300 |
+   | Places API (New) | SearchText (example address) | 100 |
    | Routes API | ComputeRouteMatrix | 300 (each up to 5 elements, plus 1 per "Check walking time") |
    | Routes API | ComputeRoutes | 500 |
 
@@ -773,10 +773,10 @@ Requests Little Days makes (checked live on 2026-11-04, PRD 7.2):
 
 | When | Requests |
 |---|---|
-| Page load, first visit | The example address and its search on Explore: 1 text search, 6 nearby searches, 1 route matrix, 1 map load |
+| Page load, first visit | No Places, Routes or map request. The address is fixed text and the weather is free. |
 | Typing an address | Autocomplete requests: Google's widget sends one per typed character (39 for the full demo address, live). Little Days can't change this. They form one session that ends with the place-details request below. |
 | Picking an address | 1 place-details request |
-| Example address | 1 text search, once per visit, for everyone with no address of their own |
+| Example address | 1 text search on the first action, once per visit, then the usual search |
 | One search (one interest) | 1 map load (the first search of the visit only; later searches reuse the map) + 1 nearby search + 1 route matrix (up to 5 elements) |
 | One search (All, **the default**) | 1 map load (first search of the visit only) + up to 6 nearby searches (only the categories not loaded yet) + 1 route matrix (up to 5 elements). Confirmed live on 2026-11-05: 6 `SearchNearby`, 1 `ComputeRouteMatrix`. |
 | "Check walking time" on another place | 1 route matrix with 1 element |

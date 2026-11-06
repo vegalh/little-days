@@ -114,7 +114,7 @@ The section table below lists where each part lives.
 ### Page order
 
 1. **Header**
-2. **One-time step** (Explore, on "Change" or if the example address can't load): three RootMap photos, the title "Let's find places to explore with children.", Who's exploring, the address question and field, "Use my location this time", "Try an example". "Change" shows only the address part, the current address and "Keep this address". Then every other visit, the **starting point**:
+2. **One-time step** (Explore, on "Change"): three RootMap photos, the title "Let's find places to explore with children.", Who's exploring, the address question and field, "Use my location this time", "Try an example". "Change" shows only the address part, the current address and "Keep this address". Then every other visit, the **starting point**:
    1. Address field and location button, in one row
    2. Location line (once chosen)
    3. Compact weather line (once chosen)

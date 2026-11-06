@@ -189,9 +189,6 @@ let plan = loadPlan(storage, isoToday(), ACTIVITY_IDS);
 let savedPlaces = loadPlaces(storage);
 // "loading", "ready", "missing" (no key) or "failed" (refused or didn't load)
 let mapsState = config.googleMapsKey ? "loading" : "missing";
-// Someone with no address of their own opens on the example address. It's never saved, so
-// their own address replaces it for good. The tests turn this off to see the one-time step.
-let openingExample = Boolean(config.googleMapsKey) && !settings.location && config.startAtExample !== false;
 // The chosen location: { kind, label, latitude, longitude, countryCode, placeId or name }.
 // kind is "place" (picked address), "example", "city" (fallback) or "device".
 let place = null;
@@ -436,9 +433,7 @@ async function startGoogle() {
     renderExploreStatus();
     renderMyPlaces();
     renderPlan();
-    // Choosing the example searches by itself, so searching here too would pay twice.
-    if (openingExample) await useExample();
-    else exploreHere();
+    exploreHere();
   } catch (error) {
     useFallback(error);
   }
@@ -476,8 +471,6 @@ async function addressProblem(error) {
 function useFallback(error) {
   if (error) console.error(error);
   mapsState = config.googleMapsKey ? "failed" : "missing";
-  openingExample = false;
-  renderScreen();
   googleLocation.hidden = true;
   cityLocation.hidden = false;
   document.querySelector("#city-note").hidden = false;
@@ -488,8 +481,18 @@ function useFallback(error) {
 
 let exampleLocation = null;
 
+// Anyone with no address of their own opens here, and opening costs nothing: nothing in this
+// comes from Google, and the weather uses Newton's Open-Meteo position. Google is only asked
+// on the first action (useExample), for the exact spot. It's never saved, so their own
+// address replaces it for good. The tests turn this off to see the one-time step.
+function waitingExample() {
+  return { kind: "example", waiting: true, label: tr("221 Washington St, Newton, MA 02458, USA"), latitude: 42.34, longitude: -71.21, countryCode: "US" };
+}
+
 async function useExample() {
   exampleButton.disabled = true;
+  const waiting = place && place.waiting;
+  if (waiting) showStatus(exploreStatus, "loading", tr("Loading your starting point…"));
   try {
     // Looked up once per visit: pressing the button again doesn't search again.
     exampleLocation = exampleLocation || await findExampleAddress();
@@ -501,12 +504,10 @@ async function useExample() {
     await chooseLocation(location);
   } catch (error) {
     console.error(error);
-    showStatus(locationStatus, "", tr("We couldn't load the example address right now."));
+    if (waiting) showStatus(exploreStatus, "", tr("We couldn't load the example address right now."), useExample);
+    else showStatus(locationStatus, "", tr("We couldn't load the example address right now."));
   } finally {
     exampleButton.disabled = false;
-    openingExample = false;
-    renderScreen();
-    renderExploreStatus();
   }
 }
 
@@ -621,7 +622,10 @@ filtersToggle.addEventListener("click", () => {
   filtersToggle.setAttribute("aria-expanded", "true");
 });
 
-filtersDone.addEventListener("click", () => filtersPanel.close());
+filtersDone.addEventListener("click", () => {
+  if (place && place.waiting && mapsState === "ready") useExample();
+  filtersPanel.close();
+});
 document.querySelector("#filters-close").addEventListener("click", () => filtersPanel.close());
 filtersPanel.addEventListener("click", (event) => {
   if (event.target === filtersPanel) filtersPanel.close();
@@ -634,9 +638,9 @@ filtersPanel.addEventListener("close", () => {
   if (!explore || categoriesToSearch(settings.interest, explore.loaded).length) exploreHere();
 });
 
-// What differs from the defaults (the first of each SETTING_CHOICES list). The mode is shown
-// but isn't a filter: it stays until the adult changes it, so Reset can never quietly drop
-// the Classroom reminders (PRD.md 7.13).
+// What differs from the defaults (the first of each SETTING_CHOICES list). The mode isn't a
+// filter: it stays until the adult changes it, so Reset can never quietly drop the Classroom
+// reminders (PRD.md 7.13).
 function changedFilters() {
   const changed = [];
   if (settings.ages !== SETTING_CHOICES.ages[0]) changed.push(agesSelect.selectedOptions[0].textContent);
@@ -654,12 +658,11 @@ function changedFilters() {
 
 function renderFilterSummary() {
   const changed = changedFilters();
-  const active = settings.mode === "classroom" ? [tr("Classroom"), ...changed] : changed;
-  filtersActive.textContent = active.join(" · ");
-  filtersSummary.hidden = !active.length;
+  filtersActive.textContent = changed.join(" · ");
+  filtersSummary.hidden = !changed.length;
   resetFiltersButton.hidden = !changed.length;
-  filtersCount.textContent = active.length;
-  filtersCount.hidden = !active.length;
+  filtersCount.textContent = changed.length;
+  filtersCount.hidden = !changed.length;
 }
 
 resetFiltersButton.addEventListener("click", () => {
@@ -890,6 +893,10 @@ function showMapAndList(visible) {
 // on opening, on choosing a new one, and on coming back to Explore (PRD.md 7.1). Other
 // views never search, and a visit searches each interest once (explore.loaded).
 function exploreHere() {
+  if (place && place.waiting) {
+    renderExploreStatus();
+    return;
+  }
   if (place && mapsState === "ready" && !changingBase && viewName() === "explore") findAdventures();
 }
 
@@ -2074,7 +2081,7 @@ function showStatus(area, className, text, retry, retryLabel = tr("Try again")) 
 // The one-time step shows until there's a starting point, and again for "Change". Everything
 // else on Explore waits behind it. Its words follow who's exploring.
 function renderScreen() {
-  const setup = changingBase || (!place && !settings.location && !openingExample);
+  const setup = changingBase || (!place && !settings.location);
   setupSection.hidden = !setup;
   explorePage.hidden = setup;
   setupSection.classList.toggle("is-change", changingBase);
@@ -2120,8 +2127,10 @@ function renderExploreStatus() {
     showStatus(exploreStatus, "", tr("Maps and places aren't set up on this copy of Little Days yet."));
   } else if (mapsState === "failed") {
     showStatus(exploreStatus, "", tr("Google Maps isn't available right now, so places and walking times can't be shown."));
-  } else if (!place && (settings.location || openingExample)) {
+  } else if (!place && settings.location) {
     showStatus(exploreStatus, "loading", tr("Loading your starting point…"));
+  } else if (place && place.waiting && mapsState === "ready") {
+    showStatus(exploreStatus, "", tr("Tap to see places to explore near this address."), useExample, tr("See nearby places"));
   } else {
     showStatus(exploreStatus, "", "");
   }
@@ -2501,6 +2510,7 @@ storePlaces(storage, savedPlaces); // the same for My Places
 renderPlan();
 renderMyPlaces();
 renderExploreStatus();
+if (config.googleMapsKey && !settings.location && config.startAtExample !== false) chooseLocation(waitingExample());
 // Resolves once Google is ready or the fallback is in place.
 const googleStarted = config.googleMapsKey ? startGoogle() : Promise.resolve(useFallback());
 renderFirstVisit();

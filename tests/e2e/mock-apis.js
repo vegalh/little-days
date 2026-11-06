@@ -67,10 +67,11 @@ async function mockApis(page, options = {}) {
       // Only on the first load, so a reload sees what the page saved itself.
       sessionStorage.setItem("mocked", "1");
       for (const [key, value] of Object.entries(storage)) localStorage.setItem(key, value);
-      // The page opens in Chinese; these tests read it in English unless they say otherwise.
+      // The page opens in Chinese for a class; these tests read it in English, as a family,
+      // unless they say otherwise.
       const settings = JSON.parse(localStorage.getItem("littleDays.settings.v2") || "{}");
-      if (!realDefaults && !settings.lang && !localStorage.getItem("littleDays.settings.v1")) {
-        localStorage.setItem("littleDays.settings.v2", JSON.stringify({ ...settings, lang: "en" }));
+      if (!realDefaults && !localStorage.getItem("littleDays.settings.v1")) {
+        localStorage.setItem("littleDays.settings.v2", JSON.stringify({ lang: "en", mode: "family", ...settings }));
       }
     }
     window.FAKE_GOOGLE = google;

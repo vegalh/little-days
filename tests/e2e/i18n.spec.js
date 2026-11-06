@@ -46,19 +46,29 @@ test("中文: the switch saves the choice, and the whole page comes back in Chin
   await expect(page.locator("#wear")).toContainText("What to wear");
 });
 
-test("a new visitor opens in Chinese on the example address, which is never saved", async ({ page }, testInfo) => {
+test("a new visitor opens in Chinese for a class, with no Google request until the first action", async ({ page }, testInfo) => {
   testInfo.api = await mockApis(page, { config: { ...GOOGLE_CONFIG, startAtExample: true }, realDefaults: true });
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
-  await expect(page.locator(".place-card").first()).toBeVisible();
   await expect(page.locator("#setup")).toBeHidden();
+  await expect(page.locator("#location-line")).toContainText("221 Washington St, Newton, MA 02458美国");
   await expect(page.locator("#location-line")).toContainText("示例地址");
   await expect(page.locator(".now-temp")).toBeAttached();
-  const calls = await page.evaluate(() => window.fakeGoogleCalls.map((c) => c.call));
+  const seeNearby = page.locator("#explore-status").getByRole("button", { name: "查看附近的地点" });
+  await expect(seeNearby).toBeVisible();
+  const googleCalls = () => page.evaluate(() => window.fakeGoogleCalls.map((c) => c.call).filter((c) => /search|Matrix|fetchFields/i.test(c)));
+  expect(await googleCalls()).toEqual([]);
+  expect(await page.evaluate(() => window.fakeMapCount || 0)).toBe(0);
+  await expect(page.locator("#filters-count")).toBeHidden();
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("littleDays.settings.v2")));
+  expect(saved.mode).toBe("classroom");
+  expect(saved.location || null).toBeNull();
+
+  await seeNearby.click();
+  await expect(page.locator(".place-card").first()).toBeVisible();
+  const calls = await googleCalls();
   expect(calls.filter((call) => call === "searchByText")).toHaveLength(1);
   expect(calls.filter((call) => call === "searchNearby")).toHaveLength(6);
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("littleDays.settings.v2") || "{}"));
-  expect(saved.location || null).toBeNull();
 
   // A real choice takes over for good.
   await page.locator("#location-line").locator("xpath=..").getByRole("button", { name: "更改" }).click();
@@ -66,6 +76,15 @@ test("a new visitor opens in Chinese on the example address, which is never save
   await page.reload();
   await expect(page.locator("#location-line")).not.toContainText("示例地址");
   await expect(page.locator("#location-line")).toContainText("Newton");
+});
+
+test("pressing Show places counts as the first action", async ({ page }, testInfo) => {
+  testInfo.api = await mockApis(page, { config: { ...GOOGLE_CONFIG, startAtExample: true }, realDefaults: true });
+  await page.goto("/");
+  await expect(page.locator("#explore-status").getByRole("button", { name: "查看附近的地点" })).toBeVisible();
+  await page.locator("#filters-toggle").click();
+  await page.locator("#filters-done").click();
+  await expect(page.locator(".place-card").first()).toBeVisible();
 });
 
 test("someone who chose English stays in English", async ({ page }, testInfo) => {

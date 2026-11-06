@@ -435,17 +435,16 @@ test("Classroom: remembered across a reload, kept by Reset, with its reminders i
   await openFilters(page);
   await page.locator("#filters-panel label", { hasText: "Classroom" }).click();
   await page.locator("#minutes").selectOption("10");
-  await expect(page.locator("#filters-active")).toHaveText("Classroom · 10 min walk");
+  await expect(page.locator("#filters-active")).toHaveText("10 min walk");
   await closeFilters(page);
 
   await page.getByRole("button", { name: "Reset" }).click();
-  await expect(page.locator("#filters-active")).toHaveText("Classroom");
-  await expect(page.getByRole("button", { name: "Reset" })).toBeHidden();
+  await expect(page.locator("#filters-summary")).toBeHidden();
   expect((await settings(page)).mode).toBe("classroom");
 
   await page.reload();
   await expect(page.locator(".now-temp")).toBeAttached();
-  await expect(page.locator("#filters-active")).toHaveText("Classroom");
+  await expect(page.locator("#filters-summary")).toBeHidden();
   await explore(page);
   await expect(page.locator(".place-card").first()).toBeVisible();
   await expect(page.locator("#explore-notes")).toContainText("Check crossings and the route before visiting.");

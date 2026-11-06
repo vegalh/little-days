@@ -28,7 +28,7 @@ const blockedStorage = {
   setItem() { throw new Error("blocked"); },
   removeItem() { throw new Error("blocked"); },
 };
-const DEFAULTS = { unit: "F", mode: "family", ages: "2-6", minutes: 15, interest: "all", lang: null, location: null };
+const DEFAULTS = { unit: "F", mode: "classroom", ages: "2-6", minutes: 15, interest: "all", lang: null, location: null };
 
 test("add: saves an activity to a date", () => {
   const plan = addToPlan({}, "2026-10-31", "washing-pumpkin");

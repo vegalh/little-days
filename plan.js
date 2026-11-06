@@ -253,7 +253,7 @@ function deleteSavedData(storage) {
 // Settings (PRD.md 7.18). The first value of each list is the default.
 const SETTING_CHOICES = {
   unit: ["F", "C"],
-  mode: ["family", "classroom"],
+  mode: ["classroom", "family"],
   ages: ["2-6", "under-2", "2-3", "4-6"],
   minutes: [15, 5, 10, 20, 30],
   interest: ["all", "nature", "everyday-life", "community-helpers", "art-culture", "animals-wildlife", "movement"],
