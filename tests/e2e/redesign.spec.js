@@ -201,7 +201,7 @@ test("Change works from the Weather page, and the example and device position ar
   await page.reload();
   await expect(page.locator("#location-line")).toContainText("221 Washington St");
 
-  await page.evaluate(() => localStorage.clear());
+  await page.evaluate(() => { localStorage.clear(); localStorage.setItem("littleDays.settings.v2", JSON.stringify({ lang: "en" })); });
   await page.reload();
   await page.getByRole("button", { name: "Try an example" }).click();
   await explore(page);

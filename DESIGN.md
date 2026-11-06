@@ -114,7 +114,7 @@ The section table below lists where each part lives.
 ### Page order
 
 1. **Header**
-2. **One-time step** (Explore, first visit and "Change"): three RootMap photos, the title "Let's find places to explore with children.", Who's exploring, the address question and field, "Use my location this time", "Try an example". "Change" shows only the address part, the current address and "Keep this address". Then every other visit, the **starting point**:
+2. **One-time step** (Explore, on "Change" or if the example address can't load): three RootMap photos, the title "Let's find places to explore with children.", Who's exploring, the address question and field, "Use my location this time", "Try an example". "Change" shows only the address part, the current address and "Keep this address". Then every other visit, the **starting point**:
    1. Address field and location button, in one row
    2. Location line (once chosen)
    3. Compact weather line (once chosen)
@@ -139,7 +139,7 @@ The section table below lists where each part lives.
 
 ### Phone (under 720px): designed on its own
 
-- **First screen** (390 × 844): on a first visit the one-time step, with no scrolling. After that: header, address line with "Change", weather line, map, and the first place in view. No search box and no supporting paragraph.
+- **First screen** (390 × 844): header, address line with "Change", weather line, map, and the first place in view. No search box and no supporting paragraph.
 - **Weather:** Now on top, Next hours as a sideways-swiping row of six columns, then the seven-day strip as a sideways-swiping row of compact day cards (112px wide, `scroll-snap-type: x mandatory`, the next card peeking in). Neither wraps into a tall grid, and the page itself never scrolls sideways. Warnings and "What to wear" follow, stacked.
 - **Explore:** map first, cards right below it, always together. There's no List/Map switch.
   - **Map:** full width, `height: clamp(208px, 30dvh, 280px)`. While places load the slot is smaller (`clamp(160px, 24dvh, 220px)`), with a pin icon and the Explore status on `--tint`. It's never a picture of a map. It isn't sticky on phones: that would leave too little room for the cards.

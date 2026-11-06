@@ -11,11 +11,6 @@ function translate(lang, text, vars = {}) {
   return template.replace(/\{(\w+)\}/g, (match, name) => (name in vars ? String(vars[name]) : match));
 }
 
-// "zh" for any Chinese browser language (zh-CN, zh-TW, zh-HK…), otherwise "en".
-function deviceLanguage(languages) {
-  return (languages || []).some((language) => /^zh\b/i.test(language)) ? "zh" : "en";
-}
-
 const ZH = {
   // --- Page and navigation ---
   "Sections": "栏目",
@@ -859,5 +854,5 @@ const GUIDE_ZH = {
 Object.assign(ZH, GUIDE_ZH);
 
 if (typeof module !== "undefined") {
-  module.exports = { LANGS, ZH, translate, deviceLanguage };
+  module.exports = { LANGS, ZH, translate };
 }

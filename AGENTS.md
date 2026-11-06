@@ -35,7 +35,7 @@ That means:
 ```
 index.html            the page
 style.css             all styles
-i18n.js               English and Chinese: translate(), deviceLanguage() and the ZH dictionary (English text is the key)
+i18n.js               English and Chinese: translate() and the ZH dictionary (English text is the key)
 app.js                rendering, page states, the dialogs, My Places, My week (DOM code)
 google.js             loading the Maps JavaScript API, Autocomplete, nearby search, routes, the maps (DOM code)
 explore.js            categories → place types, search radius, shortlist, access/setting estimates, filters

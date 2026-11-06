@@ -16,6 +16,7 @@ const FIXTURE_NOW = new Date("2026-11-04T18:15:00-05:00");
 //   forecastData a changed copy of FORECAST to answer with instead
 //   geolocation "denied" to make getCurrentPosition fail with code 1
 //   storage     { key: value } put in localStorage before the page loads
+//   realDefaults  true: no English setting is added, to test how the page really opens
 //   google      options for the fake Google script (authFailure, failFetch)
 async function mockApis(page, options = {}) {
   const api = { requests: [], unmocked: [] };
@@ -61,22 +62,27 @@ async function mockApis(page, options = {}) {
     return route.fulfill({ contentType: "text/javascript", body: fixture("../fake-google-maps.js") });
   });
 
-  await page.addInitScript(({ storage, google, geolocation }) => {
+  await page.addInitScript(({ storage, google, geolocation, realDefaults }) => {
     if (!sessionStorage.getItem("mocked")) {
       // Only on the first load, so a reload sees what the page saved itself.
       sessionStorage.setItem("mocked", "1");
       for (const [key, value] of Object.entries(storage)) localStorage.setItem(key, value);
+      // The page opens in Chinese; these tests read it in English unless they say otherwise.
+      const settings = JSON.parse(localStorage.getItem("littleDays.settings.v2") || "{}");
+      if (!realDefaults && !settings.lang && !localStorage.getItem("littleDays.settings.v1")) {
+        localStorage.setItem("littleDays.settings.v2", JSON.stringify({ ...settings, lang: "en" }));
+      }
     }
     window.FAKE_GOOGLE = google;
     if (geolocation === "denied") {
       navigator.geolocation.getCurrentPosition = (success, error) => setTimeout(() => error({ code: 1, message: "User denied Geolocation" }), 10);
     }
-  }, { storage: options.storage || {}, google: options.google || {}, geolocation: options.geolocation || null });
+  }, { storage: options.storage || {}, google: options.google || {}, geolocation: options.geolocation || null, realDefaults: Boolean(options.realDefaults) });
 
   return api;
 }
 
-const GOOGLE_CONFIG = { googleMapsKey: "fake-test-key", googleMapId: "DEMO_MAP_ID" };
+const GOOGLE_CONFIG = { googleMapsKey: "fake-test-key", googleMapId: "DEMO_MAP_ID", startAtExample: false };
 
 // Switches to one of the four views (Explore, Weather, My Places, My week) the way the nav does.
 async function showView(page, name) {

@@ -4,7 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { ZH, translate, deviceLanguage } = require("../i18n.js");
+const { ZH, translate } = require("../i18n.js");
 const { GUIDES, CATEGORY_GUIDES, GUIDE_NOTE } = require("../guides.js");
 const { CATEGORIES, ACCESS_TEXT, ageNotes } = require("../explore.js");
 const { whatToWear } = require("../advice.js");
@@ -20,10 +20,6 @@ test("translate: Chinese from the dictionary, English unchanged, values filled i
   assert.equal(translate("zh", "{minutes} min walk", { minutes: 7 }), "步行 7 分钟");
   assert.equal(translate("en", "{minutes} min walk", { minutes: 7 }), "7 min walk");
   assert.equal(translate("zh", "Not in the dictionary"), "Not in the dictionary");
-  assert.equal(deviceLanguage(["zh-CN", "en"]), "zh");
-  assert.equal(deviceLanguage(["zh-TW"]), "zh");
-  assert.equal(deviceLanguage(["en-US", "fr"]), "en");
-  assert.equal(deviceLanguage([]), "en");
 });
 
 test("every Chinese entry keeps the English entry's {placeholders}", () => {

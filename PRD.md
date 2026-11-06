@@ -67,7 +67,7 @@ Version 1 is built first for ages 2–6. Children under 2 are supported with age
 
 ### 7.1 Inputs
 
-**The starting point is set once.** On a first visit, Explore shows a one-time step: who's exploring (Family or Classroom) and the address ("Where's home?" or "Where's your school?"). A picked address is saved until the adult changes it, so every later visit opens on the neighborhood, with no search box on the main screen. A line with the address and "Change" sits on Explore and Weather, and "Change" returns to the same step, showing the current address and "Keep this address". Everything else sits in a **Filters** sheet with working defaults, so nobody has to set anything to start exploring (DESIGN.md 5). Nothing about the child is collected beyond the broad age range, and the age range and mode are never sent to any API.
+**The starting point is set once.** Someone with no address of their own opens on the example address (221 Washington Street, Newton, MA 02458), marked "Example address" and never saved, so they see real places straight away. "Change" opens the one-time step: who's exploring (Family or Classroom) and the address ("Where's home?" or "Where's your school?"). If the example can't load, or Maps isn't available, the one-time step shows instead. A picked address is saved until the adult changes it, so every later visit opens on the neighborhood, with no search box on the main screen. A line with the address and "Change" sits on Explore and Weather, and "Change" returns to the same step, showing the current address and "Keep this address". Everything else sits in a **Filters** sheet with working defaults, so nobody has to set anything to start exploring (DESIGN.md 5). Nothing about the child is collected beyond the broad age range, and the age range and mode are never sent to any API.
 
 | Input | Control | Behavior |
 |---|---|---|
@@ -595,7 +595,7 @@ Everything is stored in `localStorage` on this device, and every read and write 
 
 The whole page works in **English** and **Simplified Chinese**.
 
-- **Choosing:** an **EN / 中文** button at the end of the top bar shows the other language. Pressing it saves the choice (`settings.lang`, 7.18) and reloads the page. With nothing saved, the page follows the browser: Chinese for any `zh` browser language, otherwise English.
+- **Choosing:** an **EN / 中文** button at the end of the top bar shows the other language. Pressing it saves the choice (`settings.lang`, 7.18) and reloads the page. With nothing saved, the page opens in Chinese, whatever the browser's language.
 - **How text is translated** (`i18n.js`): the English text is its own key. `translate("zh", text, vars)` returns the Chinese from the `ZH` dictionary; English, or any text without an entry, comes back unchanged. `{name}` marks a value filled in by the page. The static text and labels in `index.html` are swapped in place when the page starts in Chinese. `tests/i18n.test.js` fails if any English text the page uses (app.js, google.js, index.html, guides, categories, access labels, age notes, clothing lines, import errors) has no Chinese entry, or if an entry's `{placeholders}` differ.
 - **Sentences built from facts** ("Why these activities?") have their own Chinese sentences in `advice.js` (`explainDayZh`), because Chinese grammar doesn't fit the English pieces.
 - **RootMap activities** use RootMap's own Chinese (`rootmap.zh`: title, age, description, materials, steps, skills, safety). Nothing is translated by Little Days.
@@ -635,10 +635,9 @@ Each part fails on its own: weather, holidays, nearby search and walking times a
 ### 8.1 Empty
 
 **First visit.**
-- No location. Filters are closed, with °F, mode Family, ages Mixed 2–6, walking 15 min, All.
+- The page opens in Chinese on the example address, with "Loading your starting point…" until it's found. Filters are closed, with °F, mode Family, ages Mixed 2–6, walking 15 min, All.
 - Location status is empty. (In the fallback: "Enter your city or use your location to see the weather.")
-- The compact weather line and the Weather section are hidden.
-- Explore shows the one-time step (7.1): Who's exploring, "Where's home?", "You only need to do this once.", "Use my location this time" and "Try an example". A setup message (8.3) shows in the map slot once there's a location.
+- "Change", or a failed example, shows the one-time step (7.1): Who's exploring, "Where's home?", "You only need to do this once.", "Use my location this time" and "Try an example". A setup message (8.3) shows in the map slot once there's a location.
 - My Places: "No saved places yet. Save places from your search to find them here." My week: "Your week is empty." (or saved dates, 7.9).
 
 **Returning visit.** Saved choices are restored. If a location is saved, its location is fetched again and the weather loads (8.2). Explore opens on places (8.2), with no search box. While the address loads, the map slot says "Loading your starting point…". Another view opens with no search.
@@ -758,7 +757,7 @@ Project: `little-days-513800`. Done already: billing, the three APIs, and the de
    | Places API (New) | Autocomplete | 3,000 (Google's widget sends a request per typed character) |
    | Places API (New) | GetPlace (place details) | 500 |
    | Places API (New) | SearchNearby | 400 |
-   | Places API (New) | SearchText (example address) | 100 |
+   | Places API (New) | SearchText (example address) | 300 |
    | Routes API | ComputeRouteMatrix | 300 (each up to 5 elements, plus 1 per "Check walking time") |
    | Routes API | ComputeRoutes | 500 |
 
@@ -774,10 +773,10 @@ Requests Little Days makes (checked live on 2026-11-04, PRD 7.2):
 
 | When | Requests |
 |---|---|
-| Page load, first visit | The Maps API script only. No map is created until a search, so no map load is billed. |
+| Page load, first visit | The example address and its search on Explore: 1 text search, 6 nearby searches, 1 route matrix, 1 map load |
 | Typing an address | Autocomplete requests: Google's widget sends one per typed character (39 for the full demo address, live). Little Days can't change this. They form one session that ends with the place-details request below. |
 | Picking an address | 1 place-details request |
-| Example address | 1 text search, once per visit |
+| Example address | 1 text search, once per visit, for everyone with no address of their own |
 | One search (one interest) | 1 map load (the first search of the visit only; later searches reuse the map) + 1 nearby search + 1 route matrix (up to 5 elements) |
 | One search (All, **the default**) | 1 map load (first search of the visit only) + up to 6 nearby searches (only the categories not loaded yet) + 1 route matrix (up to 5 elements). Confirmed live on 2026-11-05: 6 `SearchNearby`, 1 `ComputeRouteMatrix`. |
 | "Check walking time" on another place | 1 route matrix with 1 element |

@@ -181,7 +181,7 @@ const config = window.LITTLE_DAYS_CONFIG || {};
 const ACTIVITY_IDS = ACTIVITIES.map((a) => a.id);
 const settings = loadSettings(storage); // PRD.md 7.18
 // The page's language (PRD.md 7.19): the saved choice, or else the browser's.
-const LANG = settings.lang || deviceLanguage(navigator.languages || [navigator.language]);
+const LANG = settings.lang || "zh";
 const LOCALE = LANG === "zh" ? "zh-CN" : "en-US";
 const tr = (text, vars) => translate(LANG, text, vars);
 let plan = loadPlan(storage, isoToday(), ACTIVITY_IDS);
@@ -189,6 +189,9 @@ let plan = loadPlan(storage, isoToday(), ACTIVITY_IDS);
 let savedPlaces = loadPlaces(storage);
 // "loading", "ready", "missing" (no key) or "failed" (refused or didn't load)
 let mapsState = config.googleMapsKey ? "loading" : "missing";
+// Someone with no address of their own opens on the example address. It's never saved, so
+// their own address replaces it for good. The tests turn this off to see the one-time step.
+let openingExample = Boolean(config.googleMapsKey) && !settings.location && config.startAtExample !== false;
 // The chosen location: { kind, label, latitude, longitude, countryCode, placeId or name }.
 // kind is "place" (picked address), "example", "city" (fallback) or "device".
 let place = null;
@@ -433,7 +436,9 @@ async function startGoogle() {
     renderExploreStatus();
     renderMyPlaces();
     renderPlan();
-    exploreHere();
+    // Choosing the example searches by itself, so searching here too would pay twice.
+    if (openingExample) await useExample();
+    else exploreHere();
   } catch (error) {
     useFallback(error);
   }
@@ -471,6 +476,8 @@ async function addressProblem(error) {
 function useFallback(error) {
   if (error) console.error(error);
   mapsState = config.googleMapsKey ? "failed" : "missing";
+  openingExample = false;
+  renderScreen();
   googleLocation.hidden = true;
   cityLocation.hidden = false;
   document.querySelector("#city-note").hidden = false;
@@ -497,6 +504,9 @@ async function useExample() {
     showStatus(locationStatus, "", tr("We couldn't load the example address right now."));
   } finally {
     exampleButton.disabled = false;
+    openingExample = false;
+    renderScreen();
+    renderExploreStatus();
   }
 }
 
@@ -2064,7 +2074,7 @@ function showStatus(area, className, text, retry, retryLabel = tr("Try again")) 
 // The one-time step shows until there's a starting point, and again for "Change". Everything
 // else on Explore waits behind it. Its words follow who's exploring.
 function renderScreen() {
-  const setup = changingBase || (!place && !settings.location);
+  const setup = changingBase || (!place && !settings.location && !openingExample);
   setupSection.hidden = !setup;
   explorePage.hidden = setup;
   setupSection.classList.toggle("is-change", changingBase);
@@ -2110,7 +2120,7 @@ function renderExploreStatus() {
     showStatus(exploreStatus, "", tr("Maps and places aren't set up on this copy of Little Days yet."));
   } else if (mapsState === "failed") {
     showStatus(exploreStatus, "", tr("Google Maps isn't available right now, so places and walking times can't be shown."));
-  } else if (!place && settings.location) {
+  } else if (!place && (settings.location || openingExample)) {
     showStatus(exploreStatus, "loading", tr("Loading your starting point…"));
   } else {
     showStatus(exploreStatus, "", "");

@@ -257,7 +257,7 @@ const SETTING_CHOICES = {
   ages: ["2-6", "under-2", "2-3", "4-6"],
   minutes: [15, 5, 10, 20, 30],
   interest: ["all", "nature", "everyday-life", "community-helpers", "art-culture", "animals-wildlife", "movement"],
-  lang: [null, "en", "zh"], // null: follow the browser's language
+  lang: [null, "en", "zh"], // null: not chosen yet, so Chinese
 };
 
 // Only a picked Google address or a searched city is ever saved, never a device position.
