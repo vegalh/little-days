@@ -181,7 +181,7 @@
             <h2 id="plan-heading" tabindex="-1">My week</h2>
             <p id="plan-subtitle"></p>
           </div>
-          <button id="print-week" type="button" class="button-secondary" data-print-week><svg class="icon icon-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V4h12v5M5 18H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-1M6 14h12v6H6z"/></svg> Print My Week</button>
+          <button id="print-week" type="button" class="button-secondary" data-print-week><svg class="icon icon-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V4h12v5M5 18H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-1M6 14h12v6H6z"/></svg> Share or print</button>
         </div>
         <div id="plan"></div>
       </section>
@@ -321,6 +321,21 @@
   </dialog>
 
   <p id="announce" class="visually-hidden" role="status" aria-live="polite"></p>
+
+  <dialog id="share-dialog" class="share-dialog" aria-labelledby="share-heading">
+    <div class="share-controls">
+      <h2 id="share-heading">Share with families</h2>
+      <button id="share-close" type="button" class="button-quiet" aria-label="Close"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+      <div class="field share-range">
+        <label for="share-range" class="visually-hidden">Show</label>
+        <select id="share-range"></select>
+      </div>
+      <button id="share-clean" type="button">Hide buttons to screenshot</button>
+      <button id="share-print" type="button" class="button-secondary">Print</button>
+      <p class="note share-note">Tap the card to bring the buttons back.</p>
+    </div>
+    <div id="share-card" class="share-card"></div>
+  </dialog>
 
   <!-- Filled in just before window.print() (PRD.md 7.9, 7.14); never shown on screen. -->
   <div id="print-area" aria-hidden="true"></div>

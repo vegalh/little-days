@@ -813,7 +813,7 @@ document.addEventListener("click", (event) => {
   if (perspective) showPerspective(perspective.dataset.placeId, Number(perspective.dataset.perspective));
   if (add) addActivity(add.dataset.add, add.dataset.date);
   if (remove) removeActivity(remove.dataset.remove, remove.dataset.date);
-  if (event.target.closest("[data-print-week]")) printWeek();
+  if (event.target.closest("[data-print-week]")) openShare();
   const printGuideButton = event.target.closest("[data-print-guide]");
   if (printGuideButton) printGuideFor(printGuideButton.dataset.printGuide);
 });
@@ -1779,8 +1779,8 @@ function removeVisit(entry) {
   planHeading.focus();
 }
 
-// --- Print (PRD.md 7.9, 7.14) ---
-// Both printed pages are built, once, into #print-area from state already in memory (the
+// --- Share and print (PRD.md 7.9, 7.14, 7.20) ---
+// The share card and the guide are built from state already in memory (the
 // plan, savedPlaces, findPlace's cache and the current forecast): printing never makes a
 // Google, weather or holiday request. style.css's @media print shows only #print-area.
 // The private journal (an entry's observation/next, PRD.md 7.17) is never printed here.
@@ -1808,21 +1808,52 @@ function printWeatherHtml(day) {
     ${dayAlerts(day).map((line) => `<br><strong>${line}</strong>`).join("")}`;
 }
 
-// Only days with something actually planned: a printed planner of the week's real
-// adventures, not a page per forecast day (avoids unnecessary blank pages, spec §5).
-function printWeek() {
-  const dates = planDates().filter((date) => (plan[date] || []).length);
-  const placeIds = Object.values(plan).flat().filter((x) => typeof x === "object").map((x) => x.placeId);
-  printArea.innerHTML = `
-    <article class="print-page print-week">
+// A card built only from what's already planned, so nothing has to be written for it. The same
+// card is screenshotted or printed. Only days with something planned, so no empty pages.
+function plannedDates() {
+  return planDates().filter((date) => (plan[date] || []).length);
+}
+
+// range: "week", or one planned date.
+function shareCardHtml(range) {
+  const dates = range === "week" ? plannedDates() : [range];
+  const hasPlace = dates.some((date) => plan[date].some((entry) => typeof entry === "object"));
+  return `
+    <article class="print-page ${range === "week" ? "print-week" : "print-single"}">
       ${printHeaderHtml()}
       <h1 class="print-title">${tr("Our Little Adventures")}</h1>
-      ${dates.length ? `<p class="print-subtitle">${printWeekRange(dates)}</p>` : ""}
-      ${placeIds.length ? `<p class="google-attribution" translate="no">Google Maps</p>` : ""}
-      ${dates.length ? dates.map(printWeekDayHtml).join("") : `<p class="print-empty">${tr("Your week is empty. Add activities or places to plan your week.")}</p>`}
+      ${dates.length > 1 ? `<p class="print-subtitle">${printWeekRange(dates)}</p>` : ""}
+      ${hasPlace ? `<p class="google-attribution" translate="no">Google Maps</p>` : ""}
+      ${dates.length ? dates.map((date) => printDayHtml(date, range !== "week")).join("") : `<p class="print-empty">${tr("Your week is empty. Add activities or places to plan your week.")}</p>`}
     </article>`;
-  window.print();
 }
+
+function renderShareCard() {
+  document.querySelector("#share-card").innerHTML = shareCardHtml(document.querySelector("#share-range").value);
+}
+
+function openShare() {
+  document.querySelector("#share-range").innerHTML = [
+    `<option value="week">${tr("This week")}</option>`,
+    ...plannedDates().map((date) => `<option value="${date}">${formatDay(date)}</option>`),
+  ].join("");
+  renderShareCard();
+  shareDialog.showModal();
+}
+
+const shareDialog = document.querySelector("#share-dialog");
+document.querySelector("#share-range").addEventListener("change", renderShareCard);
+document.querySelector("#share-close").addEventListener("click", () => shareDialog.close());
+document.querySelector("#share-clean").addEventListener("click", (event) => {
+  event.stopPropagation();
+  shareDialog.classList.add("is-clean");
+});
+shareDialog.addEventListener("click", () => shareDialog.classList.remove("is-clean"));
+shareDialog.addEventListener("close", () => shareDialog.classList.remove("is-clean"));
+document.querySelector("#share-print").addEventListener("click", () => {
+  printArea.innerHTML = document.querySelector("#share-card").innerHTML;
+  window.print();
+});
 
 // Dates are already formatted for the page's language (formatDay); only the dash joining
 // them is language-neutral, so no translation is needed here.
@@ -1832,32 +1863,30 @@ function printWeekRange(dates) {
   return first === last ? first : `${first} – ${last}`;
 }
 
-// Only called for dates that have at least one entry (printWeek filters to those).
-function printWeekDayHtml(date) {
-  const entries = dayEntries(date);
+// Tips come from the forecast, so they need no writing and only appear when there is one.
+function printWearHtml(day) {
+  if (!day) return "";
+  const { wear, bring } = whatToWear(day);
+  return `
+    <div class="print-wear">
+      ${wear.length ? `<p><strong>${tr("What to wear")}:</strong> ${wear.map((w) => tr(w)).join(LANG === "zh" ? "、" : ", ")}</p>` : ""}
+      ${bring.length ? `<p><strong>${tr("Bring")}:</strong> ${bring.map((b) => tr(b)).join(LANG === "zh" ? "、" : ", ")}</p>` : ""}
+      <p class="print-item-meta">${tr("These tips are for comfort. They don't make outdoor play safe in bad weather.")}</p>
+    </div>`;
+}
+
+// Only called for dates that have at least one entry.
+function printDayHtml(date, withWear) {
   const day = current ? current.days.find((d) => d.date === date) : null;
-  const items = entries.map((entry) => typeof entry === "string" ? printActivityItemHtml(entry) : printPlaceItemHtml(entry, date)).join("");
+  const items = dayEntries(date).map((entry) => typeof entry === "string" ? printActivityItemHtml(entry) : printPlaceItemHtml(entry, date)).join("");
   return `
     <section class="print-day">
       <h2>${formatDay(date)}</h2>
       <p class="print-weather">${printWeatherHtml(day)}</p>
+      ${day && day.weather.hazards.length ? `<p class="print-week-alert">⚠︎ ${tr("Indoor day")}</p>` : ""}
       <ul class="print-items">${items}</ul>
-      ${settings.mode === "classroom" && entries.some((entry) => typeof entry === "object") ? printChecklistHtml() : ""}
-      <div class="print-notes">
-        <p class="print-notes-label">${tr("What did we notice?")}</p>
-        <div class="print-notes-box" aria-hidden="true"></div>
-      </div>
+      ${withWear ? printWearHtml(day) : ""}
     </section>`;
-}
-
-// Blank lines and boxes to fill in by hand. Nothing here is stored.
-function printChecklistHtml() {
-  const checks = ["Permission slips collected", "First-aid kit packed", "Emergency contacts with us", "Head count before leaving", "Head count before returning"];
-  return `
-    <div class="print-checklist">
-      <p>${tr("Adults:")} ______ &nbsp; ${tr("Children:")} ______</p>
-      <ul>${checks.map((check) => `<li>☐ ${tr(check)}</li>`).join("")}</ul>
-    </div>`;
 }
 
 function printActivityItemHtml(id) {

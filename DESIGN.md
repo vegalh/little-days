@@ -326,7 +326,7 @@ Almost none. 150ms fades on hover color and dialog open. Smooth `scroll-snap` on
 
 ## 11. Print
 
-Print My Week (PRD.md 7.9) and Print Adventure Guide (PRD.md 7.14, 7.20) use the same visual language as the rest of the page, carried into a printed, mostly-black-and-white field guide rather than a screen-style layout: native `window.print()`, `@media print`, `@page` and print-only DOM in `#print-area` — no PDF library, no second design system.
+The share card (PRD.md 7.9) and Print Adventure Guide (PRD.md 7.14, 7.20) use the same visual language as the rest of the page, carried into a printed, mostly-black-and-white field guide rather than a screen-style layout: native `window.print()`, `@media print`, `@page` and print-only DOM in `#print-area` — no PDF library, no second design system.
 
 - **Typography and color:** the same Nunito/system-Chinese fonts and `--ink`/`--ink-soft` text colors as on screen, at slightly larger, ink-efficient sizes (15–16px body, 18–26px headings) for a comfortable read on paper. Color is used sparingly: the perspective pill ("First visit") keeps `--selected`/`--accent` (`print-color-adjust: exact` makes it render), and weather icons keep their native emoji color; everything else prints in ink-efficient black and gray.
 - **Branding:** the same header lockup as the app (the sprout `logo-mark` SVG + "Little Days" wordmark), once at the top of every printed page.

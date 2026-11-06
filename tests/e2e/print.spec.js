@@ -29,6 +29,11 @@ async function start(page, testInfo, { pick = true, ...options } = {}) {
 const printArea = (page) => page.locator("#print-area");
 const dialog = (page) => page.locator("#place-dialog");
 
+async function printCard(page) {
+  await page.locator("#print-week").click();
+  await page.locator("#share-print").click();
+}
+
 async function noExtraRequests(page, testInfo, action) {
   const requestsBefore = testInfo.api.requests.length;
   const googleCallsBefore = await page.evaluate(() => window.fakeGoogleCalls.length);
@@ -51,7 +56,7 @@ test("Print My Week: activities and a place visit together, grouped by day, with
   await showView(page, "my-week");
   await expect(page.locator("#plan")).toContainText("Test Park"); // place info fetched for the section on screen
 
-  await noExtraRequests(page, testInfo, () => page.locator("#print-week").click());
+  await noExtraRequests(page, testInfo, () => printCard(page));
   expect(await page.evaluate(() => window.printCalls)).toBe(1);
 
   const area = printArea(page);
@@ -67,10 +72,38 @@ test("Print My Week: activities and a place visit together, grouped by day, with
   await expect(friday).toContainText("Bring a bag and a water bottle.");
   await expect(friday).toContainText("Heavy showers · 66° / 61°"); // a real forecast for this in-range date
   await expect(area.locator(".google-attribution")).toHaveText("Google Maps");
-  await expect(area).toContainText("What did we notice?");
-  await expect(area.locator(".print-notes-box")).toHaveCount(1);
+  // Nothing for the teacher to fill in.
+  await expect(area).not.toContainText("What did we notice?");
+  await expect(area.locator(".print-notes-box")).toHaveCount(0);
+  await expect(area).not.toContainText("______");
   // The private journal (observation/next) is never printed, even if one exists for this place.
   await expect(area).not.toContainText("observation");
+});
+
+test("share card: a full week fits one phone screen, a day adds what to wear, and the buttons hide", async ({ page }, testInfo) => {
+  const plan = {};
+  for (const date of ["2026-11-06", "2026-11-07", "2026-11-08", "2026-11-09", "2026-11-10"]) {
+    plan[date] = ["duck-walk", { kind: "place", entry: `v${date}`, placeId: "fake-park-1", category: "nature", time: "10:00", theme: "Leaves and trees", notes: "Bring a bag." }];
+  }
+  await start(page, testInfo, { storage: { "littleDays.plan.v2": JSON.stringify(plan) } });
+  await showView(page, "my-week");
+  await expect(page.locator("#plan")).toContainText("Test Park");
+  await page.locator("#print-week").click();
+
+  const card = page.locator("#share-card");
+  await expect(card.locator(".print-day")).toHaveCount(5);
+  await page.locator("#share-clean").click();
+  await expect(page.locator(".share-controls")).toBeHidden();
+  const { scrollHeight, clientHeight } = await card.evaluate((el) => ({ scrollHeight: el.scrollHeight, clientHeight: el.clientHeight }));
+  if (testInfo.project.name === "phone") expect(scrollHeight).toBeLessThanOrEqual(clientHeight);
+
+  await card.click();
+  await expect(page.locator(".share-controls")).toBeVisible();
+  await page.locator("#share-range").selectOption("2026-11-06");
+  await expect(card.locator(".print-day")).toHaveCount(1);
+  await expect(card).toContainText("What to wear");
+  await expect(card).toContainText("Bring a bag.");
+  await expect(card.locator(".google-attribution")).toHaveText("Google Maps");
 });
 
 test("Print My Week: several plans on one day print as separate items", async ({ page }, testInfo) => {
@@ -89,7 +122,7 @@ test("Print My Week: several plans on one day print as separate items", async ({
   await showView(page, "my-week");
   await expect(page.locator("#plan")).toContainText("Test Garden");
 
-  await page.locator("#print-week").click();
+  await printCard(page);
   const area = printArea(page);
   await expect(area.locator(".print-day")).toHaveCount(1); // only the planned day prints
   const day = area.locator(".print-day", { hasText: "Fri, Nov 6" });
@@ -105,7 +138,7 @@ test("Print My Week: no forecast for a date past the window shows the required f
     storage: { "littleDays.plan.v2": JSON.stringify({ "2026-11-20": ["duck-walk"] }) },
   });
   await showView(page, "my-week");
-  await page.locator("#print-week").click();
+  await printCard(page);
   await expect(printArea(page)).toContainText("Weather forecast not available yet.");
 });
 
@@ -122,7 +155,7 @@ test("Print My Week: a saved place whose details failed to load still prints its
   await showView(page, "my-week");
   await expect(page.locator("#plan")).toContainText("details unavailable right now");
 
-  await page.locator("#print-week").click();
+  await printCard(page);
   const area = printArea(page);
   await expect(area).toContainText("Saved place (details unavailable right now)");
   await expect(area).toContainText("Check opening hours first.");
@@ -131,7 +164,7 @@ test("Print My Week: a saved place whose details failed to load still prints its
 test("Print My Week: an empty week still produces a printable, labelled empty page", async ({ page }, testInfo) => {
   await start(page, testInfo);
   await showView(page, "my-week");
-  await page.locator("#print-week").click();
+  await printCard(page);
   await expect(printArea(page)).toContainText("Your week is empty.");
 });
 
@@ -146,7 +179,7 @@ test("Print My Week: a long preparation note prints in full", async ({ page }, t
   });
   await showView(page, "my-week");
   await expect(page.locator("#plan")).toContainText("Test Park");
-  await page.locator("#print-week").click();
+  await printCard(page);
   await expect(printArea(page)).toContainText(longNote);
 });
 
@@ -203,10 +236,11 @@ test("中文: Print My Week and Print Adventure Guide show the Chinese interface
     },
   });
   await showView(page, "my-week");
-  await expect(page.locator("#print-week")).toContainText("打印我的一周");
-  await page.locator("#print-week").click();
+  await expect(page.locator("#print-week")).toContainText("分享或打印");
+  await printCard(page);
   await expect(printArea(page)).toContainText("我们的小小冒险");
   await expect(printArea(page)).toContainText("来自 RootMap"); // translated "from RootMap" label
+  await page.locator("#share-close").click();
 
   await showView(page, "explore");
   await chooseInterest(page, "自然");

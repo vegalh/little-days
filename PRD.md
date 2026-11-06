@@ -325,7 +325,7 @@ My week holds two kinds of entries: **place visits** and **at-home activities** 
 - **Forecast at the visit's time:** a place visit with a time, on a date inside the loaded hourly forecast, also shows that hour's own forecast ("Forecast at 1:30 PM: 52°, Rain 10%"), read from the hourly data kept for the visit (7.3). Outside the hourly forecast, or without a time, nothing extra is shown.
 - **Planning a visit never marks the place explored.** Only recording a visit does (7.17).
 - Before any search, or if the weather fails, My week still lists saved dates from today on, without weather.
-- **Print My Week:** a "Print My Week" button renders a printable weekly planner (branding, "Our Little Adventures", the date range, each planned day's places and activities, times, themes, preparation notes, that day's real forecast or "Weather forecast not available yet.", and a ruled space for a handwritten observation) and calls `window.print()`. Only days with at least one entry print — no page for an empty forecast day. The private exploration journal (7.17's `observation`/`next`) is never printed, only the adult's own preparation notes. See 7.20.
+- **Share or print:** a "Share or print" button opens a full-screen card for families, built only from the plan, with nothing to write. A dropdown shows **This week** or one planned day. The week is compact so it fits one phone screenshot: each planned day's weather, activities, places, times and themes. A single day adds addresses, preparation notes, the hourly forecast, weather alerts and What to wear (from the forecast, with its comfort note). "Hide buttons to screenshot" leaves only the card, and a tap brings the buttons back. Print prints the card shown, with the week's addresses and notes in full.
 
 Saved in `localStorage` under `littleDays.plan.v2`. Activities stay exactly as in v1 (their RootMap ID as a string), and place visits are objects beside them:
 
@@ -607,15 +607,14 @@ The whole page works in **English** and **Simplified Chinese**.
 
 ### 7.20 Printable planning pages
 
-Two printable formats, both native-browser printing: no PDF library, just a hidden `#print-area` filled with the print markup, `@media print`/`@page` in `style.css`, and `window.print()`. Design is in DESIGN.md 11.
+Two printable formats (the share card and the Adventure Guide), both native-browser printing: no PDF library, just a hidden `#print-area` filled with the print markup, `@media print`/`@page` in `style.css`, and `window.print()`. Design is in DESIGN.md 11.
 
-- **Print My Week** (7.9) and **Print Adventure Guide** (7.14) only read state already in memory (the loaded plan, My Places, forecast and guide content). Printing never makes a new Google, weather or holiday request, and never generates a map image; Google's "Google Maps" text attribution is shown instead when a printed page includes a Google place.
+- **Share or print** (7.9) and **Print Adventure Guide** (7.14) only read state already in memory (the loaded plan, My Places, forecast and guide content). Printing never makes a new Google, weather or holiday request, and never generates a map image; Google's "Google Maps" text attribution is shown instead when a printed page includes a Google place.
 - **Weather accuracy:** a printed day or guide only ever shows the real forecast for its own date, from the already-loaded week; it's never substituted with today's weather. When that date isn't in the loaded forecast, the page shows "Weather forecast not available yet." instead of a guess. Each printed day's weather line also shows "Rain {n}%", any public holiday, and that day's weather warnings as full sentences (7.4), not just the icon and temperature.
 - **Missing place details:** if a saved place's name and address haven't loaded (or failed to), the print page shows "Saved place (details unavailable right now)" rather than nothing or stale data.
-- **Classroom checklist:** in Classroom mode, Print My Week adds a blank checklist ("Adults: ______ Children: ______" and five checkboxes — permission slips, first-aid kit, emergency contacts, head count before leaving, head count before returning) under every printed day that has at least one place visit. It's for filling in by hand; nothing on it is stored.
 - **Never printed automatically:** the private exploration journal (7.17's `observation` and `next`). Only the adult's own preparation notes (My week) or the hand-written guide content (Adventure Guide) print.
 - **Layout:** no `@page size`, so the browser's own US Letter/A4 choice and "Save as PDF" are respected; a day, a planned item, and a guide section each use `break-inside: avoid` so they aren't split awkwardly across a page break; everything else on the page (header, nav, map, dialogs, bottom bar) is hidden while printing.
-- Each printed page includes a ruled space for a handwritten observation ("What did we notice?"); the Adventure Guide also includes a small plain drawing box ("Draw what you noticed").
+- The share card has no blanks to fill in, because it exists to save teachers time. Only the Adventure Guide keeps a ruled space ("What did we notice?") and a small drawing box ("Draw what you noticed").
 - Both features are available, and fully translated, in English and Chinese (7.19).
 
 ## 8. Page states
@@ -852,7 +851,7 @@ Journeys: location permission denied; manual address selection; places success; 
 
 `tests/e2e/redesign.spec.js` covers the Explore journey: the first screen and results at 360, 390 and 430px in English and Chinese; desktop at 1280px; no paid request on load, on choosing an address or on changing a filter; the exact requests of one default search; the map appearing with results and never being created in a hidden box; marker and card selection; the short card and what moved to details; the filter summary and Reset; Classroom mode remembered and kept by Reset; the weather line on clear and hazard days; a refresh; keyboard use; long addresses.
 
-`tests/e2e/print.spec.js` (7.9, 7.14, 7.20): Print My Week with activities and a place visit together, grouped by day, with weather and notes; several plans on one day; a date past the forecast window showing the required fallback text; a saved place whose Google fetch failed still printing its own notes; an empty week; a long preparation note printing in full; Print Adventure Guide with the place, the selected day's weather and the currently-chosen perspective; Print Adventure Guide with no forecast loaded; and the same checks with the Chinese interface. Every test stubs `window.print()` and asserts no extra Google, weather or holiday request happens.
+`tests/e2e/print.spec.js` (7.9, 7.14, 7.20): The share card with activities and a place visit together, grouped by day, with weather and notes; several plans on one day; a date past the forecast window showing the required fallback text; a saved place whose Google fetch failed still printing its own notes; an empty week; a long preparation note printing in full; Print Adventure Guide with the place, the selected day's weather and the currently-chosen perspective; Print Adventure Guide with no forecast loaded; and the same checks with the Chinese interface. Every test stubs `window.print()` and asserts no extra Google, weather or holiday request happens.
 
 ### 10.3 Live check (manual, real APIs)
 
@@ -865,7 +864,7 @@ Journeys: location permission denied; manual address selection; places success; 
 - Open-Meteo: the "Now" temperature matches open-meteo.com for the same place.
 - Geolocation: allowing it searches from the device location; denying it shows 8.3's message.
 - Restrictions: the prod key, used from `localhost`, is refused (expected).
-- Print preview: open each browser's print preview (Ctrl/Cmd+P) for Print My Week and Print Adventure Guide at both US Letter and A4; confirm no clipped content, no unexpected blank pages, no section split mid-list, and that "Save as PDF" produces a readable file.
+- Print preview: open each browser's print preview (Ctrl/Cmd+P) for the share card and Print Adventure Guide at both US Letter and A4; confirm no clipped content, no unexpected blank pages, no section split mid-list, and that "Save as PDF" produces a readable file.
 
 Reports always say which results come from mocked tests and which from a live check. A feature is "live-verified" only after a live check passes.
 
