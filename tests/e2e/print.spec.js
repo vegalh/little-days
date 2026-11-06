@@ -205,8 +205,8 @@ test("Print Adventure Guide: place, weather for the selected day, and the chosen
   await expect(area).toContainText("After the visit");
   await expect(area).toContainText("Practical life extension");
   await expect(area.locator(".google-attribution")).toHaveText("Google Maps");
-  await expect(area).toContainText("What did we notice?");
-  await expect(area.locator(".print-notes-box")).toHaveCount(1);
+  // Children draw rather than write: no ruled lines, and a big space for a picture.
+  await expect(area.locator(".print-notes-box")).toHaveCount(0);
   await expect(area).toContainText("Draw what you noticed");
   await expect(area.locator(".print-drawing-box")).toHaveCount(1);
 });
@@ -250,6 +250,5 @@ test("中文: Print My Week and Print Adventure Guide show the Chinese interface
   await expect(printArea(page)).toContainText("探索重点");
   await expect(printArea(page)).toContainText("孩子们可能会注意到");
   await expect(printArea(page)).toContainText("日常生活延伸");
-  await expect(printArea(page)).toContainText("我们注意到了什么");
   await expect(printArea(page)).toContainText("画下你们的发现");
 });

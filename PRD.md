@@ -514,7 +514,7 @@ The address, setting, access line, age note, weather notes and "Add to my week" 
 
 **Day picker** (in Filters, once there's a forecast): a "Day" dropdown with one option per forecast day — the same seven days and the same selection as the Weather strip (7.1, 7.15). Each option shows the date, the high temperature, and "Indoor day" or a holiday name when they apply.
 
-**Filters panel:** one row per filter, the label beside its control, all visible on a phone without scrolling. Choices of three or more are dropdowns; Who's exploring and Temperature stay two-way switches.
+**Filters panel:** fills the phone screen, and is 760px wide in two columns on a larger screen. One row per filter, the label beside its control, all visible on a phone without scrolling. Choices of three or more are dropdowns; Who's exploring and Temperature stay two-way switches.
 
 **Booking** (in Filters, applied on the page with no new request): All, Usually walk in, Book or call first. This is a **Little Days estimate from the kind of place**, never checked with the place and shown with that label in place details. Book or call first: `fire_station`, `police`, `city_hall`, `community_center`, `cultural_center`, `museum`, `performing_arts_theater`, `zoo`, `aquarium`, `sports_complex`, `yoga_studio`. Everything else is Usually walk in, and in Classroom mode that line isn't shown because every group visit needs contact first. Google's `isReservable` isn't used: it would move every search to the Enterprise + Atmosphere price. A yoga studio also shows "Ask whether there are children's or family classes.": Google has no data on children's classes, so the page never says a place has them.
 
@@ -614,7 +614,8 @@ Two printable formats (the share card and the Adventure Guide), both native-brow
 - **Missing place details:** if a saved place's name and address haven't loaded (or failed to), the print page shows "Saved place (details unavailable right now)" rather than nothing or stale data.
 - **Never printed automatically:** the private exploration journal (7.17's `observation` and `next`). Only the adult's own preparation notes (My week) or the hand-written guide content (Adventure Guide) print.
 - **Layout:** no `@page size`, so the browser's own US Letter/A4 choice and "Save as PDF" are respected; a day, a planned item, and a guide section each use `break-inside: avoid` so they aren't split awkwardly across a page break; everything else on the page (header, nav, map, dialogs, bottom bar) is hidden while printing.
-- The share card has no blanks to fill in, because it exists to save teachers time. Only the Adventure Guide keeps a ruled space ("What did we notice?") and a small drawing box ("Draw what you noticed").
+- Neither page has anything to fill in by writing: the share card exists to save teachers time, and young children can't write yet. The Adventure Guide ends with a whole page for a child's drawing ("Draw what you noticed"), with no ruled lines.
+- **Look:** a kindergarten handout, in color: a friendly title banner with drawn doodles, and soft color blocks for each day or guide section. Print and the on-screen card share it.
 - Both features are available, and fully translated, in English and Chinese (7.19).
 
 ## 8. Page states

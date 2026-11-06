@@ -287,7 +287,6 @@ const ZH = {
   "Print Adventure Guide": "打印探索指南",
   "Our Little Adventures": "我们的小小冒险",
   "Weather forecast not available yet.": "暂无该日期的天气预报。",
-  "What did we notice?": "我们注意到了什么？",
   "Draw what you noticed": "画下你们的发现",
   "Exploration focus": "探索重点",
   "Practical life extension": "日常生活延伸",

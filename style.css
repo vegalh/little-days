@@ -1,5 +1,6 @@
 /* RootMap's font, bundled in fonts/ (SIL Open Font License, fonts/OFL.txt) rather than
    loaded from Google Fonts, which is blocked or slow in mainland China. */
+@font-face { font-family: "Caveat"; font-weight: 700; font-display: swap; src: url("fonts/caveat-latin-700-normal.woff2") format("woff2"); }
 @font-face { font-family: "Nunito"; font-weight: 400; font-display: swap; src: url("fonts/nunito-latin-400-normal.woff2") format("woff2"); }
 @font-face { font-family: "Nunito"; font-weight: 600; font-display: swap; src: url("fonts/nunito-latin-600-normal.woff2") format("woff2"); }
 @font-face { font-family: "Nunito"; font-weight: 700; font-display: swap; src: url("fonts/nunito-latin-700-normal.woff2") format("woff2"); }
@@ -25,6 +26,9 @@
   --warning: #8A5A00;
   --leaf-ink: #4B6B2E;
   --google-gray: #5E5E5E; /* only Google's "Google Maps" text attribution */
+  --print-sky: #E2EEF7;
+  --print-rose: #FBE6E0;
+  --font-fun: "Caveat", "Nunito", system-ui, sans-serif; /* only printed and shared pages */
   --font-head: "Nunito", system-ui, sans-serif;
   --font-body: "Nunito", system-ui, sans-serif;
   --radius: 20px;
@@ -55,6 +59,7 @@ h1, h2, h3 {
    too large to bundle, and Google Fonts is slow in mainland China), at sizes and weights
    that suit Chinese characters better than Caveat's. */
 html:lang(zh-CN) {
+  --font-fun: "Yuanti SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   --font-head: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   --font-body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
   line-height: 1.65;
@@ -419,12 +424,16 @@ gmp-place-autocomplete[aria-invalid=true] { box-shadow: 0 0 0 2px var(--accent);
 .filters-summary .link-button { flex: none; }
 
 /* Every secondary setting, in one sheet (DESIGN.md 6). */
-dialog.filters-panel { padding: 0; }
+dialog.filters-panel { width: min(760px, calc(100% - 32px)); max-width: 100%; max-height: 90dvh; padding: 0; }
 dialog.filters-panel[open] { display: flex; flex-direction: column; }
 .filters-head { display: flex; flex: none; align-items: center; justify-content: space-between; padding: 8px 8px 8px 16px; }
 .filters-head h2 { font-size: 18px; }
 .filters-head h2:focus { outline: 0; }
-.filters-body { flex: 1; min-height: 0; gap: 8px; padding: 0 16px 16px; overflow-y: auto; }
+.filters-body { flex: 0 1 auto; min-height: 0; gap: 12px 24px; padding: 8px 16px 16px; overflow-y: auto; }
+@media (min-width: 720px) {
+  .filters-body { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filters-body > .note { grid-column: 1 / -1; }
+}
 /* One row per filter, label beside its control, so they all fit on a phone screen. */
 .filters-body .field { display: grid; grid-template-columns: 38% minmax(0, 1fr); align-items: center; gap: 8px; }
 .filters-body fieldset.field { display: block; }
@@ -452,6 +461,14 @@ select {
   background: var(--tint);
   border: 1px solid var(--line);
   border-radius: var(--radius-small);
+}
+
+/* Browsers draw their own select, and Safari's ignores the height above. */
+select {
+  padding-right: 32px;
+  background: var(--tint) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2366655C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center / 20px;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 input[aria-invalid=true] { border-color: var(--accent); }
@@ -543,7 +560,7 @@ section { padding-block: 32px; }
 .section-head { margin-bottom: 16px; }
 .section-head h2 { font-size: 24px; }
 
-/* My week's heading plus its "Print My Week" button, side by side when there's room. */
+/* My week's heading plus its "Share or print" button, side by side when there's room. */
 .section-head-row {
   display: flex;
   flex-wrap: wrap;
@@ -1570,6 +1587,8 @@ textarea {
   .chips-scroll .chip > span { white-space: nowrap; }
 
   .place-dialog { width: 100%; max-width: 100%; }
+  dialog.filters-panel { width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; border: 0; border-radius: 0; }
+  dialog.filters-panel .filters-body { flex: 1 1 auto; gap: 8px; }
   .place-head { padding: 16px; }
   .details-actions { bottom: -16px; margin: 16px -16px -16px; padding: 12px 16px 16px; }
   .place-section { padding: 0 16px; }
@@ -1631,6 +1650,7 @@ textarea {
 .plan-alert { margin: 4px 0 0; font-size: .85rem; color: var(--warning); }
 .plan-alert::before { content: "⚠︎ "; }
 
+/* A kindergarten handout: soft color blocks, big rounded shapes, one friendly title. */
 .print-page {
   max-width: 100%;
   color: var(--ink);
@@ -1639,55 +1659,54 @@ textarea {
   -webkit-print-color-adjust: exact;
 }
 
-.print-brand {
-  margin: 0 0 16px;
-  font-size: 20px;
-}
-.print-brand .logo-mark { width: 24px; height: 24px; }
-
-.print-title { font-size: 26px; }
-.print-subtitle { margin: 4px 0 0; color: var(--ink-soft); }
-.print-address { margin: 4px 0 0; color: var(--ink-soft); }
-.print-perspective {
-  display: inline-block;
-  margin: 12px 0 0;
-  padding: 2px 10px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--accent);
-  background: var(--selected);
-  border-radius: 999px;
-}
-
+.print-hero { position: relative; padding: 14px 18px 16px; overflow: hidden; background: var(--apricot); border-radius: 26px; }
+.print-doodles { position: absolute; top: 8px; right: 10px; width: 130px; height: 70px; }
+.print-brand { margin: 0; font-size: 16px; }
+.print-brand .logo-mark { width: 22px; height: 22px; }
+.print-title { position: relative; margin: 2px 0 0; padding-right: 96px; font-family: var(--font-fun); font-size: 40px; font-weight: 700; line-height: 1.1; color: var(--heading); }
+.print-subtitle,
+.print-address { position: relative; margin: 4px 0 0; color: var(--ink); }
+.print-perspective { display: inline-block; margin: 8px 0 0; padding: 2px 12px; font-size: 13px; font-weight: 700; color: var(--accent); background: var(--surface); border-radius: 999px; }
+.print-page > .google-attribution { margin: 6px 0 0 8px; }
 .print-empty { margin-top: 16px; color: var(--ink-soft); }
 
-/* One day of My Week: kept together rather than split across a page break. */
-.print-day {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-  break-inside: avoid;
-}
-.print-day:first-of-type { border-top: 0; }
-.print-day h2 { font-size: 18px; }
-.print-weather { margin: 2px 0 12px; font-size: 13px; color: var(--ink-soft); }
+/* One day: a block of its own color, kept whole across a page break. */
+.print-day { margin-top: 12px; padding: 12px 16px; background: var(--selected); border-radius: 22px; break-inside: avoid; }
+.print-day:nth-of-type(4n + 2) { background: var(--print-sky); }
+.print-day:nth-of-type(4n + 3) { background: var(--apricot); }
+.print-day:nth-of-type(4n) { background: var(--print-rose); }
+.print-day h2 { font-size: 20px; }
+.print-weather { margin: 2px 0 8px; font-size: 14px; }
 
 .print-items { margin: 0; padding: 0; list-style: none; }
-.print-item {
-  padding: 8px 0;
-  border-top: 1px dashed var(--line);
-  break-inside: avoid;
-}
-.print-items li:first-child { border-top: 0; }
-.print-item-title { margin: 0; font-weight: 700; }
+.print-item { padding: 6px 0 6px 26px; position: relative; break-inside: avoid; }
+.print-item::before { content: "🌱"; position: absolute; left: 0; top: 6px; font-size: 15px; }
+.print-item-title { margin: 0; font-size: 17px; font-weight: 700; }
 .print-item-address,
 .print-item-meta,
-.print-item-notes { margin: 2px 0 0; font-size: 13px; color: var(--ink-soft); }
+.print-item-notes { margin: 2px 0 0; font-size: 14px; color: var(--ink); }
+
+/* The guide: the same color blocks, two across, so the words stay on one page. */
+.print-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.print-section { padding: 10px 14px; font-size: 14px; background: var(--selected); border-radius: 20px; break-inside: avoid; }
+.print-section:nth-child(4n + 2) { background: var(--print-sky); }
+.print-section:nth-child(4n + 3) { background: var(--apricot); }
+.print-section:nth-child(4n) { background: var(--print-rose); }
+.print-section h2 { font-size: 16px; }
+.print-section p { margin: 4px 0 0; }
+.print-section ul { margin: 4px 0 0; padding-left: 18px; }
+.print-section li { margin: 2px 0; }
 
 /* The week's screenshot leaves out the full alerts, so it says this much instead. */
 .print-week-alert { display: none; }
-.print-wear { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.print-wear { margin-top: 8px; padding: 8px 12px; background: rgba(255, 255, 255, .7); border-radius: 14px; }
 .print-wear p { margin: 2px 0 0; font-size: 14px; }
+
+/* Children draw rather than write, so this gets a whole page and no ruled lines. */
+.print-drawing { break-before: page; }
+.print-drawing h2 { font-family: var(--font-fun); font-size: 36px; text-align: center; }
+.print-drawing-box { position: relative; height: 200mm; margin-top: 10px; border: 4px dashed var(--peach); border-radius: 36px; }
+.print-drawing-box .print-doodles { top: auto; right: 16px; bottom: 12px; }
 
 /* The card a teacher screenshots for families: fills a phone, and with its buttons hidden
    nothing else is in the picture, so there's nothing to crop. */
@@ -1700,26 +1719,26 @@ dialog.share-dialog[open] { display: flex; flex-direction: column; }
 .share-controls button { min-width: 0; }
 .share-note { margin: 0; font-size: 13px; color: var(--ink-soft); text-align: center; }
 .share-dialog.is-clean .share-controls { display: none; }
-.share-card { flex: 1; min-height: 0; padding: 12px 16px; overflow-y: auto; }
-.share-card .print-brand { margin: 0 0 8px; font-size: 16px; }
-.share-card .print-title { font-size: 22px; }
-.share-card .print-subtitle { font-size: 14px; }
-.share-card .google-attribution { margin: 4px 0 0; }
-.share-card .print-week .print-day { margin-top: 5px; padding-top: 5px; }
-.share-card .print-week .print-title { font-size: 20px; }
-.share-card .print-week .print-subtitle,
-.share-card .print-week .google-attribution { display: inline; margin: 0 8px 0 0; font-size: 13px; }
-.share-card .print-week .print-items { margin-top: 2px; }
+.share-card { flex: 1; min-height: 0; padding: 10px 12px; overflow-y: auto; }
+.share-card .print-title { font-size: 34px; }
+/* The week has to fit one screenshot; the single day has room for everything. */
+.share-card .print-week .print-hero { padding: 8px 14px 10px; border-radius: 20px; }
+.share-card .print-week .print-doodles { top: 4px; width: 100px; height: 54px; }
+.share-card .print-week .print-title { font-size: 28px; }
+.share-card .print-week .print-subtitle { margin: 0; font-size: 13px; }
+.share-card .print-week > .google-attribution { margin: 3px 0 0 6px; font-size: 12px; }
+.share-card .print-week .print-day { margin-top: 6px; padding: 6px 12px; border-radius: 16px; }
 .share-card .print-week .print-day h2 { display: inline; font-size: 15px; }
 .share-card .print-week .print-weather { display: inline; margin: 0 0 0 8px; font-size: 12px; line-height: 1.3; }
-.share-card .print-week .print-item { margin: 0; padding: 1px 0; border-top: 0; line-height: 1.3; }
 .share-card .print-week .print-week-alert { display: block; margin: 0; font-size: 12px; font-weight: 700; color: var(--warning); }
+.share-card .print-week .print-items { margin-top: 2px; }
+.share-card .print-week .print-item { margin: 0; padding: 1px 0 1px 20px; line-height: 1.3; }
+.share-card .print-week .print-item::before { top: 1px; font-size: 12px; }
 .share-card .print-week .print-item p { display: inline; }
 .share-card .print-week .print-item-title { font-size: 14px; line-height: 1.3; }
 .share-card .print-week .print-item-meta { margin: 0 0 0 6px; font-size: 12px; line-height: 1.3; }
-/* The week has to fit one screenshot; the single day has room for all of this. */
 .share-card .print-week .print-item-address,
-.share-card .print-week .print-item-notes { display: none !important; }
+.share-card .print-week .print-item-notes,
 .share-card .print-week .print-weather strong,
 .share-card .print-week .print-weather br,
 .share-card .print-week .print-item-meta + .print-item-meta { display: none !important; }
@@ -1735,33 +1754,4 @@ dialog.share-dialog[open] { display: flex; flex-direction: column; }
 
   html, body { background: #FFF; }
 
-  /* A section of the guide (why explore, focus, notice, before/during/after, practical
-     life): each stays on one page together, never split mid-list. */
-  .print-section {
-    margin-top: 18px;
-    break-inside: avoid;
-  }
-  .print-section h2 { font-size: 16px; }
-  .print-section p { margin: 4px 0 0; }
-  .print-section ul { margin: 4px 0 0; padding-left: 20px; }
-  .print-section li { margin: 2px 0; }
-
-  /* Blank, ruled space for a handwritten note - a nature-journal page, not a spreadsheet. */
-  .print-notes,
-  .print-observations { margin-top: 18px; break-inside: avoid; }
-  .print-notes-label { margin: 0 0 6px; font-weight: 600; }
-  .print-notes-box {
-    height: 70px;
-    background-image: repeating-linear-gradient(to bottom, transparent 0 23px, var(--line) 23px 24px);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-small);
-  }
-
-  /* A plain box for a small drawing: no ruled lines, just a gentle frame. */
-  .print-drawing { margin-top: 18px; break-inside: avoid; }
-  .print-drawing-box {
-    height: 140px;
-    border: 1px dashed var(--line);
-    border-radius: var(--radius-small);
-  }
 }

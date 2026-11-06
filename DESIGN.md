@@ -326,11 +326,10 @@ Almost none. 150ms fades on hover color and dialog open. Smooth `scroll-snap` on
 
 ## 11. Print
 
-The share card (PRD.md 7.9) and Print Adventure Guide (PRD.md 7.14, 7.20) use the same visual language as the rest of the page, carried into a printed, mostly-black-and-white field guide rather than a screen-style layout: native `window.print()`, `@media print`, `@page` and print-only DOM in `#print-area` — no PDF library, no second design system.
+The share card (PRD.md 7.9) and Print Adventure Guide (PRD.md 7.14, 7.20) look like a kindergarten handout, on screen and on paper: native `window.print()`, `@media print` and `@page`, with no PDF library.
 
-- **Typography and color:** the same Nunito/system-Chinese fonts and `--ink`/`--ink-soft` text colors as on screen, at slightly larger, ink-efficient sizes (15–16px body, 18–26px headings) for a comfortable read on paper. Color is used sparingly: the perspective pill ("First visit") keeps `--selected`/`--accent` (`print-color-adjust: exact` makes it render), and weather icons keep their native emoji color; everything else prints in ink-efficient black and gray.
-- **Branding:** the same header lockup as the app (the sprout `logo-mark` SVG + "Little Days" wordmark), once at the top of every printed page.
-- **Layout:** a single column, generous line-height, and the same gentle borders and rounded corners (`--radius-small`) as on-screen cards — but no shadows (wasted ink) and no background tint behind the whole page (stays `#FFF` so `@page` margins and any printer's own header/footer sit cleanly outside it).
-- **A nature-journal feel, not a spreadsheet:** short prose and short bulleted lists, generous whitespace between sections, and two deliberately plain, undecorated spaces for the family to fill in by hand — a ruled note box ("What did we notice?") on every My Week day and the Adventure Guide, and a plain dashed drawing box ("Draw what you noticed") on the Adventure Guide only.
+- **Title banner:** `--apricot`, 26px radius, the sprout lockup, the title in `--font-fun` (Caveat in English, a rounded system font in Chinese; only these pages use it), and the inline SVG doodles: a smiling sun, a cloud and a flower.
+- **Color blocks:** each day or guide section is a soft block, cycling `--selected`, `--print-sky`, `--apricot`, `--print-rose`, 20–22px radius, no borders or shadows. Items carry a 🌱 bullet. Google's attribution sits on white, outside the blocks.
+- **Nothing to write:** no ruled lines or blanks. The guide's last page is one large dashed frame for a child's drawing.
 - **Pagination:** a My Week day, a planned item, and a guide section each use `break-inside: avoid` so the browser never splits one across a page boundary. `@page` sets only a margin (14mm), never a fixed `size`, so the browser's own US Letter/A4 choice and "Save as PDF" are respected.
 - **What's left out of print:** everything else on the page (header, bottom nav, maps, dialogs, filters) is hidden under `@media print`; the private exploration journal is never printed; a missing forecast or missing place detail shows the same plain-text fallback as on screen, never a guess or a blank gap.

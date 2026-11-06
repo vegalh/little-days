@@ -1785,7 +1785,7 @@ function removeVisit(entry) {
 // Google, weather or holiday request. style.css's @media print shows only #print-area.
 // The private journal (an entry's observation/next, PRD.md 7.17) is never printed here.
 
-function printHeaderHtml() {
+function printBrandHtml() {
   return `
     <p class="logo print-brand" translate="no">
       <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -1795,6 +1795,30 @@ function printHeaderHtml() {
       </svg>
       Little Days
     </p>`;
+}
+
+// A sun, a cloud and a flower, drawn here because nothing can load from outside (AGENTS.md).
+const PRINT_DOODLES = `
+  <svg class="print-doodles" viewBox="0 0 130 70" aria-hidden="true" focusable="false">
+    <g stroke="#E9A23B" stroke-width="3" stroke-linecap="round">
+      <path d="M40 6v7M40 47v7M16 30h7M57 30h7M23 13l5 5M52 42l5 5M57 13l-5 5M28 42l-5 5"/>
+    </g>
+    <circle cx="40" cy="30" r="13" fill="#F6C75E"/>
+    <circle cx="35" cy="28" r="1.8" fill="#26251F"/><circle cx="45" cy="28" r="1.8" fill="#26251F"/>
+    <path d="M35 34q5 4 10 0" fill="none" stroke="#26251F" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M76 46a9 9 0 0 1 2-18 12 12 0 0 1 23-2 10 10 0 0 1 8 20Z" fill="#FFF" stroke="#7FA7C9" stroke-width="2.5" stroke-linejoin="round"/>
+    <g fill="#E98B7A"><circle cx="112" cy="58" r="4"/><circle cx="120" cy="58" r="4"/><circle cx="116" cy="52" r="4"/><circle cx="116" cy="64" r="4"/></g>
+    <circle cx="116" cy="58" r="3" fill="#F6C75E"/>
+  </svg>`;
+
+function printHeroHtml(title, lines) {
+  return `
+    <header class="print-hero">
+      ${PRINT_DOODLES}
+      ${printBrandHtml()}
+      <h1 class="print-title">${title}</h1>
+      ${lines}
+    </header>`;
 }
 
 // The weather line for one date: the real forecast when it's in range, never a guess
@@ -1820,9 +1844,7 @@ function shareCardHtml(range) {
   const hasPlace = dates.some((date) => plan[date].some((entry) => typeof entry === "object"));
   return `
     <article class="print-page ${range === "week" ? "print-week" : "print-single"}">
-      ${printHeaderHtml()}
-      <h1 class="print-title">${tr("Our Little Adventures")}</h1>
-      ${dates.length > 1 ? `<p class="print-subtitle">${printWeekRange(dates)}</p>` : ""}
+      ${printHeroHtml(tr("Our Little Adventures"), dates.length > 1 ? `<p class="print-subtitle">${printWeekRange(dates)}</p>` : "")}
       ${hasPlace ? `<p class="google-attribution" translate="no">Google Maps</p>` : ""}
       ${dates.length ? dates.map((date) => printDayHtml(date, range !== "week")).join("") : `<p class="print-empty">${tr("Your week is empty. Add activities or places to plan your week.")}</p>`}
     </article>`;
@@ -1931,15 +1953,15 @@ function printGuide(placeItem, shown, day) {
   const list = (items) => `<ul>${items.map((item) => `<li>${escapeHtml(guideText(item))}</li>`).join("")}</ul>`;
   printArea.innerHTML = `
     <article class="print-page print-guide">
-      ${printHeaderHtml()}
-      <h1 class="print-title">${escapeHtml(placeItem.name || tr("Unnamed place"))}</h1>
-      ${placeItem.address ? `<p class="print-address">${escapeHtml(placeItem.address)}</p>` : ""}
+      ${printHeroHtml(escapeHtml(placeItem.name || tr("Unnamed place")), `
+        ${placeItem.address ? `<p class="print-address">${escapeHtml(placeItem.address)}</p>` : ""}
+        <p class="print-perspective">${tr(["First visit", "Second visit", "Third visit"][shown])}</p>`)}
       <p class="google-attribution" translate="no">Google Maps</p>
+      <div class="print-sections">
       <section class="print-section">
         <h2>${day ? tr("Weather on {day}", { day: formatDay(day.date) }) : tr("Weather")}</h2>
         <p>${printWeatherHtml(day)}</p>
       </section>
-      <p class="print-perspective">${tr(["First visit", "Second visit", "Third visit"][shown])}</p>
       <section class="print-section">
         <h2>${tr("Why explore this place?")}</h2>
         <p>${escapeHtml(guideText(guide.why))}</p>
@@ -1968,13 +1990,10 @@ function printGuide(placeItem, shown, day) {
         <h2>${tr("Practical life extension")}</h2>
         <p>${escapeHtml(guideText(set.practical))}</p>
       </section>
-      <section class="print-section print-observations">
-        <h2>${tr("What did we notice?")}</h2>
-        <div class="print-notes-box" aria-hidden="true"></div>
-      </section>
-      <section class="print-section print-drawing">
+      </div>
+      <section class="print-drawing">
         <h2>${tr("Draw what you noticed")}</h2>
-        <div class="print-drawing-box" aria-hidden="true"></div>
+        <div class="print-drawing-box" aria-hidden="true">${PRINT_DOODLES}</div>
       </section>
     </article>`;
   window.print();
