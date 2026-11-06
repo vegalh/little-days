@@ -119,9 +119,9 @@ test("a visit searches once: 6 searches, 1 route matrix and 1 map, and a return 
   await showView(page, "weather");
   await showView(page, "my-week");
   await showView(page, "explore");
-  await page.locator("#explore-chips label", { hasText: "Nature" }).click();
+  await chooseInterest(page, "Nature");
   await expect(page.locator(".place-card")).toHaveCount(2);
-  await page.locator("#explore-chips label", { hasText: "All" }).click();
+  await chooseInterest(page, "All");
   await expect(page.locator(".place-card")).toHaveCount(6);
   expect(await googleCalls(page)).toEqual(expected);
 

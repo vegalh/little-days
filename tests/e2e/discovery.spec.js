@@ -69,7 +69,7 @@ test("All: the first 5 get walking times; the rest can be checked one at a time"
   expect(matrix[1].destinations).toBe(1);
 
   // Switching to an interest already loaded shows it from memory: no new request.
-  await page.locator("#explore-chips label", { hasText: "Everyday Life" }).click();
+  await chooseInterest(page, "Everyday Life");
   await expect(page.locator(".place-card")).toHaveCount(1);
   expect(await calls(page, "searchNearby")).toHaveLength(6);
 });

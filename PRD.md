@@ -78,11 +78,11 @@ Version 1 is built first for ages 2–6. Children under 2 are supported with age
 | Who's exploring (Filters) | Two radio buttons: **Family** / **Classroom** | Changes wording and reminders (7.13). Default Family. Remembered, so a teacher picks Classroom once. Reset doesn't change it. |
 | Ages (Filters) | Dropdown: Under 2, 2–3, 4–6, Mixed 2–6 | Changes age notes (7.13) and at-home ideas (7.5). Default Mixed 2–6. |
 | Walking time (Filters) | Dropdown: 5, 10, 15, 20, 30 min walk | Sets the search area (7.10) and the walking-time filter (7.12). Default 15. |
-| Interests (Filters) | Dropdown, and the chips on Explore: **All** and the six categories (7.10) | One is chosen at a time. **All is chosen at first**, so the first press shows the mix of places the neighborhood has. A category is one search; All is one search per category not yet loaded (7.10, cost in 9.3). |
+| Interests (Filters) | Dropdown: **All** and the six categories (7.10) | One is chosen at a time. **All is chosen at first**, so the first press shows the mix of places the neighborhood has. A category is one search; All is one search per category not yet loaded (7.10, cost in 9.3). |
 | Temperature (Filters) | °F / °C switch | Changes every temperature, wind speed (mph / km/h), rain amount (in / mm) and distance (mi / km). Doesn't refetch anything. Saved. |
 | Day | Each day card in the seven-day strip (Weather) and in the Day dropdown in Filters (7.16) chooses it | Selects the day used for weather notes on places, What to wear, and at-home ideas. The chosen day is kept: it stays selected across a search and when moving between Weather and Explore; only choosing a new location resets it to today. |
 
-**Filters summary.** Under the interest chips, a short line lists what differs from the defaults ("Classroom · 10 min walk · Nature"), and the Filters button shows the count. **Reset** puts ages, walking time, interest, day and the Setting and Explored filters back to their defaults. It keeps the mode, so it can never quietly drop the Classroom reminders.
+**Filters summary.** Under the Filters button, a short line lists what differs from the defaults ("Classroom · 10 min walk · Nature"), and the Filters button shows the count. **Reset** puts ages, walking time, interest, day and the Setting and Explored filters back to their defaults. It keeps the mode, so it can never quietly drop the Classroom reminders.
 
 **Choosing a location fetches the weather right away** (Open-Meteo and Nager.Date, no Google request). **Places load by themselves whenever Explore is on screen with a starting point**: on choosing one, on opening the page there, and on coming to Explore from another view. Opening straight on Weather, My Places or My week searches nothing. A visit searches each interest once; moving between views and interests already loaded sends nothing. Changing mode, ages, units, the day or filters never makes a request. Changing the location or walking time clears the places loaded so far and searches again, and from Filters that happens once, when the sheet closes.
 
@@ -510,7 +510,7 @@ The address, setting, access line, age note, weather notes and "Add to my week" 
 
 **Layout:** one column of starting point, map, cards on phones and tablets, with no List/Map switch: the map and the cards are always shown together. From 960px the starting point and cards share the left column and the map stays in view on the right. Details are specified in DESIGN.md.
 
-**Interest tabs** (under the map, beside Filters): the seven interests again, with the searched one chosen, as the one quick filter. Choosing one shows it from memory if it's loaded (7.10); otherwise it searches that interest. Loaded interests carry a "✓", except when everything is loaded.
+**Interests** are chosen only in Filters, so they aren't repeated on the page. Choosing one shows it from memory if it's loaded (7.10); otherwise it searches that interest when Filters closes.
 
 **Day picker** (in Filters, once there's a forecast): a "Day" dropdown with one option per forecast day — the same seven days and the same selection as the Weather strip (7.1, 7.15). Each option shows the date, the high temperature, and "Indoor day" or a holiday name when they apply.
 
@@ -717,8 +717,8 @@ Theme and notes can't be too long (`maxlength`). Walking time, mode, ages and un
 From top to bottom (DESIGN.md sets the look):
 
 1. **Header**: the logo, the language switch, and links to Explore, Weather, My Places and My week (a bottom bar on phones).
-2. **Starting point:** the address line with "Change", the **compact weather line** (7.15), and below the map Filters and the interest chips (7.1).
-3. **Map, then places:** the map or the Explore status, the interest tabs, one short line of notes, then the cards (7.16).
+2. **Starting point:** the address line with "Change", the **compact weather line** (7.15), and below the map the Filters button (7.1).
+3. **Map, then places:** the map or the Explore status, one short line of notes, then the cards (7.16).
 4. **Weather** (7.15): one line naming the place and dates ("221 Washington St, Newton, MA 02458, USA · Wed Nov 4 – Tue Nov 10"), Now, Next hours, and the seven-day strip. Day cards are unchanged from the earlier version: day and date, icon, condition, high/low, "Rain {n}%", holiday and celebration tags, "Indoor day" on a hazard day, and the featured at-home activity. Today is selected. Under the strip: the selected day's weather warnings and forecast reminder (7.4) and What to wear (7.6).
 5. **Ideas for {day}** (optional at-home ideas): three at-home ideas (7.5) and Why these activities? (7.7).
 6. **My Places** (7.17).
@@ -801,7 +801,7 @@ Requests Little Days makes (checked live on 2026-11-04, PRD 7.2):
 
 ### 9.5 Deployment
 
-**Workflow:** `.github/workflows/pages.yml`. It runs **only when started by hand** (Actions → "Deploy to GitHub Pages" → Run workflow), never on push. It checks out the code, runs `node --test`, copies only the site files (`index.html`, `style.css`, the `.js` files, `images/` and `fonts/`) into `_site`, writes `_site/config.js` from two repository secrets, and publishes `_site` with GitHub's Pages actions. There's no build step. `node_modules`, `tests`, `tools`, `design`, the docs and the package files aren't published.
+**Workflow:** `.github/workflows/pages.yml`. It runs **on every push to `main`**, and can also be started by hand (Actions → "Deploy to GitHub Pages" → Run workflow). It checks out the code, runs `node --test`, copies only the site files (`index.html`, `style.css`, the `.js` files, `images/` and `fonts/`) into `_site`, writes `_site/config.js` from two repository secrets, and publishes `_site` with GitHub's Pages actions. There's no build step. `node_modules`, `tests`, `tools`, `design`, the docs and the package files aren't published.
 
 **Repository secrets** (Settings → Secrets and variables → Actions → New repository secret):
 
@@ -817,10 +817,10 @@ The workflow stops with a message if either is missing. The key ends up in the p
 2. Add the two secrets.
 3. Settings → Pages → Build and deployment → Source: **GitHub Actions**.
 4. Commit and push `main` (including the workflow) when you're ready.
-5. Actions → "Deploy to GitHub Pages" → Run workflow on `main`. Watch it finish.
+5. Actions → "Deploy to GitHub Pages": watch the run finish.
 6. Open `https://vegalh.github.io/little-days/` and run tests/LIVE-CHECK.md checks 1–3, 16–18 and 21 with the production key. Check 12 (a different address is refused) confirms the restriction.
 
-**Updating:** push to `main`, then run the workflow again.
+**Updating:** push to `main`. The workflow runs by itself.
 
 **Rollback:**
 - To go back to an earlier version: Actions → "Deploy to GitHub Pages" → open the last good run → **Re-run all jobs**. It redeploys that run's commit. Or `git revert` the bad commit, push, and run the workflow.
@@ -871,7 +871,7 @@ Reports always say which results come from mocked tests and which from a live ch
 
 ## 11. Development phases
 
-One phase at a time. Each phase ends with: what changed, the tests run and their results, failures and limitations, and the next step. Nothing is committed, pushed or deployed unless asked.
+One phase at a time. Each phase ends with: what changed, the tests run and their results, failures and limitations, and the next step. Finished work is committed and pushed to `main`, and a push deploys it.
 
 | Phase | Scope | Needs a Google key? |
 |---|---|---|

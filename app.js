@@ -45,7 +45,6 @@ const filtersCount = document.querySelector("#filters-count");
 const filtersSummary = document.querySelector("#filters-summary");
 const filtersActive = document.querySelector("#filters-active");
 const resetFiltersButton = document.querySelector("#reset-filters");
-const exploreTabs = document.querySelector("#explore-tabs");
 const exploreResults = document.querySelector("#explore-results");
 const exploreNotes = document.querySelector("#explore-notes");
 const placeList = document.querySelector("#place-list");
@@ -566,7 +565,7 @@ addressSlot.addEventListener("input", () => {
 
 document.addEventListener("change", (event) => {
   const { name, value } = event.target;
-  if (name === "interest" || name === "explore-interest") chooseInterest(value);
+  if (name === "interest") chooseInterest(value);
   if (name === "mode") {
     settings.mode = value;
     saveSettings(storage, settings);
@@ -837,30 +836,14 @@ let selectedPlace = null;
 // The place shown in the details dialog, and the button that opened it.
 let placeOpener = null;
 
-function interestChipsHtml(name) {
-  const options = [["all", { label: tr("All") }], ...CATEGORY_KEYS.map((key) => [key, CATEGORIES[key]])];
-  return options.map(([key, { label }]) => `
-    <label class="chip">
-      <input type="radio" name="${name}" value="${key}">
-      <span><span>${tr(label)}</span><span class="chip-loaded" hidden>✓<span class="visually-hidden"> ${tr("(loaded)")}</span></span></span>
-    </label>`).join("");
-}
-
-// The chosen interest, ages, mode and walking time, shown on both sets of chips.
+// The chosen interest, ages, mode and walking time, shown in Filters.
 function showChoices() {
-  for (const input of document.querySelectorAll("input[name=explore-interest]")) input.checked = input.value === settings.interest;
   document.querySelector("#interest").value = settings.interest;
   for (const input of document.querySelectorAll("input[name=mode]")) input.checked = input.value === settings.mode;
   document.querySelector("#minutes").value = settings.minutes;
   agesSelect.value = settings.ages;
   allNote.hidden = settings.interest !== "all";
   for (const note of document.querySelectorAll(".classroom-note")) note.hidden = settings.mode !== "classroom";
-  // A ✓ only tells interests apart, so with everything loaded no chip needs one.
-  const allLoaded = explore && CATEGORY_KEYS.every((key) => explore.loaded[key]);
-  for (const label of document.querySelectorAll(".chip")) {
-    const key = label.querySelector("input").value;
-    label.querySelector(".chip-loaded").hidden = allLoaded || !(explore && explore.loaded[key]);
-  }
   exampleButton.hidden = mapsState !== "ready" || Boolean(place);
   renderFilterSummary();
 }
@@ -878,7 +861,6 @@ function resetExplore() {
   explore = null;
   selectedPlace = null;
   showMapAndList(false);
-  exploreTabs.hidden = true;
   placeList.innerHTML = "";
   showChoices();
   renderExploreStatus();
@@ -940,7 +922,6 @@ async function showResults(checkRoutes) {
   explore.shortlist = shortlist(explore.loaded, settings.interest, explore.origin);
   selectedPlace = null;
   showChoices();
-  exploreTabs.hidden = false;
   if (!explore.shortlist.length) {
     showMapAndList(false);
     showStatus(exploreStatus, "", settings.interest === "all"
@@ -2501,7 +2482,6 @@ document.querySelector("#interest").innerHTML = [["all", "All"], ...CATEGORY_KEY
   .map(([key, label]) => `<option value="${key}">${tr(label)}</option>`).join("");
 document.querySelector("#minutes").innerHTML = [...SETTING_CHOICES.minutes].sort((a, b) => a - b)
   .map((minutes) => `<option value="${minutes}">${tr("{minutes} min walk", { minutes })}</option>`).join("");
-document.querySelector("#explore-chips").innerHTML = interestChipsHtml("explore-interest");
 showChoices();
 renderScreen();
 showView();

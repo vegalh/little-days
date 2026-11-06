@@ -114,7 +114,6 @@ const ZH = {
   "Searching…": "搜索中…",
   "Google walking estimates may not reflect the time needed when accompanying young children. Check crossings and the route before visiting.": "Google 的步行时间估算可能无法反映带着幼儿同行所需的时间。出发前请检查路口和路线。",
   "All": "全部",
-  "(loaded)": "（已载入）",
   "Nature": "自然",
   "Everyday Life": "日常生活",
   "Community Helpers": "社区帮手",

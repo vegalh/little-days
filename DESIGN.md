@@ -81,12 +81,11 @@ English sizes were rescaled down from the earlier (Caveat) sizes to line up with
 
 ## 4. Shape and spacing
 
-- **Corners:** cards, panels and the map frame `--radius: 20px`; inputs, buttons and art tiles `--radius-small: 14px`; chips and segmented tracks 12px; tags fully rounded.
+- **Corners:** cards, panels and the map frame `--radius: 20px`; inputs, buttons and art tiles `--radius-small: 14px`; segmented tracks 12px; tags fully rounded.
 - **Borders:** 1px `--line`, on cards and secondary buttons alike.
 - **Shadow:** cards are flat, with only their border. `--shadow` is kept for what floats above the page (the map preview).
 - **Cards share one rule** in `style.css` (`.status`, `.now-card`, `.hours`, `.idea`, `.plan`, `.place-card`, `.saved-place`): `--surface`, 1px `--line`, `--radius`. No card sits inside another card on Explore.
 - **Segmented controls** (°F/°C, Family/Classroom, walking time, Setting, Explored, My Places tabs) follow RootMap's: a `--tint` track with 2px padding and 12px corners, each option 44px tall; the selected segment is `--selected` with `--accent` bold text and 9px corners. Unselected segments are `--ink-soft`.
-- **Interest chips** follow RootMap's filter pills: `--surface`, 1px `--line`, 12px corners; the selected pill is `--selected` with an `--accent` border and text.
 - **Icons:** RootMap's line icons (24 × 24, 1.8 stroke, `currentColor`) for navigation: compass (Explore), sun (Weather), heart (My Places), calendar (My week), plus a pin, a folded map, and a compass for the location/example/search buttons. Interest and category labels are plain text, no emoji — kept visually restrained per the mobile-first redesign. Weather emoji stay, always next to text that says the same thing.
 - **Spacing** uses one scale: 4, 8, 12, 16, 24, 32 (48 for the search controls' height). Icon to label 8, label to input 8, related controls 8–12, card padding 16, between major sections 24. Use a value from the scale; the only exceptions are the 2px segmented track and a border's own compensation.
 - Content max width 1040px, centered, except the Explore section, which may widen to 1200px on large screens so the map has room. Side gutter 16px on phones, 24px from 720px up.
@@ -119,11 +118,11 @@ The section table below lists where each part lives.
    1. Address field and location button, in one row
    2. Location line (once chosen)
    3. Compact weather line (once chosen)
-   4. Filters and the interest chips, in one row under the map
+   4. The Filters button, under the map
    5. Filter summary (when something differs from the defaults)
    6. Filters sheet (closed)
 3. **Map** (Explore): the map, or the Explore status in its slot.
-4. **Places** (Explore): interest tabs, one short line of notes, then the cards.
+4. **Places** (Explore): one short line of notes, then the cards.
 5. **Weather** (`#weather`): Now, Next hours, the seven-day strip, then warnings and "What to wear" for the selected day.
 6. **Ideas for {day}** (`#ideas`): optional at-home ideas: three activities and "Why these activities?".
 7. **My Places** (`#my-places`).
@@ -167,7 +166,7 @@ The one-time step has no card around it: it sits on the page, 8px between its ro
 
 **Compact weather line**: one line, with no box on an ordinary day: "☀️ 73° · Nice for exploring", or the day's first warning in a few words after a `--warning` "⚠︎" ("🌧️ 52° · ⚠︎ Rain possible"), and "More weather" at the right, linking to `#weather`. On a hazard day it gets an `--apricot` box, 14px radius, with 600-weight text so it can't be missed. The friendly words only appear when today has no hazard, caution or note. While loading: "Getting the weather…" in `--ink-soft`.
 
-**Filters**: a secondary button beside the interest chips (`aria-expanded`, `aria-controls`), with a small `--accent` count badge when something differs from the defaults. It opens a `<dialog>`: a bottom sheet on phones, in this order: Who's exploring, Ages, Walking time, What to explore, Day, Setting, Booking, Explored, Temperature, with "Show places" at the foot. Under the chips, when anything differs: the summary line ("Classroom · 10 min walk · Nature") in 14px `--ink-soft`, and "Reset" as a text button at its right. Classroom alone shows in the summary with no Reset, because Reset keeps the mode.
+**Filters**: a secondary button under the map (`aria-expanded`, `aria-controls`), with a small `--accent` count badge when something differs from the defaults. It opens a `<dialog>`: a bottom sheet on phones, in this order: Who's exploring, Ages, Walking time, What to explore, Day, Setting, Booking, Explored, Temperature, with "Show places" at the foot. Under the button, when anything differs: the summary line ("Classroom · 10 min walk · Nature") in 14px `--ink-soft`, and "Reset" as a text button at its right. Classroom alone shows in the summary with no Reset, because Reset keeps the mode.
 
 **Filter rows**: one row per filter, label on the left (38%), control on the right, 8px apart, so all of them show on a phone. Choices of three or more are native `<select>`s; Who's exploring and Temperature stay segmented switches.
 
@@ -175,7 +174,7 @@ The one-time step has no card around it: it sits on the page, 8px between its ro
 
 **Walking time**: full-width segmented control, five radio buttons (5, 10, 15, 20, 30), legend "Walking time (minutes)".
 
-**Interests (one search at a time)**: a `<fieldset>` with legend "What would you like to explore?" and **seven radio buttons styled as chips**, text only (no emoji): All · Nature · Everyday Life · Community Helpers · Art & Culture · Animals & Wildlife · Movement, wrapping at their natural width so long Chinese labels never break. One is chosen at a time, and **All is chosen at first**. Choosing "All" shows a 14px `--ink-soft` note: "All searches six kinds of places, so it takes a little longer." Chips: 44px tall, 12px padding, 14px / 600, never wrapped, `--surface` with a `--line` border; chosen chip `--selected` background with an `--accent` border and text.
+**Interests (one search at a time)**: the What to explore dropdown in Filters: All · Nature · Everyday Life · Community Helpers · Art & Culture · Animals & Wildlife · Movement. **All is chosen at first**. They aren't repeated on the page.
 
 **°F / °C switch**: two radio buttons styled as a segmented control inside a `<fieldset>` with the legend "Temperature", in Filters.
 
@@ -204,7 +203,6 @@ The one-time step has no card around it: it sits on the page, 8px between its ro
 
 **Status area**: in the map slot, centered under the pin icon, 14px `--ink-soft` on `--tint`, with no card of its own. One sentence and at most one secondary button. No spinner and no placeholder cards. Never a red banner. (The Weather status keeps the `--surface` card.)
 
-**Interest tabs**: after the first search, the seven interests appear again right under the map as a row of chips (scrolls sideways on phones), with the searched one chosen. Choosing another interest searches that one, **once per visit**: results for an interest already searched this visit are shown again from memory, with no new request. A small "✓" on a chip marks interests already loaded, and is left off when all of them are. "All" searches only the interests not loaded yet. Changing the location or walking time clears what's loaded.
 
 **Notes above the list**: 14px `--ink-soft`, as few lines as possible: "{n} places · walking times from Google, ideas from Little Days", then only what applies: holidays, places over the walking limit, "Weather unavailable…", what couldn't be loaded. In Classroom mode the walking reminder follows in `--ink` / 600. The weather limitation line is in the weather section of the place details, with the weather notes it's about.
 
