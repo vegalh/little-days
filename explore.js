@@ -4,7 +4,8 @@
 
 // Little Days categories → Google place types (all from Google's Table A, checked
 // 2026-11-04). They're searched as includedPrimaryTypes, so a supermarket that also
-// lists "bakery" among its types isn't shown as a bakery.
+// lists "bakery" among its types isn't shown as a bakery. "farm" isn't searched: it
+// doesn't tell us a place has animals or takes visitors (PRD.md 7.10).
 const CATEGORIES = {
   "nature": { label: "Nature", emoji: "🌳", types: ["park", "botanical_garden", "garden", "hiking_area"] },
   "everyday-life": {
@@ -21,7 +22,7 @@ const CATEGORIES = {
   },
   "animals-wildlife": {
     label: "Animals & Wildlife", emoji: "🐦",
-    types: ["zoo", "aquarium", "farm", "pet_store", "dog_park", "wildlife_park", "wildlife_refuge"],
+    types: ["zoo", "aquarium", "pet_store", "dog_park", "wildlife_park", "wildlife_refuge"],
   },
   "movement": { label: "Movement", emoji: "🤸", types: ["playground", "athletic_field", "sports_complex"] },
 };
@@ -57,8 +58,7 @@ function straightLine(a, b) {
 function shortlist(loaded, interest, origin) {
   const keys = interest === "all" ? CATEGORY_KEYS : [interest];
   const seen = new Set();
-  // Google's types are grouped, so a search can return a type not asked for: "farm" brings
-  // back wineries, which must never be offered as Animals & Wildlife.
+  // Google's types are grouped, so a search can return a type not asked for.
   const asked = (place, key) => !place.primaryType || CATEGORIES[key].types.includes(place.primaryType);
   const byCategory = keys.map((key) => (loaded[key] || [])
     .filter((place) => place.location && asked(place, key) && !seen.has(place.id) && seen.add(place.id))

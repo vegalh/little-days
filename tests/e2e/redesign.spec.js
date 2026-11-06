@@ -236,29 +236,24 @@ test("each page speaks to whoever is exploring", async ({ page }, testInfo) => {
   await expect(page.locator("#plan-subtitle")).toHaveText("School days in the week ahead.");
 });
 
-test("a failed address request keeps the field and the typed text, and can be tried again", async ({ page }, testInfo) => {
+test("a failed address request keeps the field and the typed text, and typing tries again", async ({ page }, testInfo) => {
   await open(page, testInfo);
   await page.locator("gmp-place-autocomplete input").fill("221 Wash");
   const field = page.locator("gmp-place-autocomplete");
   await page.evaluate(() => window.fakeAddressError());
 
   await expect(page.locator("#location-status")).toContainText("We couldn't get address suggestions.");
+  await expect(page.locator("#location-status")).toBeInViewport();
   await expect(page.locator("gmp-place-autocomplete input")).toHaveValue("221 Wash");
   await expect(field).toBeVisible();
   await expect(page.locator("#city-location")).toBeHidden();
   await expect(page.locator("#city-note")).toBeHidden();
   await expect(page.locator("#locate")).toBeVisible();
 
-  // Try again asks Google by changing the text in place: same text, in the field, message gone.
-  await page.evaluate(() => {
-    window.inputEvents = 0;
-    document.querySelector("#address-slot").addEventListener("input", () => window.inputEvents++);
-  });
-  await page.locator("#location-status").getByRole("button", { name: "Try again" }).click();
-  await expect(page.locator("gmp-place-autocomplete input")).toHaveValue("221 Wash");
-  await expect(page.locator("gmp-place-autocomplete input")).toBeFocused();
+  // Google's field has no retry call, so there's no button: typing again clears the message.
+  await expect(page.locator("#location-status").getByRole("button")).toHaveCount(0);
+  await page.locator("gmp-place-autocomplete input").fill("221 Washi");
   await expect(page.locator("#location-status")).toBeEmpty();
-  await expect.poll(() => page.evaluate(() => window.inputEvents)).toBe(1);
 
   // A second failure, then an address picked: the setup carries on as usual, and the check
   // of why it failed isn't repeated.

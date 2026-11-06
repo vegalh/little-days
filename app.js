@@ -453,23 +453,18 @@ let refusalCheck = null;
 // A failed address request only means Maps is unavailable if Google refused it. Otherwise the
 // field stays. At Google's own 450px limit its dialog is modal and would hide this message:
 // rebuilding the field keeps the text and closes the dialog. On a wider screen the field
-// stays too, so typing isn't interrupted.
+// stays too, so typing isn't interrupted. Google's field has no retry call: the next real
+// typing asks again, so the message says to type rather than offering a button.
 async function addressProblem(error) {
   console.error(error);
-  let field = document.querySelector("#address");
+  const field = document.querySelector("#address");
   refusalCheck = refusalCheck || mapsRefused(field.value);
   if (await refusalCheck) {
     useFallback(new Error("Google refused the address request"));
     return;
   }
-  if (window.matchMedia("(max-width: 450px)").matches) field = await mountAddress(field.value);
-  showStatus(locationStatus, "", tr("We couldn't get address suggestions. Check your connection and try again."),
-    () => {
-      showStatus(locationStatus, "", "");
-      // After this click is over: Google's field closes its list on a click outside it.
-      setTimeout(() => retrySuggestions(field));
-    });
-  locationStatus.scrollIntoView({ block: "center" });
+  if (window.matchMedia("(max-width: 450px)").matches) await mountAddress(field.value);
+  showStatus(locationStatus, "", tr("We couldn't get address suggestions. Check your connection, then type in the address field again."));
 }
 
 // Without Google, the city field gives weather only: no places, no walking routes. This is

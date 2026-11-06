@@ -75,23 +75,14 @@ async function setupAutocomplete(slot, labelId, onPick, onError, text = "") {
 // map. So one direct request asks why: true only if Google refused it (a bad key, a blocked
 // address, an API turned off). A network, server or quota failure is false.
 async function mapsRefused(text) {
-  const { AutocompleteSuggestion } = await google.maps.importLibrary("places");
   try {
+    const { AutocompleteSuggestion } = await google.maps.importLibrary("places");
     await AutocompleteSuggestion.fetchAutocompleteSuggestions({ input: text || "a" });
     return false;
   } catch (error) {
     console.error(error);
     return error.code === 7 || error.code === 16 || /api key/i.test(error.message);
   }
-}
-
-// Google's field has no retry call, and only a real change to its text asks again. Its input
-// is in a closed shadow root, so the text goes back in through the browser's editing command.
-function retrySuggestions(field) {
-  const text = field.value;
-  field.focus();
-  document.execCommand("selectAll");
-  document.execCommand("insertText", false, text);
 }
 
 // Chromium keeps using the pre-upgrade style match for this field's ::part() rules

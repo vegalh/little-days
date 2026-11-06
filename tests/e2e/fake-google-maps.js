@@ -79,7 +79,6 @@
       if (this.input) this.input.value = text;
       else this.pendingValue = text;
     }
-    focus() { this.input.focus(); }
   }
   customElements.define("gmp-place-autocomplete", PlaceAutocompleteElement);
 
