@@ -178,7 +178,7 @@ The one-time step has no card around it: it sits on the page, 8px between its ro
 
 **°F / °C switch**: two radio buttons styled as a segmented control inside a `<fieldset>` with the legend "Temperature", in Filters.
 
-**Place cards**: each card is an entry with a rule between entries, not a box: a 56px `--selected` tile with the category's line icon (28px, `--accent`, `CATEGORY_ICONS` in `app.js`) beside the words. No photos: nothing on a card may look like a picture of the place.
+**Place cards**: each card is an entry with a rule between entries, not a box: an 88px `--selected` tile with Google's photo, or the category's line icon (28px, `--accent`, `CATEGORY_ICONS` in `app.js`) beside the words.
 
 ### Weather
 
@@ -294,7 +294,7 @@ One `--surface` card with rows (day + date on the left, entries on the right). E
 - Shown in a fixed 4:3 frame (`aspect-ratio: 4 / 3; object-fit: cover`) with 12px corners.
 - Every `<img>` has `srcset` (480w, 960w), `sizes`, `width`/`height` (no layout shift), `loading="lazy"` and `decoding="async"`. `alt=""`, because the title next to it says what it shows.
 - **Missing photo:** a plain `--tint` tile with the title's first letter at 50% opacity. Never a broken-image icon.
-- **Places have no photos** in version 1 (Google photos are a pricier field and need author credit). The number badge is enough; category is shown as a plain-text tag, not emoji.
+- **Place photos:** Explore's cards show Google's first photo in the 88px tile, with "Photo: {author}" linked under the text. They load only when scrolled into view, since each one is billed. With no photo, or one that fails, the category icon shows instead.
 - **Weather** uses emoji, `aria-hidden="true"`, always next to text that says the same thing: ☀️ 🌤️ ⛅ ☁️ 🌫️ 🌧️ ❄️ ⛈️. Categories, places and walking are plain text/line icons, no emoji (the one exception is the compact "📍 {address}" location-line status text, kept as emoji because several tests assert its exact text content).
 - No icon fonts and no images from outside URLs. Google's map tiles and markers come with the Maps API.
 

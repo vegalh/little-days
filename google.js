@@ -124,6 +124,15 @@ async function placeLocation(placeId) {
 
 const PLACE_FIELDS = ["id", "displayName", "formattedAddress", "location", "primaryType", "types"];
 
+// The first photo of a search result, with the credit Google requires beside it, so one with
+// no author isn't used. Only the address goes here: the image is paid for when it loads.
+function photoFromGoogle(place) {
+  const photo = (place.photos || [])[0];
+  const author = photo && (photo.authorAttributions || [])[0];
+  if (!author) return null;
+  return { url: photo.getURI({ maxWidth: 240 }), author: author.displayName, authorUrl: author.uri };
+}
+
 // Google's Place → a plain object for explore.js. Kept in memory only (PRD.md 9.4).
 function placeFromGoogle(place) {
   return {
@@ -133,6 +142,7 @@ function placeFromGoogle(place) {
     location: place.location ? { lat: place.location.lat(), lng: place.location.lng() } : null,
     primaryType: place.primaryType || null,
     types: place.types || [],
+    photo: photoFromGoogle(place),
   };
 }
 
@@ -140,7 +150,7 @@ function placeFromGoogle(place) {
 async function searchNearbyPlaces(center, radius, types) {
   const { Place, SearchNearbyRankPreference } = await google.maps.importLibrary("places");
   const { places } = await Place.searchNearby({
-    fields: PLACE_FIELDS,
+    fields: [...PLACE_FIELDS, "photos"],
     locationRestriction: { center, radius },
     includedPrimaryTypes: types,
     maxResultCount: MAX_RESULTS,

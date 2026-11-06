@@ -305,6 +305,7 @@ const ZH = {
 
   // --- Weather ---
   "Try again": "重试",
+  "Photo:": "照片：",
   "221 Washington St, Newton, MA 02458, USA": "221 Washington St, Newton, MA 02458美国",
   "Tap to see places to explore near this address.": "点一下，看看这个地址附近可以去哪里探索。",
   "See nearby places": "查看附近的地点",

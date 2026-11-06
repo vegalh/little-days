@@ -44,6 +44,12 @@
         const place = new Place({ id: p.id });
         Object.assign(place, { displayName: p.name, formattedAddress: p.address, primaryType: p.primaryType, types: [p.primaryType] });
         place.location = { lat: () => p.lat, lng: () => p.lng };
+        if (p.id === "fake-park-1") {
+          place.photos = [{
+            getURI: () => "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==",
+            authorAttributions: [{ displayName: "A Test Author", uri: "https://example.test/author" }],
+          }];
+        }
         return place;
       });
       return { places };

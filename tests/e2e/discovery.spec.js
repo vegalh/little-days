@@ -34,7 +34,7 @@ test("one interest: one search, a list with map markers, and at most 5 walking t
   expect(search).toHaveLength(1);
   expect(search[0].request.includedPrimaryTypes).toEqual(["park", "botanical_garden", "garden", "hiking_area"]);
   expect(search[0].request.locationRestriction.radius).toBe(1200);
-  expect(search[0].request.fields).toEqual(["id", "displayName", "formattedAddress", "location", "primaryType", "types"]);
+  expect(search[0].request.fields).toEqual(["id", "displayName", "formattedAddress", "location", "primaryType", "types", "photos"]);
 
   // Google's walking time, or "unavailable" when there's no route. Never a guess.
   await expect(cards.filter({ hasText: "Test Park" })).toContainText("min walk");

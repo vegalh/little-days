@@ -1102,7 +1102,8 @@ function placeCardHtml(placeItem, day) {
   const hazard = day && day.weather.hazards.length && settingFor(placeItem) === "outdoors";
   return `
     <article class="place-card${placeItem.id === selectedPlace ? " is-selected" : ""}" data-place="${placeItem.id}">
-      <span class="place-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24">${CATEGORY_ICONS[placeItem.category]}</svg></span>
+      <span class="place-icon art" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24">${CATEGORY_ICONS[placeItem.category]}</svg>
+        ${placeItem.photo ? `<img src="${escapeHtml(placeItem.photo.url)}" alt="" loading="lazy">` : ""}</span>
       <div class="place-body">
       <h3><span class="place-number" aria-hidden="true">${placeItem.number}</span>
         <button type="button" class="place-title" data-place-open="${placeItem.id}">
@@ -1113,6 +1114,7 @@ function placeCardHtml(placeItem, day) {
       ${hazard ? `<p class="place-alert">${tr("Outdoor places are better left for another day.")}</p>` : ""}
       ${settings.mode === "classroom" ? `<p class="place-access">${tr("Access not verified.")} <strong>${tr("Contact before a classroom visit.")}</strong></p>` : ""}
       <p class="place-idea"><span class="idea-label">${visits ? tr("Little Days idea for next visit:") : tr("Little Days idea:")}</span> ${escapeHtml(idea)}</p>
+      ${placeItem.photo ? `<p class="place-credit">${tr("Photo:")} <a href="${escapeHtml(placeItem.photo.authorUrl)}" target="_blank" rel="noopener">${escapeHtml(placeItem.photo.author)}</a></p>` : ""}
       <div class="place-actions">
         <button type="button" class="button-secondary" data-place-open="${placeItem.id}" aria-label="${tr("View details for {name}", { name })}">${tr("View details")}</button>
         ${savedPlaces[placeItem.id] ? statusTagHtml(placeItem.id)

@@ -307,13 +307,20 @@ test("filters: every row fits on a phone screen, and Booking narrows the places 
   expect((await googleCalls(page)).length).toBe(before);
 });
 
-test("a place card shows a category icon and never a photo", async ({ page }, testInfo) => {
+test("a place card shows Google's photo with its author, or else the category icon", async ({ page }, testInfo) => {
   await open(page, testInfo);
   await pickAddress(page);
   await explore(page);
   await expect(page.locator(".place-card")).toHaveCount(6);
   await expect(page.locator(".place-card .place-icon svg")).toHaveCount(6);
-  await expect(page.locator(".place-card img")).toHaveCount(0);
+  await expect(page.locator(".place-card img")).toHaveCount(1);
+  await expect(page.locator(".place-card img")).toHaveAttribute("loading", "lazy");
+  const credit = page.locator(".place-card .place-credit");
+  await expect(credit).toHaveCount(1);
+  await expect(credit).toHaveText("Photo: A Test Author");
+  await expect(credit.getByRole("link")).toHaveAttribute("href", "https://example.test/author");
+  const stored = await page.evaluate(() => JSON.stringify({ ...localStorage }));
+  expect(stored).not.toContain("A Test Author");
 });
 
 test("My Places tabs stay on one line at 375px and 360px", async ({ page }, testInfo) => {

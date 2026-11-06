@@ -117,7 +117,7 @@ What's been checked so far (Google's JavaScript reference, 2026-11-04):
 |---|---|
 | Autocomplete pick → `fetchFields` | `location`, `formattedAddress`, `addressComponents` |
 | Example → `searchByText` | `location`, `formattedAddress`, `addressComponents`, `maxResultCount: 1` |
-| `searchNearby` (7.10) | `id`, `displayName`, `formattedAddress`, `location`, `primaryType`, `types` |
+| `searchNearby` (7.10) | `id`, `displayName`, `formattedAddress`, `location`, `primaryType`, `types`, `photos` (live, 2026-11-06: `photos[0].getURI({ maxWidth })` and `authorAttributions[0]` with `displayName` and `uri`; 10 of 12 places had one) |
 | Saved place → `fetchFields` (7.17) | `displayName`, `formattedAddress`, `location`, `primaryType`, `types` |
 | `computeRouteMatrix` | `durationMillis`, `distanceMeters`, `condition` |
 | `computeRoutes` | `durationMillis`, `distanceMeters`, `path`, `warnings` |
@@ -777,6 +777,7 @@ Requests Little Days makes (checked live on 2026-11-04, PRD 7.2):
 | Typing an address | Autocomplete requests: Google's widget sends one per typed character (39 for the full demo address, live). Little Days can't change this. They form one session that ends with the place-details request below. |
 | Picking an address | 1 place-details request |
 | Example address | 1 text search on the first action, once per visit, then the usual search |
+| A place photo on a card | 1 Place Photo, only when the card scrolls into view. Asking for `photos` in the nearby search doesn't change its price. |
 | One search (one interest) | 1 map load (the first search of the visit only; later searches reuse the map) + 1 nearby search + 1 route matrix (up to 5 elements) |
 | One search (All, **the default**) | 1 map load (first search of the visit only) + up to 6 nearby searches (only the categories not loaded yet) + 1 route matrix (up to 5 elements). Confirmed live on 2026-11-05: 6 `SearchNearby`, 1 `ComputeRouteMatrix`. |
 | "Check walking time" on another place | 1 route matrix with 1 element |
