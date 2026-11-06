@@ -179,7 +179,7 @@ The one-time step has no card around it: it sits on the page, 8px between its ro
 
 **°F / °C switch**: two radio buttons styled as a segmented control inside a `<fieldset>` with the legend "Temperature", in Filters.
 
-**Place cards and photos**: each card is an entry with a rule between entries, not a box: a 104 × 128 RootMap activity photo chosen by category (`photos` in `explore.js`) beside the words. The photos are never of the place, and a line under the list says so.
+**Place cards**: each card is an entry with a rule between entries, not a box: a 56px `--selected` tile with the category's line icon (28px, `--accent`, `CATEGORY_ICONS` in `app.js`) beside the words. No photos: nothing on a card may look like a picture of the place.
 
 ### Weather
 

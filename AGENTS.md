@@ -68,7 +68,7 @@ Don't add files beyond these without asking. Add each file only in the phase tha
 | API | How it's called | Key |
 |---|---|---|
 | Maps JavaScript API | Google's bootstrap loader, then `google.maps.importLibrary("maps" / "marker" / "places" / "routes")` | Browser key from `config.js` |
-| Places API (New) | Only through the JS `places` library: `PlaceAutocompleteElement`, `Place.searchNearby`, `Place.searchByText`, `fetchFields` | Same browser key |
+| Places API (New) | Only through the JS `places` library: `PlaceAutocompleteElement`, `Place.searchNearby`, `Place.searchByText`, `fetchFields`, and `AutocompleteSuggestion.fetchAutocompleteSuggestions` only to learn why an address request failed (PRD.md 8.3) | Same browser key |
 | Routes API | Only through the JS `routes` library: `RouteMatrix.computeRouteMatrix`, `Route.computeRoutes` | Same browser key |
 | Open-Meteo Forecast | `fetch` | None |
 | Open-Meteo Geocoding | `fetch`, weather-only fallback | None |

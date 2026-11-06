@@ -80,7 +80,7 @@ const ZH = {
   "Loading your starting point…": "正在加载你的出发地…",
   "Show places": "查看地点",
   "Find places": "查找地点",
-  "Photos show RootMap activities, not these places.": "照片展示的是 RootMap 活动，并非这些地点。",
+  "We couldn't get address suggestions. Check your connection and try again.": "暂时无法获取地址建议。请检查网络后重试。",
   "What to expect before you head out.": "出门前先了解一下。",
   "What to expect before taking the class out.": "带班外出前先了解一下。",
   "Places to explore together.": "一起探索的地方。",

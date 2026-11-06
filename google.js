@@ -45,8 +45,9 @@ function logFirst(name, value) {
   console.log(`Little Days: first ${name} response (check against PRD.md 7.2)`, value);
 }
 
-// Puts Google's address field into slot. onPick gets a location; onError gets any failure.
-async function setupAutocomplete(slot, labelId, onPick, onError) {
+// Puts Google's address field into slot, with any text already typed. onPick gets a
+// location; onError gets a failed suggestions or details request.
+async function setupAutocomplete(slot, labelId, onPick, onError, text = "") {
   const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
   const field = new PlaceAutocompleteElement();
   field.id = "address";
@@ -65,8 +66,32 @@ async function setupAutocomplete(slot, labelId, onPick, onError) {
   });
   field.addEventListener("gmp-error", onError);
   slot.replaceChildren(field);
+  field.value = text;
   refreshPartStyles();
   return field;
+}
+
+// gmp-error has no details, and a refused key doesn't reach gm_authFailure on a page without a
+// map. So one direct request asks why: true only if Google refused it (a bad key, a blocked
+// address, an API turned off). A network, server or quota failure is false.
+async function mapsRefused(text) {
+  const { AutocompleteSuggestion } = await google.maps.importLibrary("places");
+  try {
+    await AutocompleteSuggestion.fetchAutocompleteSuggestions({ input: text || "a" });
+    return false;
+  } catch (error) {
+    console.error(error);
+    return error.code === 7 || error.code === 16 || /api key/i.test(error.message);
+  }
+}
+
+// Google's field has no retry call, and only a real change to its text asks again. Its input
+// is in a closed shadow root, so the text goes back in through the browser's editing command.
+function retrySuggestions(field) {
+  const text = field.value;
+  field.focus();
+  document.execCommand("selectAll");
+  document.execCommand("insertText", false, text);
 }
 
 // Chromium keeps using the pre-upgrade style match for this field's ::part() rules

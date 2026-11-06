@@ -56,6 +56,14 @@
     }
   }
 
+  class AutocompleteSuggestion {
+    static async fetchAutocompleteSuggestions() {
+      window.fakeGoogleCalls.push({ call: "fetchAutocompleteSuggestions" });
+      if (options.refuseAddress) throw Object.assign(new Error("Requests are blocked."), { code: 7 });
+      throw Object.assign(new Error("Rpc failed due to xhr error."), { code: 2 });
+    }
+  }
+
   // Google's element keeps its input in a shadow DOM; a plain child input is enough here.
   class PlaceAutocompleteElement extends HTMLElement {
     connectedCallback() {
@@ -63,12 +71,20 @@
       this.input = document.createElement("input");
       this.input.setAttribute("aria-label", "Address or place");
       this.input.style.cssText = "width: 100%; min-height: 46px; padding: 0 12px; font: inherit; border: 0; background: transparent;";
+      this.input.value = this.pendingValue || "";
       this.append(this.input);
     }
-    get value() { return this.input ? this.input.value : ""; }
-    set value(text) { if (this.input) this.input.value = text; }
+    get value() { return this.input ? this.input.value : this.pendingValue || ""; }
+    set value(text) {
+      if (this.input) this.input.value = text;
+      else this.pendingValue = text;
+    }
+    focus() { this.input.focus(); }
   }
   customElements.define("gmp-place-autocomplete", PlaceAutocompleteElement);
+
+  // A suggestions request failing: Google's real gmp-error carries no details.
+  window.fakeAddressError = () => document.querySelector("gmp-place-autocomplete").dispatchEvent(new Event("gmp-error"));
 
   window.fakePickAddress = () => {
     const field = document.querySelector("gmp-place-autocomplete");
@@ -143,7 +159,7 @@
       ControlPosition: { RIGHT_TOP: "RIGHT_TOP" },
       importLibrary: async (name) => {
         window.fakeGoogleCalls.push({ call: "importLibrary", name });
-        if (name === "places") return { Place, PlaceAutocompleteElement, SearchNearbyRankPreference: { DISTANCE: "DISTANCE" } };
+        if (name === "places") return { Place, PlaceAutocompleteElement, AutocompleteSuggestion, SearchNearbyRankPreference: { DISTANCE: "DISTANCE" } };
         if (name === "routes") return { RouteMatrix, Route };
         if (name === "maps") return { Map: FakeMap, Polyline };
         if (name === "marker") return { AdvancedMarkerElement, PinElement };

@@ -50,13 +50,20 @@ test("search: radius from walking time, and All searches only what isn't loaded"
   assert.deepEqual(categoriesToSearch("all", { nature: [], movement: [] }), ["everyday-life", "community-helpers", "art-culture", "animals-wildlife"]);
 });
 
+test("shortlist: a type Google returned but wasn't asked for is left out", () => {
+  const winery = { ...at("wine", 100), primaryType: "winery" };
+  const shop = { ...at("pets", 200), primaryType: "pet_store" };
+  assert.deepEqual(shortlist({ "animals-wildlife": [winery, shop] }, "animals-wildlife", ORIGIN).map((p) => p.id), ["pets"]);
+  assert.deepEqual(shortlist({ "animals-wildlife": [winery, shop] }, "all", ORIGIN).map((p) => p.id), ["pets"]);
+});
+
 test("shortlist: one category is closest first; All keeps two per category, up to 12", () => {
   const loaded = { nature: [at("far", 900), at("near", 100), { id: "nowhere", location: null }] };
   assert.deepEqual(shortlist(loaded, "nature", ORIGIN).map((p) => p.id), ["near", "far"]);
 
   const all = {};
   CATEGORY_KEYS.forEach((key, k) => {
-    all[key] = [0, 1, 2, 3].map((n) => at(`${key}-${n}`, 100 + n * 100 + k * 1000));
+    all[key] = [0, 1, 2, 3].map((n) => at(`${key}-${n}`, 100 + n * 100 + k * 1000, CATEGORIES[key].types[0]));
   });
   const list = shortlist(all, "all", ORIGIN);
   assert.equal(list.length, 12);

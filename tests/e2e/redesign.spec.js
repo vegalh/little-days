@@ -236,6 +236,90 @@ test("each page speaks to whoever is exploring", async ({ page }, testInfo) => {
   await expect(page.locator("#plan-subtitle")).toHaveText("School days in the week ahead.");
 });
 
+test("a failed address request keeps the field and the typed text, and can be tried again", async ({ page }, testInfo) => {
+  await open(page, testInfo);
+  await page.locator("gmp-place-autocomplete input").fill("221 Wash");
+  const field = page.locator("gmp-place-autocomplete");
+  await page.evaluate(() => window.fakeAddressError());
+
+  await expect(page.locator("#location-status")).toContainText("We couldn't get address suggestions.");
+  await expect(page.locator("gmp-place-autocomplete input")).toHaveValue("221 Wash");
+  await expect(field).toBeVisible();
+  await expect(page.locator("#city-location")).toBeHidden();
+  await expect(page.locator("#city-note")).toBeHidden();
+  await expect(page.locator("#locate")).toBeVisible();
+
+  // Try again asks Google by changing the text in place: same text, in the field, message gone.
+  await page.evaluate(() => {
+    window.inputEvents = 0;
+    document.querySelector("#address-slot").addEventListener("input", () => window.inputEvents++);
+  });
+  await page.locator("#location-status").getByRole("button", { name: "Try again" }).click();
+  await expect(page.locator("gmp-place-autocomplete input")).toHaveValue("221 Wash");
+  await expect(page.locator("gmp-place-autocomplete input")).toBeFocused();
+  await expect(page.locator("#location-status")).toBeEmpty();
+  await expect.poll(() => page.evaluate(() => window.inputEvents)).toBe(1);
+
+  // A second failure, then an address picked: the setup carries on as usual, and the check
+  // of why it failed isn't repeated.
+  await page.evaluate(() => window.fakeAddressError());
+  await expect(page.locator("#location-status")).toContainText("We couldn't get address suggestions.");
+  expect(await calledTimes(page, "fetchAutocompleteSuggestions")).toBe(1);
+  await expect(page.locator("#location-status")).toContainText("We couldn't get address suggestions.");
+  await pickAddress(page);
+  await explore(page);
+  await expect(page.locator("#setup")).toBeHidden();
+});
+
+test("a failed place-details request also keeps the address field", async ({ page }, testInfo) => {
+  await open(page, testInfo, { google: { failFetch: true } });
+  await page.evaluate(() => window.fakePickAddress());
+  await expect(page.locator("#location-status")).toContainText("We couldn't get address suggestions.");
+  await expect(page.locator("gmp-place-autocomplete")).toBeVisible();
+  await expect(page.locator("#city-location")).toBeHidden();
+});
+
+test("an address request Google refused is what brings the city field, asked once however many fail", async ({ page }, testInfo) => {
+  await open(page, testInfo, { google: { refuseAddress: true } });
+  await page.evaluate(() => { window.fakeAddressError(); window.fakeAddressError(); });
+  await expect(page.locator("#city-location")).toBeVisible();
+  await expect(page.locator("#google-location")).toBeHidden();
+  await expect(page.locator("#location-status")).not.toContainText("address suggestions");
+  expect(await calledTimes(page, "fetchAutocompleteSuggestions")).toBe(1);
+});
+
+test("Maps being refused is what brings the weather-only city field", async ({ page }, testInfo) => {
+  await open(page, testInfo);
+  await page.evaluate(() => window.gm_authFailure());
+  await expect(page.locator("#city-location")).toBeVisible();
+  await expect(page.locator("#google-location")).toBeHidden();
+});
+
+test("a place card shows a category icon and never a photo", async ({ page }, testInfo) => {
+  await open(page, testInfo);
+  await pickAddress(page);
+  await explore(page);
+  await expect(page.locator(".place-card")).toHaveCount(6);
+  await expect(page.locator(".place-card .place-icon svg")).toHaveCount(6);
+  await expect(page.locator(".place-card img")).toHaveCount(0);
+});
+
+test("My Places tabs stay on one line at 375px and 360px", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "phone", "phone widths");
+  for (const lang of ["en", "zh"]) {
+    await open(page, testInfo, { storage: { "littleDays.settings.v2": JSON.stringify({ lang }),
+      "littleDays.places.v2": JSON.stringify({ "fake-park-1": { status: "want", category: "nature", saved: "2026-11-01", visits: [] } }) } });
+    await showView(page, "my-places");
+    for (const width of [375, 360]) {
+      await page.setViewportSize({ width, height: 800 });
+      for (const tab of await page.locator(".places-tabs .segmented span:not(.count)").all()) {
+        expect((await tab.boundingBox()).height, `${lang} ${width}`).toBeLessThanOrEqual(46);
+      }
+      await noSideways(page);
+    }
+  }
+});
+
 test("Weather with no starting point offers a way to set one", async ({ page }, testInfo) => {
   await open(page, testInfo);
   await showView(page, "weather");

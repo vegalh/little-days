@@ -5,6 +5,16 @@ const HOLIDAYS_URL = "https://date.nager.at/api/v3/PublicHolidays";
 // A small line-icon pin, replacing the 📍 emoji everywhere a location is labelled.
 const PIN_ICON = '<svg class="icon icon-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21S5 13.4 5 9a7 7 0 1 1 14 0c0 4.4-7 12-7 12Z"/><circle cx="12" cy="9" r="2.3"/></svg>';
 
+// One line icon per category, on the place cards: a kind of place, never a picture of one.
+const CATEGORY_ICONS = {
+  "nature": '<path d="M20 4c-9 0-15 4.5-15 11 0 1.8.6 3.4 1.6 4.4C7.6 20.4 9.2 21 11 21c6.5 0 9-8 9-17ZM4 21c2-5 5.5-8.5 10-11"/>',
+  "everyday-life": '<path d="M4 10h16l-1.6 9a1.5 1.5 0 0 1-1.5 1.2H7.1a1.5 1.5 0 0 1-1.5-1.2L4 10ZM8 10l3-6M16 10l-3-6M9.5 14v3M14.5 14v3"/>',
+  "community-helpers": '<path d="M12 3l7 3v5c0 4.6-3 8.1-7 10-4-1.9-7-5.4-7-10V6l7-3ZM12 8.5v6M9 11.5h6"/>',
+  "art-culture": '<path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-1 2-2 0-1.4-1-1.8-1-3 0-1.1.9-2 2-2h2.2c2 0 3.8-1.4 3.8-3.6C21 6.1 17 3 12 3Z"/><circle cx="7.5" cy="11.5" r="1"/><circle cx="10.5" cy="7.5" r="1"/><circle cx="15.5" cy="7.5" r="1"/>',
+  "animals-wildlife": '<circle cx="6" cy="11" r="1.8"/><circle cx="9.8" cy="6.8" r="1.8"/><circle cx="14.2" cy="6.8" r="1.8"/><circle cx="18" cy="11" r="1.8"/><path d="M12 11.5c-2.6 0-5 3-5 5.5 0 1.7 1.2 2.7 2.8 2.7 1 0 1.5-.5 2.2-.5s1.2.5 2.2.5c1.6 0 2.8-1 2.8-2.7 0-2.5-2.4-5.5-5-5.5Z"/>',
+  "movement": '<circle cx="14" cy="4.5" r="2"/><path d="M6 9l4-1.5 4 1 3 3.5M13.5 8.5l-2 5 3.5 2.5v5M11.5 13.5L9 17l-4 1"/>',
+};
+
 const form = document.querySelector("#location-form");
 const googleLocation = document.querySelector("#google-location");
 const addressSlot = document.querySelector("#address-slot");
@@ -416,10 +426,7 @@ async function startGoogle() {
   googleLocation.hidden = false;
   try {
     await loadGoogleMaps(config.googleMapsKey, () => useFallback(new Error("Google refused the Maps key (gm_authFailure)")), LOCALE);
-    await setupAutocomplete(addressSlot, "address-label", (location) => {
-      pickedLabel = location.label;
-      chooseLocation(location);
-    }, useFallback);
+    await mountAddress();
     // Google may have refused the key while the address field was being set up.
     if (mapsState === "failed") return;
     mapsState = "ready";
@@ -433,7 +440,40 @@ async function startGoogle() {
   }
 }
 
-// Without Google, the city field gives weather only: no places, no walking routes.
+function mountAddress(text) {
+  return setupAutocomplete(addressSlot, "address-label", (location) => {
+    pickedLabel = location.label;
+    chooseLocation(location);
+  }, addressProblem, text);
+}
+
+// Asked once per visit, on the first failed address request.
+let refusalCheck = null;
+
+// A failed address request only means Maps is unavailable if Google refused it. Otherwise the
+// field stays. At Google's own 450px limit its dialog is modal and would hide this message:
+// rebuilding the field keeps the text and closes the dialog. On a wider screen the field
+// stays too, so typing isn't interrupted.
+async function addressProblem(error) {
+  console.error(error);
+  let field = document.querySelector("#address");
+  refusalCheck = refusalCheck || mapsRefused(field.value);
+  if (await refusalCheck) {
+    useFallback(new Error("Google refused the address request"));
+    return;
+  }
+  if (window.matchMedia("(max-width: 450px)").matches) field = await mountAddress(field.value);
+  showStatus(locationStatus, "", tr("We couldn't get address suggestions. Check your connection and try again."),
+    () => {
+      showStatus(locationStatus, "", "");
+      // After this click is over: Google's field closes its list on a click outside it.
+      setTimeout(() => retrySuggestions(field));
+    });
+  locationStatus.scrollIntoView({ block: "center" });
+}
+
+// Without Google, the city field gives weather only: no places, no walking routes. This is
+// only for Maps itself being unavailable: refused, or its script or library failed to load.
 function useFallback(error) {
   if (error) console.error(error);
   mapsState = config.googleMapsKey ? "failed" : "missing";
@@ -524,7 +564,10 @@ cityInput.addEventListener("input", () => {
   suggestTimer = setTimeout(() => suggestCities(text), 300);
 });
 
-addressSlot.addEventListener("input", clearInvalid);
+addressSlot.addEventListener("input", () => {
+  clearInvalid();
+  showStatus(locationStatus, "", "");
+});
 
 document.addEventListener("change", (event) => {
   const { name, value } = event.target;
@@ -1150,10 +1193,9 @@ function placeCardHtml(placeItem, day) {
   const idea = guideText(guide.sets[perspectiveFor(guide, visits)].notice[0]);
   const name = escapeHtml(placeItem.name || tr("Unnamed place"));
   const hazard = day && day.weather.hazards.length && settingFor(placeItem) === "outdoors";
-  const photos = category.photos;
   return `
     <article class="place-card${placeItem.id === selectedPlace ? " is-selected" : ""}" data-place="${placeItem.id}">
-      ${photoHtml(activityById(photos[placeItem.number % photos.length]), "104px")}
+      <span class="place-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24">${CATEGORY_ICONS[placeItem.category]}</svg></span>
       <div class="place-body">
       <h3><span class="place-number" aria-hidden="true">${placeItem.number}</span>
         <button type="button" class="place-title" data-place-open="${placeItem.id}">
@@ -1299,7 +1341,7 @@ function renderPlaceDetails(placeItem, perspective) {
       <h3 id="weather-detail-heading">${day ? tr("Weather on {day}", { day: formatDay(day.date) }) : tr("Weather")}</h3>
       ${day ? `<p>${(weatherOf(day.code)).map((part, i) => i ? part : `<span aria-hidden="true">${part}</span>`).join(" ")} ·
         ${temp(day.high)} / ${temp(day.low)} · ${day.rainChance == null ? tr("Rain –") : tr("Rain {chance}%", { chance: day.rainChance })}</p>` : ""}
-      <ul class="place-weather">${placeWeatherLines(placeItem, day).map((line) => `<li>${line}</li>`).join("")}</ul>
+      <ul class="place-weather">${placeWeatherLines(placeItem, day).map((line) => `<li${line === tr("The forecast looks good for time outdoors.") ? ` class="is-good"` : ""}>${line}</li>`).join("")}</ul>
       <p class="note">${tr("These notes use the forecast for the whole area and fixed temperature levels. They're a starting point, not a safety check. Use your own judgement and your setting's rules.")}</p>
     </section>
 

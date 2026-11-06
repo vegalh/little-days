@@ -358,7 +358,7 @@ Saved in `localStorage` under `littleDays.plan.v2`. Activities stay exactly as i
 
 The category shown on a card comes from this table (the search that found it), so it is a **Little Days label**, not Google's.
 
-**Search.** Only while Explore is on screen with a starting point (7.1). A category means one `Place.searchNearby`; **All** means one per category not loaded yet, all at once. Each search:
+**Search.** Only while Explore is on screen with a starting point (7.1). Google's types are grouped, so a result is kept only if its `primaryType` is in that category's list (live, 2026-11-05: `farm` also returned a `winery`). A category means one `Place.searchNearby`; **All** means one per category not loaded yet, all at once. Each search:
 
 - `locationRestriction`: a circle around the search location with radius = walking minutes × 80 m (5 → 400 m, 10 → 800 m, 15 → 1200 m, 20 → 1600 m, 30 → 2400 m). 80 m a minute is an adult's walking pace. This only sets the search area; walking times come from routes (7.12).
 - `includedPrimaryTypes`: the category's types, sent as **primary** types so a place with several Google types (for example a supermarket that also lists "bakery") is matched only by its actual primary type, not shown under every category it merely mentions. `maxResultCount`: 10. `rankPreference`: distance.
@@ -676,7 +676,8 @@ Details always go to `console.error`. The adult never sees raw error text. Error
 | What failed | What the adult sees | What still works |
 |---|---|---|
 | **No Google key configured** (`config.js` missing, or its key is empty) | Explore status: "Maps and places aren't set up on this copy of Little Days yet." The fallback city field replaces the address field. No example button. | Weather by city or device location, the seven-day strip, at-home ideas, My week (place names show as unavailable) |
-| **Google refuses the key or fails to load** (wrong key, address not allowed, API not enabled, billing off, network: `gm_authFailure`, the script's `error` event, `gmp-error`, or a rejected library call) | Explore status: "Google Maps isn't available right now, so places and walking times can't be shown." The fallback city field replaces the address field. Any Google location already chosen keeps its weather. | Same as above |
+| **Google refuses the key or fails to load** (wrong key, address not allowed, API not enabled, billing off, network: `gm_authFailure`, the script's `error` event, a rejected library call, or a refusal found after a failed address request, below) | Explore status: "Google Maps isn't available right now, so places and walking times can't be shown." The fallback city field replaces the address field. Any Google location already chosen keeps its weather. | Same as above |
+| **An address request fails** (`gmp-error` or a failed place-details request) | `gmp-error` has no details, so the first failure of a visit sends one `fetchAutocompleteSuggestions` request to learn why. If Google refused it (code 7 or 16, or an API key message), this is the row above. Any other failure keeps the address field and the typed text, with "We couldn't get address suggestions. Check your connection and try again." + **Try again** (enters the same text again, which is what makes Google's field ask). At 450px and under the field is rebuilt first, because Google's dialog is modal and would hide the message. | Setup stays usable |
 | **Nearby search fails** (network, quota, other) | Explore status: "We couldn't load nearby places right now. Check your connection and try again." + **Try again** (repeats the search) | Weather |
 | **Walking times fail** (the matrix rejects) | Every card: "Walking time unavailable". One note above the list: "Walking times couldn't be checked right now, so the walking-time filter is off." | Places, map, weather |
 | **Detail route fails** | "Walking route unavailable." in the detail | Everything else in the detail |
@@ -777,6 +778,7 @@ Requests Little Days makes (checked live on 2026-11-04, PRD 7.2):
 | One search (All, **the default**) | 1 map load (first search of the visit only) + up to 6 nearby searches (only the categories not loaded yet) + 1 route matrix (up to 5 elements). Confirmed live on 2026-11-05: 6 `SearchNearby`, 1 `ComputeRouteMatrix`. |
 | "Check walking time" on another place | 1 route matrix with 1 element |
 | Showing an interest again in the same visit | Nothing (kept in page memory, 7.10) |
+| First failed address request of a visit | 1 `fetchAutocompleteSuggestions` request to learn why (8.3) |
 | A return visit | 1 place-details request to restore a saved address, then, **when Explore is on screen**, one search as above: with All, 1 map load + up to 6 nearby searches + 1 route matrix. This runs on every full page load, including a quick look. Opening on another view adds no search. Weather and holidays are free. |
 | Opening a place | 1 compute-routes request the first time per place and starting point (reused after that), and 1 map load the first time only: the one detail map is reused for every place |
 | Saved places not in the results | 1 place-details request each, only once My Places or My week is on screen (max 50 per visit) |
