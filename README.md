@@ -36,11 +36,13 @@ I expected a simple tool that a busy teacher would want to open. The first versi
 - **The printed plan made more work for teachers.** It had blank boxes and a checklist to fill in by hand. I wanted something teachers could send without writing anything, so it became a card to screenshot for families ([`dea24d4`](https://github.com/vegalh/little-days/commit/dea24d4f254304654da533186268e8b64c8055d3)). Young children can't write yet, so the guide's ruled box became a full page for drawing ([`f57dfb0`](https://github.com/vegalh/little-days/commit/f57dfb019c5a0fa0f007086c93fb5adc8a290960)).
 - **The first plan cost more than I expected.** Live Google searches for places and walking routes were billed as people used the site. For one school that wasn't worth it, so the places are now prepared ahead from OpenStreetMap and Google is used only for the map and Street View ([`685815c`](https://github.com/vegalh/little-days/commit/685815cc1388b22869686cfc41176fbb54c17b0d)). The trade-off is that walking times are estimates from distance, and most places have no photo.
 
-## AI-output reflection
+## AI output I did not accept as-is
 
-**A case where I changed the AI's first output:** the agent's first answer to "how do we keep this free?" was to remove Google completely. I told it I still needed the Google map and links, but that the map shouldn't reload the place search every time, and that I wanted more places. The result is [`685815c`](https://github.com/vegalh/little-days/commit/685815cc1388b22869686cfc41176fbb54c17b0d): a prepared list of places, with Google only drawing the map.
+**What it gave me.** In [`685815c`](https://github.com/vegalh/little-days/commit/685815cc1388b22869686cfc41176fbb54c17b0d), the agent built the list of places near the school from a short set of kinds of places, such as parks, libraries and bakeries: 82 in all. Its code also capped the list at 12 places for "All" and 10 for any one category.
 
-**A case where I accepted the first output:** the weather thresholds in [`e8d1808`](https://github.com/vegalh/little-days/commit/e8d1808a090a8271f7cd427dc41d0c875b92961d), such as how hot, cold or windy counts as a warning, are unchanged since the agent first wrote them with tests. I kept them because they were conservative, which is what I want when the page is advising on young children going outside.
+**What I changed.** In [`b99b585`](https://github.com/vegalh/little-days/commit/b99b585f1260460c28597500037a5aaf8df4656f), I had it remove both caps and take nearly every named place an adult would go, including shops, restaurants, banks and places of worship. It leaves out only places that aren't right for children, such as alcohol and tobacco shops and traffic-heavy car repair shops. The list grew to 229 places, and the default 15-minute walk went from 12 places to 43.
+
+**How I knew it needed changing.** I opened the site and saw only 12 places, which was far too few to choose from. I also disagreed with the agent's idea of where young children can go. Children can go almost anywhere adults go, apart from places like alcohol and tobacco shops or dangerous areas, and they can learn from seeing and experiencing those places. The code ran without errors, so the tests passed. I could only see the problem by using the site and comparing it with what I knew the list should include.
 
 ## How it stays honest
 
