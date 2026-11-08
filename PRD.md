@@ -712,16 +712,14 @@ How to test: DevTools → Network → **Offline**, then choose a location (weath
 
 ### 8.4 Invalid input
 
-Refused before any request. The message sits directly under its field, in `--ink`, starting with "⚠︎ ". The field gets `aria-invalid="true"` and `aria-describedby`, and keeps focus. The message clears when the input changes. The status areas don't change.
+Refused before anything is saved. The message appears in its form, starting with "⚠︎ ", and the form stays open with what was typed.
 
 | Input | Rule | Message |
 |---|---|---|
-| Address typed but not picked | Text in the field that doesn't match the last picked suggestion | "Pick an address from the suggestions." |
-| City empty (fallback) | trim, then length 0 | "Type a city name first." |
-| City 1 character (fallback) | trim, then length < 2 | "Type at least 2 letters." |
 | My week date | Empty or before today | "Choose today or a later date." |
+| Date of a recorded visit | Empty or after today | "Choose today or an earlier date." |
 
-Theme and notes can't be too long (`maxlength`). Walking time, mode, ages and units only offer fixed choices.
+Theme and notes can't be too long (`maxlength`). Walking time, mode, ages, the day and units only offer fixed choices, so they can't be invalid.
 
 ### 8.5 In use
 

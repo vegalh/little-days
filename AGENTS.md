@@ -4,9 +4,9 @@ Rules for any coding agent working in this repository.
 
 ## Read first
 
-1. `docs/PRD.md` — what to build. It is the source of truth for features and behavior.
+1. `PRD.md` — what to build. It is the source of truth for features and behavior.
 2. `DESIGN.md` — how it should look. Follow it before styling anything.
-3. `docs/PROPOSAL.md` — the original idea, for background only.
+3. `PROPOSAL.md` — the original idea, for background only.
 
 If these files disagree, PRD.md wins for behavior and DESIGN.md wins for appearance. If something isn't covered, ask instead of guessing.
 
@@ -59,7 +59,8 @@ assets/
   images/places/           place photos: openly licensed or the school's own, credited in places.js
 
 DESIGN.md                  how it should look (stays at the root)
-docs/                      PRD.md, PROPOSAL.md, LIVE-CHECK.md (the manual check against the real APIs)
+PRD.md, PROPOSAL.md        what to build, and the original idea (at the root, with DESIGN.md and AGENTS.md)
+docs/                      LIVE-CHECK.md (the manual check against the real APIs)
   design/                  mockups, prototypes and the UI inspiration image (reference only)
 
 tools/
