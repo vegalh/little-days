@@ -160,31 +160,54 @@ test("filters: every row fits on a phone screen, and Booking narrows the places 
   expect((await googleCalls(page)).length).toBe(before);
 });
 
-test("each card shows a Street View photo, with Google's name, loaded only on screen", async ({ page }, testInfo) => {
+test("a place with a photo shows it with its credit; the others keep their category icon", async ({ page }, testInfo) => {
   await open(page, testInfo);
   await explore(page);
-  await expect(page.locator(".place-card img")).toHaveCount(6);
-  await expect(page.locator(".place-card img").first()).toHaveAttribute("loading", "lazy");
-  await expect(page.locator(".place-card img").first()).toHaveAttribute("src", /maps\/api\/streetview\?size=240x240&location=42\.\d+,-71\.\d+.*return_error_code=true/);
-  await expect(page.locator("#google-credit")).toHaveText("Google Maps");
-  await expect(page.locator("#google-credit")).toHaveAttribute("translate", "no");
-  const stored = await page.evaluate(() => JSON.stringify({ ...localStorage }));
-  expect(stored).not.toContain("streetview");
-});
-
-test("where there's no Street View, the card keeps its category icon", async ({ page }, testInfo) => {
-  await open(page, testInfo, { streetView: "none" });
-  await explore(page);
   await expect(page.locator(".place-card .place-icon svg")).toHaveCount(6);
-  await expect.poll(() => page.locator(".place-card img").count()).toBeLessThan(6);
+  const photo = page.locator(".place-card img");
+  await expect(photo).toHaveCount(1);
+  await expect(photo).toHaveAttribute("src", "images/activities/duck-walk-480.webp");
+  await expect(photo).toHaveAttribute("loading", "lazy");
+  const credit = page.locator(".place-card", { hasText: "Test Bakery" }).locator(".place-credit");
+  await expect(credit).toHaveText("Photo: A Test Author, CC BY-SA 4.0");
+  await expect(credit.getByRole("link")).toHaveAttribute("href", "https://commons.wikimedia.org/wiki/File:Test.jpg");
 });
 
-test("without a key there are no photos and no Google name, only icons", async ({ page }, testInfo) => {
+test("Street View shows in place details only when asked, in one reused view", async ({ page }, testInfo) => {
+  await open(page, testInfo);
+  await explore(page);
+  await page.getByRole("button", { name: "Details for Test Park" }).click();
+  const dialog = page.locator("#place-dialog");
+  await expect(page.locator("#place-street")).toBeHidden();
+  expect(await page.evaluate(() => window.fakePanoramas || 0)).toBe(0);
+  await dialog.getByRole("button", { name: "Show Street View" }).click();
+  await expect(page.locator("#place-street")).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Show Street View" })).toHaveCount(0);
+  await dialog.locator("[data-place-close]").first().click();
+
+  // Another place starts hidden again, and reuses the same view.
+  await page.getByRole("button", { name: "Details for Test Garden" }).click();
+  await expect(page.locator("#place-street")).toBeHidden();
+  await dialog.getByRole("button", { name: "Show Street View" }).click();
+  await expect(page.locator("#place-street")).toBeVisible();
+  expect(await page.evaluate(() => window.fakePanoramas)).toBe(1);
+});
+
+test("where Google has no Street View, details say so", async ({ page }, testInfo) => {
+  await open(page, testInfo, { google: { noStreetView: true } });
+  await explore(page);
+  await page.getByRole("button", { name: "Details for Test Park" }).click();
+  await page.locator("#place-dialog").getByRole("button", { name: "Show Street View" }).click();
+  await expect(page.locator("#place-dialog")).toContainText("Google has no Street View here.");
+  await expect(page.locator("#place-street")).toBeHidden();
+});
+
+test("without a key there's no Street View button", async ({ page }, testInfo) => {
   testInfo.api = await mockApis(page, { config: null });
   await page.goto("/");
   await explore(page);
-  await expect(page.locator(".place-card img")).toHaveCount(0);
-  await expect(page.locator("#google-credit")).toBeHidden();
+  await page.getByRole("button", { name: "Details for Test Park" }).click();
+  await expect(page.locator("#place-dialog").getByRole("button", { name: "Show Street View" })).toHaveCount(0);
 });
 
 test("My Places tabs stay on one line at 375px and 360px", async ({ page }, testInfo) => {

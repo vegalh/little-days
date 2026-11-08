@@ -1,6 +1,6 @@
-// Everything that touches google.maps (AGENTS.md): loading the Maps JavaScript API and the
-// results map. The places themselves come from places.js, so no Places or Routes request
-// is ever made: the map is the only billed part, one load per visit.
+// Everything that touches google.maps (AGENTS.md): loading the Maps JavaScript API, the results
+// map, and Street View in place details. The places themselves come from places.js, so no
+// Places or Routes request is ever made.
 
 // Loads the API once. Resolves when it's ready; rejects if the script can't load.
 // Google reports a refused key (wrong key, address not allowed, API not enabled,
@@ -101,4 +101,23 @@ function highlightMarker(markers, id) {
     pin.scale = key === id ? 1.25 : 1;
     marker.zIndex = key === id ? 10 : null;
   }
+}
+
+// One Street View, reused for every place, shown in element. Resolves false where Google has
+// no Street View within 50 m (its lookup is free; showing the view is the billed part).
+let streetPanorama = null;
+async function showStreetView(element, location) {
+  const { StreetViewService, StreetViewPanorama, StreetViewSource } = await google.maps.importLibrary("streetView");
+  let found;
+  try {
+    found = await new StreetViewService().getPanorama({ location, radius: 50, source: StreetViewSource.OUTDOOR });
+  } catch {
+    return false; // Google rejects with ZERO_RESULTS when there's none
+  }
+  if (!streetPanorama) {
+    streetPanorama = new StreetViewPanorama(element, { disableDefaultUI: true, zoomControl: true, motionTracking: false });
+  }
+  streetPanorama.setPano(found.data.location.pano);
+  streetPanorama.setVisible(true);
+  return true;
 }

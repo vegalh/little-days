@@ -59,8 +59,6 @@
           <div id="explore-results" hidden>
             <div id="explore-notes" class="explore-notes"></div>
             <p class="data-credit" translate="no">© OpenStreetMap contributors</p>
-            <!-- The cards' Street View photos are Google's, so its name goes with them. -->
-            <p id="google-credit" class="google-attribution" translate="no" hidden>Google Maps</p>
             <div id="place-list" class="place-list"></div>
           </div>
         </section>
@@ -254,6 +252,8 @@
     <section class="place-section" aria-labelledby="route-heading">
       <h3 id="route-heading">Walking route</h3>
       <div id="place-route"></div>
+      <!-- Kept outside place-body so the one Street View is reused. -->
+      <div id="place-street" class="street-view" hidden></div>
       <p id="route-reminder" class="route-reminder"></p>
     </section>
     <div id="place-body"></div>

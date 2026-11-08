@@ -31,7 +31,7 @@ const exploreNotes = document.querySelector("#explore-notes");
 const mapBox = document.querySelector("#place-map-box");
 const exploreMap = document.querySelector("#explore-map");
 const mapPeek = document.querySelector("#map-peek");
-const googleCredit = document.querySelector("#google-credit");
+const streetBox = document.querySelector("#place-street");
 const placeList = document.querySelector("#place-list");
 const placeDialog = document.querySelector("#place-dialog");
 const placeBody = document.querySelector("#place-body");
@@ -509,6 +509,8 @@ document.addEventListener("click", (event) => {
   if (event.target.closest("[data-print-week]")) openShare();
   const printGuideButton = event.target.closest("[data-print-guide]");
   if (printGuideButton) printGuideFor(printGuideButton.dataset.printGuide);
+  const streetButton = event.target.closest("[data-street-view]");
+  if (streetButton) openStreetView(streetButton);
 });
 
 // A photo that fails to load becomes a plain tile instead of a broken image.
@@ -654,8 +656,6 @@ function stopMap(error) {
   console.error(error);
   mapsState = "off";
   mapBox.hidden = true;
-  googleCredit.hidden = true;
-  renderPlaces();
 }
 
 // The forecast days as buttons above the results, so the day can be chosen while looking
@@ -727,7 +727,7 @@ function placeCardHtml(placeItem, day) {
   return `
     <article class="place-card${placeItem.id === selectedPlace ? " is-selected" : ""}" data-place="${placeItem.id}">
       <span class="place-icon art" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24">${CATEGORY_ICONS[placeItem.category]}</svg>
-        ${placePhoto(placeItem) ? `<img src="${escapeHtml(placePhoto(placeItem))}" alt="" loading="lazy">` : ""}</span>
+        ${placeItem.photo ? `<img src="${escapeHtml(placeItem.photo)}" alt="" loading="lazy">` : ""}</span>
       <div class="place-body">
       <h3><span class="place-number" aria-hidden="true">${placeItem.number}</span>
         <button type="button" class="place-title" data-place-open="${placeItem.id}">
@@ -737,6 +737,7 @@ function placeCardHtml(placeItem, day) {
       ${roundTripHtml(placeItem)}
       ${hazard ? `<p class="place-alert">${tr("Outdoor places are better left for another day.")}</p>` : ""}
       ${settings.mode === "classroom" ? `<p class="place-access">${tr("Access not verified.")} <strong>${tr("Contact before a classroom visit.")}</strong></p>` : ""}
+      ${placeItem.credit ? `<p class="place-credit">${tr("Photo:")} <a href="${escapeHtml(placeItem.creditUrl)}" target="_blank" rel="noopener">${escapeHtml(placeItem.credit)}</a></p>` : ""}
       <p class="place-idea"><span class="idea-label">${visits ? tr("Little Days idea for next visit:") : tr("Little Days idea:")}</span> ${escapeHtml(idea)}</p>
       <div class="place-actions">
         <button type="button" class="button-secondary" data-place-open="${placeItem.id}" aria-label="${tr("View details for {name}", { name })}">${tr("View details")}</button>
@@ -745,17 +746,6 @@ function placeCardHtml(placeItem, day) {
       </div>
       </div>
     </article>`;
-}
-
-// The school's own photo, or else Google's Street View of the spot, loaded only when the card
-// is on screen and never stored (Google's terms). Each one is billed past Google's free
-// 10,000 a month. Where there's no Street View, Google answers with an error, and the error
-// listener below leaves the category icon in its place.
-function placePhoto(placeItem) {
-  if (placeItem.photo) return placeItem.photo;
-  if (mapsState === "off") return "";
-  return `https://maps.googleapis.com/maps/api/streetview?size=240x240&location=${placeItem.lat},${placeItem.lng}` +
-    `&fov=80&source=outdoor&return_error_code=true&key=${encodeURIComponent(config.googleMapsKey)}`;
 }
 
 // A marker or card was chosen: highlight both, and show the preview on the map.
@@ -994,7 +984,29 @@ function renderRoute(placeItem) {
   routeBox.innerHTML = `
     <p class="place-walk"><span aria-hidden="true">🚶</span> ${tr("About {minutes} min walk", { minutes: walkingMinutes(walk.durationMillis) })} · ${formatDistance(walk.distanceMeters, settings.unit)}
       <span class="walk-source">${tr("Little Days estimate")}</span></p>
-    <p><a href="${directions}" target="_blank" rel="noopener">${tr("See the walking route on Google Maps")}<span aria-hidden="true"> ↗</span></a></p>`;
+    <p><a href="${directions}" target="_blank" rel="noopener">${tr("See the walking route on Google Maps")}<span aria-hidden="true"> ↗</span></a></p>
+    ${mapsState === "ready" ? `<button type="button" class="button-secondary" data-street-view>${tr("Show Street View")}</button>` : ""}`;
+  streetBox.hidden = true;
+}
+
+// Only when asked: each Street View shown is billed past Google's free 5,000 a month.
+async function openStreetView(button) {
+  const placeItem = findPlace(openPlaceId);
+  if (!placeItem) return;
+  button.disabled = true;
+  streetBox.hidden = false;
+  try {
+    if (!await showStreetView(streetBox, { lat: placeItem.lat, lng: placeItem.lng })) {
+      streetBox.hidden = true;
+      button.outerHTML = `<p>${tr("Google has no Street View here.")}</p>`;
+      return;
+    }
+    button.remove();
+  } catch (error) {
+    console.error(error);
+    streetBox.hidden = true;
+    button.outerHTML = `<p>${tr("Street View isn't available right now.")}</p>`;
+  }
 }
 
 // After a change to My Places: the cards, the section, and the open dialog.
@@ -1987,5 +1999,4 @@ storePlaces(storage, savedPlaces); // the same for My Places
 renderPlan();
 renderMyPlaces();
 loadWeather(place);
-googleCredit.hidden = mapsState === "off";
 if (config.googleMapsKey) startMap();

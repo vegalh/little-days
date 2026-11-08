@@ -158,6 +158,23 @@
   }
   class LatLngBounds { constructor() {} extend() {} }
 
+  // Street View: a view for every spot, unless the test says there's none.
+  class StreetViewService {
+    async getPanorama(request) {
+      window.fakeGoogleCalls.push({ call: "getPanorama", request });
+      if (options.noStreetView) throw Object.assign(new Error("ZERO_RESULTS"), { code: "ZERO_RESULTS" });
+      return { data: { location: { pano: `pano-${request.location.lat}` } } };
+    }
+  }
+  class StreetViewPanorama {
+    constructor(element) {
+      window.fakePanoramas = (window.fakePanoramas || 0) + 1;
+      element.dataset.fakePanorama = "";
+    }
+    setPano(pano) { window.fakePano = pano; }
+    setVisible() {}
+  }
+
   window.google = {
     maps: {
       LatLngBounds,
@@ -168,6 +185,7 @@
         if (name === "routes") return { RouteMatrix, Route };
         if (name === "maps") return { Map: FakeMap, Polyline };
         if (name === "marker") return { AdvancedMarkerElement, PinElement };
+        if (name === "streetView") return { StreetViewService, StreetViewPanorama, StreetViewSource: { OUTDOOR: "outdoor" } };
         return {};
       },
     },
