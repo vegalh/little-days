@@ -69,6 +69,7 @@ Don't add files beyond these without asking. Add each file only in the phase tha
 | API | How it's called | Key |
 |---|---|---|
 | Maps JavaScript API | Google's bootstrap loader, then `google.maps.importLibrary("maps" / "marker")`, for the results map only | Browser key from `config.js` |
+| Street View Static API | An `<img>` URL on each place card (`/maps/api/streetview`, `return_error_code=true`) | Same browser key |
 | Open-Meteo Forecast | `fetch` | None |
 | Nager.Date | `fetch` | None |
 | OpenStreetMap (Overpass) | Only by `tools/import-osm.py`, run by hand to regenerate places.js. The page never calls it | None |
@@ -83,6 +84,7 @@ Places API and Routes API are not used: they're what made the site cost money. P
 - Never copy Google names, addresses, photos or walking times into places.js or any other file: Google's terms don't allow storing them. places.js holds only OpenStreetMap data and the school's own photos.
 - Keep Google's logo and attributions visible on the map. Where places are listed, show "© OpenStreetMap contributors" (ODbL). Never hide or cover either.
 - One results map per visit, created only when Explore shows results; markers are reused.
+- Place cards show Google's Street View Static image of the spot, as a plain `<img>` with `loading="lazy"`, never fetched, prefetched or stored, with "Google Maps" beside the list. Where there's none (`return_error_code=true`), the category icon stays. It's billed past 10,000 a month, so keep the daily quota in Google Cloud.
 - Don't add a backend, a serverless function or a second key. If a feature seems to need one, stop and ask.
 
 **fetch rules** (Open-Meteo Forecast, Nager.Date)
