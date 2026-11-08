@@ -17,6 +17,14 @@ Little Days helps the teachers and families of Peninsula Montessori Academy (New
 - **Classroom and Family modes:** different wording and reminders for a group or a family. Classroom is the default.
 - **Chinese and English:** the page opens in Chinese, and the EN button switches and remembers the choice.
 
+## How to use it
+
+1. Open the [live site](https://vegalh.github.io/little-days/). It opens in Chinese; use the language button at the top to switch to English.
+2. In **Explore**, browse the map and the list of places near the school. Use **Filters** to narrow them by walking time, ages, kind of place, day, indoors or outdoors, and booking, then press **Show places**.
+3. Open a place to read its guide, and press **Save** to keep it in **My Places**. After a trip, use **Record a visit** there to add it to your journal.
+4. In **Weather**, check the seven-day forecast, what to wear, and at-home activities chosen for the weather.
+5. Use **Add to my week** on a place or activity, then open **My week** to see the plan and share or print it for families.
+
 ## How it stays honest
 
 - Places come from OpenStreetMap and forecasts from Open-Meteo. Walking times are labelled as estimates from distance. Missing data is shown as missing, never guessed.
@@ -40,7 +48,7 @@ The places are prepared ahead in `places.js`, so the site never searches Google.
 | `js/` | The code: `app.js` draws the page, `google.js` the map; the rest is logic with no page code |
 | `data/` | Content: places, activities, exploration guides, celebrations |
 | `assets/` | Fonts and images |
-| `docs/` | Product requirements, design rules, the live check, design references |
+| `docs/` | Product requirements, the proposal, the live check, design references |
 | `tools/` | Scripts that regenerate `data/places.js` and `data/activities.js` |
 | `tests/` | `unit/` for the logic, `e2e/` for the browser |
 
@@ -92,7 +100,7 @@ Every push to `main` runs [.github/workflows/pages.yml](.github/workflows/pages.
 ## Project documents
 
 - [docs/PRD.md](docs/PRD.md): what to build, and the source of truth for behavior
-- [docs/DESIGN.md](docs/DESIGN.md): how it should look
+- [DESIGN.md](DESIGN.md): how it should look
 - [AGENTS.md](AGENTS.md): rules for coding agents working in this repository
 - [docs/PROPOSAL.md](docs/PROPOSAL.md): the original idea, for background
 
