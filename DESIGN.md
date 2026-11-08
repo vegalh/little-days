@@ -2,7 +2,7 @@
 
 Read this before writing any CSS or markup.
 
-**Chosen direction: RootMap family.** Little Days now shares RootMap's palette, fonts, controls and icons (sections 2–4). The earlier Storybook trial ([design/trial-a.html](design/trial-a.html)) and Paper planner ([design/trial-b.html](design/trial-b.html)) and the original mockup ([design/mockup.png](design/mockup.png)) are kept for reference only. Where they disagree with this file, this file wins.
+**Chosen direction: RootMap family.** Little Days now shares RootMap's palette, fonts, controls and icons (sections 2–4). The earlier Storybook trial ([design/trial-a.html](docs/design/trial-a.html)) and Paper planner ([design/trial-b.html](docs/design/trial-b.html)) and the original mockup ([design/mockup.png](docs/design/mockup.png)) are kept for reference only. Where they disagree with this file, this file wins.
 
 ## 1. Feeling
 
