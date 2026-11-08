@@ -38,11 +38,11 @@ I expected a simple tool that a busy teacher would want to open. The first versi
 
 ## AI output I did not accept as-is
 
-**What it gave me.** In [`685815c`](https://github.com/vegalh/little-days/commit/685815cc1388b22869686cfc41176fbb54c17b0d), the agent built the list of places near the school from a short set of kinds of places, such as parks, libraries and bakeries: 82 in all. Its code also capped the list at 12 places for "All" and 10 for any one category.
+**What it gave me.** By [`e2cef4e`](https://github.com/vegalh/little-days/commit/e2cef4ef007718557918a36ef7676b6e2317ec5b), the agent had piled every feature onto one long page: the search, Explore, Weather, My Places, My week and Your data, one section after another, with no real layout to tell me where to look. The address form sat at the top, so using the tool felt like entering an address every time.
 
-**What I changed.** In [`b99b585`](https://github.com/vegalh/little-days/commit/b99b585f1260460c28597500037a5aaf8df4656f), I had it remove both caps and take nearly every named place an adult would go, including shops, restaurants, banks and places of worship. It leaves out only places that aren't right for children, such as alcohol and tobacco shops and traffic-heavy car repair shops. The list grew to 229 places, and the default 15-minute walk went from 12 places to 43.
+**What I changed.** I had the agent split the page into four separate views, Explore, Weather, My Places and My week, in [`85b01d7`](https://github.com/vegalh/little-days/commit/85b01d7f00d1ed1ceeedc1be91a55af46e6ebcda). Then in [`3bce793`](https://github.com/vegalh/little-days/commit/3bce793632367920c73ae15151ad2bdd6fe1c808), the address became a one-time step, so a teacher opens straight onto the neighborhood.
 
-**How I knew it needed changing.** I opened the site and saw only 12 places, which was far too few to choose from. I also disagreed with the agent's idea of where young children can go. Children can go almost anywhere adults go, apart from places like alcohol and tobacco shops or dangerous areas, and they can learn from seeing and experiencing those places. The code ran without errors, so the tests passed. I could only see the problem by using the site and comparing it with what I knew the list should include.
+**How I knew it needed changing.** I opened it and tried it myself. It felt far too complicated, and the first time I saw it I had no desire to use it at all. The features were all there and worked, so nothing looked broken to a test. But a busy teacher wouldn't use a tool that makes them work through a form and a long page before they see anything useful.
 
 ## How it stays honest
 
