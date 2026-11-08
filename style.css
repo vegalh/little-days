@@ -25,7 +25,6 @@
   --holiday: #96421A;
   --warning: #8A5A00;
   --leaf-ink: #4B6B2E;
-  --google-gray: #5E5E5E; /* only Google's "Google Maps" text attribution */
   --print-sky: #E2EEF7;
   --print-rose: #FBE6E0;
   --font-fun: "Caveat", "Nunito", system-ui, sans-serif; /* only printed and shared pages */
@@ -71,7 +70,6 @@ html:lang(zh-CN) {
 html:lang(zh-CN) h1,
 html:lang(zh-CN) h2,
 html:lang(zh-CN) h3 { font-weight: 600; letter-spacing: .02em; }
-html:lang(zh-CN) .setup h1 { font-size: 26px; line-height: 1.3; }
 html:lang(zh-CN) .section-head h2 { font-size: 24px; }
 html:lang(zh-CN) .idea h3,
 html:lang(zh-CN) .saved-place h3 { font-size: 19px; }
@@ -194,8 +192,8 @@ html:lang(zh-CN) .day-name { font-size: 16px; }
   stroke-linecap: round;
 }
 
-/* Explore: search, map, places. One column; from 960px the search and places share a
-   column and the map stays in view beside them (DESIGN.md 5). */
+/* Explore: the school and its weather, the map, the places. One column; from 960px the map
+   stays in view beside the rest (DESIGN.md 5). */
 .explore-page {
   display: grid;
   /* minmax(0, …) lets the column shrink below its widest child. */
@@ -278,76 +276,12 @@ fieldset.field {
   outline-offset: 1px;
 }
 
-/* The one-time step (PRD.md 7.1). "Change" shows only the address part of it. */
-.setup { max-width: 560px; margin: 0 auto; padding: 8px 24px 32px; }
-.setup-photos { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; }
-.setup-photos img { width: 100%; height: clamp(120px, 20dvh, 200px); object-fit: cover; border-radius: var(--radius-small); }
-.setup h1 { margin: 24px 0 16px; font-size: 28px; line-height: 1.15; text-wrap: balance; }
-.setup-ask { margin: 8px 0 0; font-weight: 700; }
-.setup-ask:focus { outline: 0; }
-.setup-note { margin: 0; font-size: 14px; color: var(--ink-soft); overflow-wrap: anywhere; }
-.setup-actions { display: flex; flex-wrap: wrap; gap: 0 16px; }
-.setup-actions .link-button { display: inline-flex; gap: 4px; align-items: center; padding: 0; font-size: 14px; font-weight: 700; color: var(--accent); text-decoration: none; }
-.setup.is-change .setup-intro,
-.setup.is-change .setup-mode { display: none; }
-.setup.is-change { padding-top: 24px; }
-
-/* The saved starting point: one line and "Change", on Explore and Weather. */
+/* The school's line, on Explore and Weather. */
 .base-line { display: flex; gap: 8px; align-items: center; justify-content: space-between; min-height: 44px; }
 .base-line p { flex: 1; min-width: 0; margin: 0; }
-.base-line .link-button { flex: none; color: var(--accent); }
 #place-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.search-field { flex: 1; min-width: 0; }
-
-.city-row {
-  display: flex;
-  gap: 8px;
-}
-
-.city-row input,
-.city-row button { min-height: 48px; }
-
-/* Google's address field, styled only through what it documents: the element and its
-   parts (DESIGN.md 6). One edge, and it belongs to the element: at rest a shadow draws it,
-   and on focus that edge gives way to Google's ring, so there are never two lines. Google's
-   default black box is on the element too, so this border: 0 is what removes it. */
-gmp-place-autocomplete {
-  display: block;
-  width: 100%;
-  height: 52px;
-  font-family: var(--font-body);
-  font-size: 16px;
-  color: var(--ink);
-  color-scheme: light;
-  background-color: var(--surface);
-  border: 0;
-  border-radius: 16px;
-  box-shadow: 0 0 0 1px var(--line), var(--shadow);
-}
-
-gmp-place-autocomplete:focus-within { box-shadow: var(--shadow); }
-
-/* !important: Google's own part styles would otherwise win (confirmed live). */
-gmp-place-autocomplete::part(input) {
-  background: transparent !important;
-  border: 0 !important;
-  text-overflow: ellipsis;
-}
-
-gmp-place-autocomplete::part(prediction-list) {
-  background: var(--surface) !important;
-  border: 1px solid var(--line) !important;
-  border-radius: var(--radius-small) !important;
-}
-
-gmp-place-autocomplete::part(prediction-item-selected) { background: var(--selected) !important; }
-/* The focus ring part draws itself with border-color, not outline-color. */
-gmp-place-autocomplete::part(focus-ring) { border-color: var(--accent) !important; }
-gmp-place-autocomplete[aria-invalid=true] { box-shadow: 0 0 0 2px var(--accent); }
-
-/* A long address is cut short rather than breaking the layout; the full text is in the
-   field above and in the line's title. */
+/* A long line is cut short rather than breaking the layout; the full text is in its title. */
 .location-line {
   display: flex;
   margin: 0;
@@ -1083,11 +1017,11 @@ dialog p { margin: 8px 0 0; }
 .explore-notes p { margin: 0 0 4px; }
 .classroom-line { color: var(--ink); font-weight: 600; }
 
-.google-attribution {
+/* OpenStreetMap's credit, wherever its places are shown (ODbL). */
+.data-credit {
   margin: 0 0 8px;
-  font: 400 14px Roboto, var(--font-body);
-  color: var(--google-gray);
-  white-space: nowrap;
+  font-size: 14px;
+  color: var(--ink-soft);
 }
 
 .place-list {
@@ -1096,23 +1030,14 @@ dialog p { margin: 8px 0 0; }
   gap: 0 24px;
 }
 
-.list-divider {
-  grid-column: 1 / -1;
-  margin: 8px 0 0;
-  font-size: 16px;
-  color: var(--ink-soft);
-}
-
 /* An entry in the guide: the kind of place as an icon beside the words, with a rule between
    entries. No photo: nothing here may look like a picture of the place itself. */
 .place-card { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
 .place-icon { position: relative; display: grid; place-items: center; width: 88px; height: 88px; overflow: hidden; color: var(--accent); background: var(--selected); border-radius: var(--radius-small); }
 .place-icon .icon { width: 28px; height: 28px; }
+.place-card.is-selected { background: var(--selected); box-shadow: 0 0 0 8px var(--selected); border-radius: 2px; }
 /* Over the icon, so a place with no photo, or one that fails, still has its tile. */
 .place-icon img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.place-credit { font-size: 12px; color: var(--ink-soft); }
-.place-credit a { color: var(--accent); }
-.place-card.is-selected { background: var(--selected); box-shadow: 0 0 0 8px var(--selected); border-radius: 2px; }
 
 .place-card h3 {
   display: flex;
@@ -1179,12 +1104,6 @@ dialog p { margin: 8px 0 0; }
 }
 
 .walk-source,
-.walk-pending {
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--ink-soft);
-}
-
 .place-walk .link-button { min-height: 44px; font-weight: 600; }
 
 .notes-label {
@@ -1217,8 +1136,7 @@ dialog p { margin: 8px 0 0; }
 
 .tag-saved { --c: var(--leaf-ink); }
 
-/* About 40% of the screen, starting right under the search. Before a search it holds only
-   the Explore status, so it stays small. */
+/* About 40% of the screen, right above the places. */
 .map-box {
   position: relative;
   height: clamp(208px, 30dvh, 280px);
@@ -1229,32 +1147,8 @@ dialog p { margin: 8px 0 0; }
   scroll-margin-top: 8px;
 }
 
-.map-box.is-empty {
-  height: auto;
-  min-height: clamp(160px, 24dvh, 220px);
-  background: var(--tint);
-}
-
 .map { width: 100%; height: 100%; background: var(--tint); }
 
-.map-empty {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: center;
-  justify-content: center;
-  min-height: inherit;
-  height: 100%;
-  padding: 16px;
-  font-size: 14px;
-  text-align: center;
-  color: var(--ink-soft);
-}
-
-.map-empty > .icon { width: 28px; height: 28px; color: var(--accent); }
-.map-empty .status { padding: 0; background: none; border: 0; border-radius: 0; }
-.map-empty .status button { margin-top: 8px; }
-.map-empty .link-button { color: var(--ink-soft); }
 
 @media (min-width: 960px) {
   .explore-page {
@@ -1263,9 +1157,10 @@ dialog p { margin: 8px 0 0; }
     gap: 16px 24px;
     align-items: start;
   }
+  /* Without a map (no key), the places take the whole width. */
+  .explore-page:has(> .map-box[hidden]) { grid-template-columns: minmax(0, 1fr); }
   /* Short enough to fit under the header, so Google's logo is never below the fold. */
-  .map-box,
-  .map-box.is-empty {
+  .map-box {
     position: sticky;
     top: 16px;
     grid-column: 2;
@@ -1325,14 +1220,6 @@ dialog p { margin: 8px 0 0; }
 .place-section p { margin: 0 0 8px; }
 .place-section a { color: var(--accent); font-weight: 600; }
 
-.map-detail {
-  height: auto;
-  aspect-ratio: 16 / 10;
-  margin-bottom: 8px;
-  border-radius: var(--radius);
-}
-
-.route-warnings,
 .route-reminder { font-size: 14px; }
 
 .route-reminder {
@@ -1473,7 +1360,7 @@ textarea {
 .saved-meta { font-size: 14px; color: var(--ink-soft); }
 .history { margin-top: 8px; font-size: 14px; }
 .history summary { min-height: 44px; display: flex; align-items: center; color: var(--accent); font-weight: 600; cursor: pointer; }
-#my-places .section-head .google-attribution { margin-top: 4px; }
+#my-places .section-head .data-credit { margin-top: 4px; }
 
 /* My week: weather and planned places */
 
@@ -1499,7 +1386,6 @@ textarea {
 
 @media (max-width: 719px) {
   .wrap { padding: 0 16px; }
-  .setup { padding: 8px 16px 24px; }
   html:lang(zh-CN) .section-head h2 { font-size: 22px; }
   .logo { font-size: 20px; }
   .logo-mark { width: 24px; height: 24px; }
@@ -1617,7 +1503,7 @@ textarea {
 .print-subtitle,
 .print-address { position: relative; margin: 4px 0 0; color: var(--ink); }
 .print-perspective { display: inline-block; margin: 8px 0 0; padding: 2px 12px; font-size: 13px; font-weight: 700; color: var(--accent); background: var(--surface); border-radius: 999px; }
-.print-page > .google-attribution { margin: 6px 0 0 8px; }
+.print-page > .data-credit { margin: 6px 0 0 8px; }
 .print-empty { margin-top: 16px; color: var(--ink-soft); }
 
 /* One day: a block of its own color, kept whole across a page break. */
@@ -1676,7 +1562,7 @@ dialog.share-dialog[open] { display: flex; flex-direction: column; }
 .share-card .print-week .print-doodles { top: 4px; width: 100px; height: 54px; }
 .share-card .print-week .print-title { font-size: 28px; }
 .share-card .print-week .print-subtitle { margin: 0; font-size: 13px; }
-.share-card .print-week > .google-attribution { margin: 3px 0 0 6px; font-size: 12px; }
+.share-card .print-week > .data-credit { margin: 3px 0 0 6px; font-size: 12px; }
 .share-card .print-week .print-day { margin-top: 6px; padding: 6px 12px; border-radius: 16px; }
 .share-card .print-week .print-day h2 { display: inline; font-size: 15px; }
 .share-card .print-week .print-weather { display: inline; margin: 0 0 0 8px; font-size: 12px; line-height: 1.3; }

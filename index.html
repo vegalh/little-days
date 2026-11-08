@@ -31,70 +31,19 @@
   <main>
     <!-- Four views, one shown at a time (DESIGN.md 5). The nav links switch them by the URL hash. -->
     <div class="view" data-view="explore">
-      <!-- The one-time step (PRD.md 7.1): the starting point is set here once and saved.
-           "Change" comes back to it. Explore itself has no search box. -->
-      <section id="setup" class="setup" aria-labelledby="setup-heading" hidden>
-        <div class="setup-intro">
-          <div class="setup-photos">
-            <img src="images/activities/bark-rubbing-480.webp" alt="" width="480" height="440">
-            <img src="images/activities/i-spy-a-color-480.webp" alt="" width="480" height="440">
-            <img src="images/activities/duck-walk-480.webp" alt="" width="480" height="440">
-          </div>
-          <h1 id="setup-heading">Let's find places to explore with children.</h1>
-        </div>
-        <form id="location-form" class="controls" role="search" novalidate>
-          <fieldset class="field setup-mode">
-            <legend>Who's exploring</legend>
-            <div class="segmented segmented-wide">
-              <label><input type="radio" name="mode" value="family"><span>Family</span></label>
-              <label><input type="radio" name="mode" value="classroom"><span>Classroom</span></label>
-            </div>
-          </fieldset>
-          <p id="address-label" class="setup-ask" tabindex="-1"></p>
-          <div id="google-location" class="search-field" hidden>
-            <div id="address-slot"></div>
-          </div>
-          <div id="city-location" class="search-field" hidden>
-            <label for="city" class="visually-hidden">City (for weather)</label>
-            <div class="city-row">
-              <input id="city" name="city" type="text" list="city-options" autocomplete="off" placeholder="e.g. Boston">
-              <datalist id="city-options"></datalist>
-              <button id="city-button" type="submit" class="button-secondary">Show weather</button>
-            </div>
-          </div>
-          <p id="city-note" class="note" hidden>Maps aren't available right now, so you can check the weather by city.</p>
-          <p id="location-message" class="field-message" hidden></p>
-          <div id="location-status" class="hint" role="status" aria-live="polite"></div>
-          <p id="setup-note" class="setup-note"></p>
-          <p id="setup-current" class="setup-note" hidden></p>
-          <div class="setup-actions">
-            <button id="locate" type="button" class="link-button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg> <span>Use my location this time</span></button>
-            <button id="example" type="button" class="link-button" hidden>Try an example</button>
-            <button id="keep-address" type="button" class="link-button" hidden>Keep this address</button>
-          </div>
-        </form>
-      </section>
-
-      <!-- Three parts: starting point, map, places. Stacked in that order on phones; on a
-           wide screen the starting point and places share a column beside the map (DESIGN.md 5). -->
-      <div id="explore" class="explore-page" hidden>
+      <!-- The school and its weather, the map, then the places. Stacked on phones; on a wide
+           screen the map stays beside the places (DESIGN.md 5). -->
+      <div id="explore" class="explore-page">
         <aside class="explore-side" aria-label="Your starting point">
           <h1 class="visually-hidden">Little adventures, close to home.</h1>
           <div class="base-line">
-            <p id="location-line" class="location-line" hidden></p>
-            <button type="button" class="link-button" data-change-base>Change</button>
+            <p id="location-line" class="location-line"></p>
           </div>
           <div id="now-line" class="now-line" hidden></div>
         </aside>
-        <section id="place-map-box" class="map-box is-empty" aria-labelledby="map-heading">
+        <section id="place-map-box" class="map-box" aria-labelledby="map-heading" hidden>
           <h2 id="map-heading" class="visually-hidden" tabindex="-1">Map of places</h2>
-          <!-- A map is a billed load (PRD.md 9.3), so it's created with the first results.
-               Until then this slot holds the Explore status. It's never a picture of a map. -->
-          <div id="map-empty" class="map-empty">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21S5 13.4 5 9a7 7 0 1 1 14 0c0 4.4-7 12-7 12Z"/><circle cx="12" cy="9" r="2.3"/></svg>
-            <div id="explore-status" class="status" role="status" aria-live="polite"></div>
-          </div>
-          <div id="explore-map" class="map" hidden></div>
+          <div id="explore-map" class="map"></div>
           <div id="map-peek" class="map-peek" hidden></div>
         </section>
         <section class="explore-main" aria-labelledby="explore-heading">
@@ -106,9 +55,10 @@
             <p id="filters-active"></p>
             <button id="reset-filters" type="button" class="link-button" hidden>Reset</button>
           </div>
+          <div id="explore-status" class="status" role="status" aria-live="polite"></div>
           <div id="explore-results" hidden>
             <div id="explore-notes" class="explore-notes"></div>
-            <p class="google-attribution" translate="no">Google Maps</p>
+            <p class="data-credit" translate="no">© OpenStreetMap contributors</p>
             <div id="place-list" class="place-list"></div>
           </div>
         </section>
@@ -116,17 +66,12 @@
     </div>
 
     <div class="view" data-view="weather" hidden>
-      <div id="weather-empty" class="status wrap-status">
-        <p>Choose a place on the Explore tab to see its weather.</p>
-        <a class="button-secondary link-as-button" href="#explore">Set your starting point</a>
-      </div>
       <section id="weather" class="wrap" aria-labelledby="weather-heading" hidden>
         <div class="section-head">
           <h2 id="weather-heading">Weather</h2>
           <p id="weather-subtitle"></p>
           <div class="base-line">
             <p id="place-line" hidden></p>
-            <button type="button" class="link-button" data-change-base>Change</button>
           </div>
         </div>
         <div id="weather-status" class="status" role="status" aria-live="polite"></div>
@@ -156,7 +101,7 @@
         <div class="section-head">
           <h2 id="places-heading">My Places</h2>
           <p id="places-subtitle"></p>
-          <p class="google-attribution" translate="no">Google Maps</p>
+          <p class="data-credit" translate="no">© OpenStreetMap contributors</p>
         </div>
         <fieldset class="places-tabs">
           <legend class="visually-hidden">Show places</legend>
@@ -186,7 +131,7 @@
 
   <footer class="site-footer">
     <div class="wrap">
-      <p>Weather by Open-Meteo · Holidays by Nager.Date · Activities and photos from RootMap · Places, maps and walking routes from Google Maps</p>
+      <p>Weather by Open-Meteo · Holidays by Nager.Date · Activities and photos from RootMap · Places from OpenStreetMap</p>
       <section class="your-data" aria-labelledby="data-heading">
         <h2 id="data-heading">Your data</h2>
 
@@ -194,8 +139,7 @@
           <h3>Privacy</h3>
           <ul>
             <li>Your saved places, journal entries, plan and choices are stored only in this browser. There are no accounts and nothing is synced.</li>
-            <li>Location permission is optional. Little Days asks only when you press "Use my location", and never stores your device's position.</li>
-            <li>Place details, maps and walking routes come from Google Maps. Little Days keeps only Google's place IDs.</li>
+            <li>Places come from OpenStreetMap and are written into the site, so Little Days uses no map service. Google Maps opens only from its links.</li>
             <li>Weather comes from Open-Meteo, and public holidays from Nager.Date.</li>
             <li>Please don't write children's names in notes or journal entries.</li>
           </ul>
@@ -248,12 +192,11 @@
                 <label for="minutes">Walking time</label>
                 <select id="minutes" name="minutes"></select>
               </div>
-              <p class="note classroom-note" hidden>Google walking estimates may not reflect the time needed when accompanying young children. Check crossings and the route before visiting.</p>
+              <p class="note classroom-note" hidden>These walking times are estimated from distance and may not reflect the time needed with young children. Check crossings and the route before visiting.</p>
               <div class="field">
                 <label for="interest">What to explore</label>
                 <select id="interest" name="interest"></select>
               </div>
-              <p class="note all-note" hidden>All searches six kinds of places, so it takes a little longer.</p>
               <div id="explore-days-box" class="field" hidden>
                 <label for="explore-day">Day</label>
                 <select id="explore-day" name="explore-day"></select>
@@ -308,8 +251,6 @@
     <header id="place-head" class="place-head"></header>
     <section class="place-section" aria-labelledby="route-heading">
       <h3 id="route-heading">Walking route</h3>
-      <!-- Kept outside place-body so the one detail map is reused (PRD.md 7.16). -->
-      <div id="place-map" class="map map-detail"></div>
       <div id="place-route"></div>
       <p id="route-reminder" class="route-reminder"></p>
     </section>
@@ -336,7 +277,7 @@
   <!-- Filled in just before window.print() (PRD.md 7.9, 7.14); never shown on screen. -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <!-- config.js is gitignored (PRD.md 9.2). Without it, the page runs without Google. -->
+  <!-- config.js is gitignored (PRD.md 9.2). Without it, the page runs without the map. -->
   <script src="config.js"></script>
   <script src="i18n.js"></script>
   <script src="activities.js"></script>
@@ -346,6 +287,7 @@
   <script src="plan.js"></script>
   <script src="explore.js"></script>
   <script src="guides.js"></script>
+  <script src="places.js"></script>
   <script src="google.js"></script>
   <script src="app.js"></script>
 </body>

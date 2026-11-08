@@ -1,5 +1,5 @@
 // Place discovery logic (PRD.md 7.10–7.12). No page code here, so tests can run it in Node.
-// Places here are plain objects made from Google's results:
+// Places here are plain objects made from places.js:
 // { id, name, address, location: { lat, lng }, primaryType, types, category }
 
 // The errands of an adult's ordinary day, where a child can come along.
@@ -35,14 +35,10 @@ const CATEGORIES = {
 };
 const CATEGORY_KEYS = Object.keys(CATEGORIES);
 
-const WALK_METERS_PER_MINUTE = 80; // an adult's walking pace; only sets the search area
-const MAX_RESULTS = 10; // per category search
+const WALK_METERS_PER_MINUTE = 80; // an adult's walking pace
+const ROUTE_STRETCH = 1.3; // streets are longer than the straight line
+const MAX_RESULTS = 10; // per category
 const ALL_SHORTLIST = 12;
-const ROUTE_BATCH = 5; // walking times calculated at first (PRD.md 7.12)
-
-function searchRadius(minutes) {
-  return minutes * WALK_METERS_PER_MINUTE;
-}
 
 // The categories a search needs: one, or for "all" every category not loaded yet.
 function categoriesToSearch(interest, loaded) {
@@ -78,14 +74,20 @@ function shortlist(loaded, interest, origin) {
   return [...firsts, ...rest].slice(0, ALL_SHORTLIST).sort((a, b) => a.distance - b.distance);
 }
 
-// Places that still need a walking time, closest first, at most ROUTE_BATCH.
-// routes: { placeId: { status: "ok" | "none" | "failed" | "pending", ... } }
-function routeTargets(places, routes, limit = ROUTE_BATCH) {
-  return places.filter((place) => !routes[place.id]).slice(0, limit);
+// The places of these types within the walking time, by the same estimate the cards show.
+function nearbyPlaces(places, origin, minutes, types) {
+  return places.filter((place) => types.includes(place.primaryType) && estimateWalk(origin, place).durationMillis <= minutes * 60000);
 }
 
-// Splits places by the walking-time limit. Places without a Google walking time are
-// never hidden: Little Days can't tell (PRD.md 7.12).
+// A Little Days estimate, never a checked route: the straight line, stretched for streets,
+// at an adult's pace. Same shape as a route, for byWalkingTime.
+function estimateWalk(origin, place) {
+  const meters = straightLine(origin, place.location) * ROUTE_STRETCH;
+  return { status: "ok", durationMillis: meters / WALK_METERS_PER_MINUTE * 60000, distanceMeters: meters };
+}
+
+// Splits places by the walking-time limit. Places without a walking time are never hidden:
+// Little Days can't tell (PRD.md 7.12).
 function byWalkingTime(places, routes, minutes) {
   const within = [];
   const unknown = [];
@@ -102,7 +104,7 @@ function byWalkingTime(places, routes, minutes) {
   return { within, unknown, over };
 }
 
-// Walking minutes, rounded up, as Google's estimate.
+// Walking minutes, rounded up.
 function walkingMinutes(durationMillis) {
   return Math.max(1, Math.ceil(durationMillis / 60000));
 }
@@ -208,7 +210,7 @@ function filterBySetting(places, setting) {
 
 if (typeof module !== "undefined") {
   module.exports = {
-    CATEGORIES, CATEGORY_KEYS, MAX_RESULTS, ROUTE_BATCH, searchRadius, categoriesToSearch, straightLine,
-    shortlist, routeTargets, byWalkingTime, walkingMinutes, placeType, accessFor, settingFor, filterBySetting, bookingFor, filterByBooking, ageNotes, categoryOf, ACCESS_TEXT,
+    CATEGORIES, CATEGORY_KEYS, MAX_RESULTS, categoriesToSearch, straightLine, nearbyPlaces, estimateWalk,
+    shortlist, byWalkingTime, walkingMinutes, placeType, accessFor, settingFor, filterBySetting, bookingFor, filterByBooking, ageNotes, categoryOf, ACCESS_TEXT,
   };
 }

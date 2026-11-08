@@ -3,7 +3,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { ACTIVITIES } = require("../activities.js");
 const {
-  CATEGORIES, CATEGORY_KEYS, searchRadius, categoriesToSearch, shortlist, routeTargets, byWalkingTime,
+  CATEGORIES, CATEGORY_KEYS, categoriesToSearch, shortlist, nearbyPlaces, estimateWalk, byWalkingTime,
   walkingMinutes, accessFor, settingFor, filterBySetting, ageNotes, bookingFor, filterByBooking,
 } = require("../explore.js");
 const { GUIDES, CATEGORY_GUIDES, GUIDE_FOR_TYPE, guideFor, perspectiveFor, forGroup } = require("../guides.js");
@@ -42,9 +42,14 @@ test("categories: six, each with Google types, matching the saved-settings choic
   }
 });
 
-test("search: radius from walking time, and All searches only what isn't loaded", () => {
-  assert.equal(searchRadius(5), 400);
-  assert.equal(searchRadius(30), 2400);
+test("nearby: the walking estimate decides what's within reach, and All works out only what isn't loaded", () => {
+  const near = at("near", 300, "park");
+  const far = at("far", 1000, "park");
+  const shop = at("shop", 100, "bakery");
+  // 300 m of straight line is about 390 m of streets: 5 minutes at 80 m a minute.
+  assert.equal(walkingMinutes(estimateWalk(ORIGIN, near).durationMillis), 5);
+  assert.deepEqual(nearbyPlaces([near, far, shop], ORIGIN, 5, ["park"]).map((p) => p.id), ["near"]);
+  assert.deepEqual(nearbyPlaces([near, far, shop], ORIGIN, 20, ["park"]).map((p) => p.id), ["near", "far"]);
   assert.deepEqual(categoriesToSearch("nature", {}), ["nature"]);
   assert.deepEqual(categoriesToSearch("nature", { nature: [] }), []);
   assert.deepEqual(categoriesToSearch("all", { nature: [], movement: [] }), ["everyday-life", "community-helpers", "art-culture", "animals-wildlife"]);
@@ -83,10 +88,8 @@ test("shortlist: one category is closest first; All keeps two per category, up t
   assert.deepEqual(twice.map((p) => [p.id, p.category]), [["same", "nature"]]);
 });
 
-test("walking: at most 5 routed at first, and places without a time are never hidden", () => {
-  const places = [1, 2, 3, 4, 5, 6, 7].map((n) => at(`p${n}`, n * 100));
-  assert.deepEqual(routeTargets(places, {}).map((p) => p.id), ["p1", "p2", "p3", "p4", "p5"]);
-  assert.deepEqual(routeTargets(places, { p1: { status: "pending" }, p2: { status: "ok" } }).map((p) => p.id), ["p3", "p4", "p5", "p6", "p7"]);
+test("walking: places without a time are never hidden", () => {
+  const places = [1, 2, 3, 4].map((n) => at(`p${n}`, n * 100));
   const routes = { p1: { status: "ok", durationMillis: 600000 }, p2: { status: "ok", durationMillis: 1200000 }, p3: { status: "none" } };
   const split = byWalkingTime(places.slice(0, 4), routes, 15);
   assert.deepEqual(split.within.map((p) => p.id), ["p1"]);

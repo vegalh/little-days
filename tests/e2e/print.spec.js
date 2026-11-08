@@ -9,21 +9,14 @@ test.afterEach(async ({}, testInfo) => {
   expect(testInfo.api?.unmocked ?? []).toEqual([]);
 });
 
-// `pick: false` skips choosing an address (and so never fetches weather): used for the
-// failed-Google-fetch case, where picking an address would itself hit the failing fetch.
-async function start(page, testInfo, { pick = true, ...options } = {}) {
+async function start(page, testInfo, options = {}) {
   testInfo.api = await mockApis(page, { config: GOOGLE_CONFIG, ...options });
   await page.addInitScript(() => {
     window.printCalls = 0;
     window.print = () => { window.printCalls += 1; };
   });
   await page.goto("/");
-  if (pick) {
-    await page.evaluate(() => window.fakePickAddress());
-    await expect(page.locator(".now-temp")).toBeAttached();
-  } else {
-    await expect(page.getByRole("button", { name: /Try an example|试试示例/ })).toBeVisible();
-  }
+  await expect(page.locator(".now-temp")).toBeAttached();
 }
 
 const printArea = (page) => page.locator("#print-area");
@@ -71,7 +64,7 @@ test("Print My Week: activities and a place visit together, grouped by day, with
   await expect(friday).toContainText("10:00 AM · Leaves and trees");
   await expect(friday).toContainText("Bring a bag and a water bottle.");
   await expect(friday).toContainText("Heavy showers · 66° / 61°"); // a real forecast for this in-range date
-  await expect(area.locator(".google-attribution")).toHaveText("Google Maps");
+  await expect(area.locator(".data-credit")).toHaveText("© OpenStreetMap contributors");
   // Nothing for the teacher to fill in.
   await expect(area).not.toContainText("What did we notice?");
   await expect(area.locator(".print-notes-box")).toHaveCount(0);
@@ -103,7 +96,7 @@ test("share card: a full week fits one phone screen, a day adds what to wear, an
   await expect(card.locator(".print-day")).toHaveCount(1);
   await expect(card).toContainText("What to wear");
   await expect(card).toContainText("Bring a bag.");
-  await expect(card.locator(".google-attribution")).toHaveText("Google Maps");
+  await expect(card.locator(".data-credit")).toHaveText("© OpenStreetMap contributors");
 });
 
 test("Print My Week: several plans on one day print as separate items", async ({ page }, testInfo) => {
@@ -142,13 +135,11 @@ test("Print My Week: no forecast for a date past the window shows the required f
   await expect(printArea(page)).toContainText("Weather forecast not available yet.");
 });
 
-test("Print My Week: a saved place whose details failed to load still prints its notes", async ({ page }, testInfo) => {
+test("Print My Week: a planned place no longer on the list still prints its notes", async ({ page }, testInfo) => {
   await start(page, testInfo, {
-    pick: false,
-    google: { failFetch: true },
     storage: {
       "littleDays.plan.v2": JSON.stringify({
-        "2026-11-06": [{ kind: "place", entry: "v1", placeId: "fake-park-1", category: "nature", time: "", theme: "", notes: "Check opening hours first." }],
+        "2026-11-06": [{ kind: "place", entry: "v1", placeId: "ChIJoldGooglePlace", category: "nature", time: "", theme: "", notes: "Check opening hours first." }],
       }),
     },
   });
@@ -204,7 +195,7 @@ test("Print Adventure Guide: place, weather for the selected day, and the chosen
   await expect(area).toContainText("During the visit");
   await expect(area).toContainText("After the visit");
   await expect(area).toContainText("Practical life extension");
-  await expect(area.locator(".google-attribution")).toHaveText("Google Maps");
+  await expect(area.locator(".data-credit")).toHaveText("© OpenStreetMap contributors");
   // Children draw rather than write: no ruled lines, and a big space for a picture.
   await expect(area.locator(".print-notes-box")).toHaveCount(0);
   await expect(area).toContainText("Draw what you noticed");
@@ -218,7 +209,6 @@ test("Print Adventure Guide: no forecast loaded shows the required fallback text
     window.print = () => { window.printCalls += 1; };
   });
   await page.goto("/");
-  await page.evaluate(() => window.fakePickAddress());
   await expect(page.locator("#weather-status")).toContainText("We couldn't load the weather right now.");
 
   await chooseInterest(page, "Nature");

@@ -5,7 +5,6 @@ const path = require("node:path");
 
 const fixture = (name) => fs.readFileSync(path.join(__dirname, "fixtures", name), "utf8");
 const FORECAST = JSON.parse(fixture("forecast.json"));
-const NEWTON = JSON.parse(fixture("geocode-newton.json"));
 
 // The forecast fixture was saved at 18:15 in Newton, MA (America/New_York).
 const FIXTURE_NOW = new Date("2026-11-04T18:15:00-05:00");
@@ -14,7 +13,6 @@ const FIXTURE_NOW = new Date("2026-11-04T18:15:00-05:00");
 //   config      what config.js says: null (missing, 404) or { googleMapsKey, googleMapId }
 //   forecast    "ok" (default), a status code, or "offline", or a list used one per request
 //   forecastData a changed copy of FORECAST to answer with instead
-//   geolocation "denied" to make getCurrentPosition fail with code 1
 //   storage     { key: value } put in localStorage before the page loads
 //   realDefaults  true: no English setting is added, to test how the page really opens
 //   google      options for the fake Google script (authFailure, failFetch)
@@ -42,15 +40,7 @@ async function mockApis(page, options = {}) {
     return route.fulfill({ json: options.forecastData || FORECAST });
   });
 
-  await page.route("https://geocoding-api.open-meteo.com/v1/search?**", (route) => {
-    const url = new URL(route.request().url());
-    api.requests.push(url.href);
-    const name = url.searchParams.get("name");
-    if (url.searchParams.get("count") === "5") return route.fulfill({ json: name.startsWith("Newton") ? NEWTON : {} });
-    // A full "Newton, Massachusetts, …" name finds Newton, MA; anything else isn't found.
-    const found = NEWTON.results.find((r) => name.startsWith(`${r.name}, ${r.admin1}`));
-    return route.fulfill({ json: found ? { results: [found] } : JSON.parse(fixture("geocode-none.json")) });
-  });
+  await page.route("**/places.js", (route) => route.fulfill({ contentType: "text/javascript", body: fixture("places.js") }));
 
   await page.route("https://date.nager.at/api/v3/PublicHolidays/**", (route) => {
     api.requests.push(route.request().url());
@@ -62,7 +52,7 @@ async function mockApis(page, options = {}) {
     return route.fulfill({ contentType: "text/javascript", body: fixture("../fake-google-maps.js") });
   });
 
-  await page.addInitScript(({ storage, google, geolocation, realDefaults }) => {
+  await page.addInitScript(({ storage, google, realDefaults }) => {
     if (!sessionStorage.getItem("mocked")) {
       // Only on the first load, so a reload sees what the page saved itself.
       sessionStorage.setItem("mocked", "1");
@@ -75,10 +65,7 @@ async function mockApis(page, options = {}) {
       }
     }
     window.FAKE_GOOGLE = google;
-    if (geolocation === "denied") {
-      navigator.geolocation.getCurrentPosition = (success, error) => setTimeout(() => error({ code: 1, message: "User denied Geolocation" }), 10);
-    }
-  }, { storage: options.storage || {}, google: options.google || {}, geolocation: options.geolocation || null, realDefaults: Boolean(options.realDefaults) });
+  }, { storage: options.storage || {}, google: options.google || {}, realDefaults: Boolean(options.realDefaults) });
 
   return api;
 }
@@ -109,4 +96,4 @@ async function chooseInterest(page, label) {
   await closeFilters(page);
 }
 
-module.exports = { mockApis, showView, openFilters, closeFilters, chooseInterest, FORECAST, NEWTON, GOOGLE_CONFIG };
+module.exports = { mockApis, showView, openFilters, closeFilters, chooseInterest, FORECAST, GOOGLE_CONFIG };

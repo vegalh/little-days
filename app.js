@@ -1,4 +1,3 @@
-const GEOCODE_URL = "https://geocoding-api.open-meteo.com/v1/search";
 const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
 const HOLIDAYS_URL = "https://date.nager.at/api/v3/PublicHolidays";
 
@@ -15,29 +14,11 @@ const CATEGORY_ICONS = {
   "movement": '<circle cx="14" cy="4.5" r="2"/><path d="M6 9l4-1.5 4 1 3 3.5M13.5 8.5l-2 5 3.5 2.5v5M11.5 13.5L9 17l-4 1"/>',
 };
 
-const form = document.querySelector("#location-form");
-const googleLocation = document.querySelector("#google-location");
-const addressSlot = document.querySelector("#address-slot");
-const cityLocation = document.querySelector("#city-location");
-const cityInput = document.querySelector("#city");
-const cityOptions = document.querySelector("#city-options");
-const cityButton = document.querySelector("#city-button");
-const locationMessage = document.querySelector("#location-message");
-const locateButton = document.querySelector("#locate");
-const exampleButton = document.querySelector("#example");
 const locationLine = document.querySelector("#location-line");
-const locationStatus = document.querySelector("#location-status");
 const nowLine = document.querySelector("#now-line");
 const unitInputs = document.querySelectorAll("input[name=unit]");
 const exploreStatus = document.querySelector("#explore-status");
 const agesSelect = document.querySelector("#ages");
-const allNote = document.querySelector(".all-note");
-const setupSection = document.querySelector("#setup");
-const setupNote = document.querySelector("#setup-note");
-const setupCurrent = document.querySelector("#setup-current");
-const addressLabel = document.querySelector("#address-label");
-const keepButton = document.querySelector("#keep-address");
-const explorePage = document.querySelector("#explore");
 const filtersToggle = document.querySelector("#filters-toggle");
 const filtersPanel = document.querySelector("#filters-panel");
 const filtersDone = document.querySelector("#filters-done");
@@ -47,20 +28,17 @@ const filtersActive = document.querySelector("#filters-active");
 const resetFiltersButton = document.querySelector("#reset-filters");
 const exploreResults = document.querySelector("#explore-results");
 const exploreNotes = document.querySelector("#explore-notes");
-const placeList = document.querySelector("#place-list");
-const placeMapBox = document.querySelector("#place-map-box");
-const mapEmpty = document.querySelector("#map-empty");
+const mapBox = document.querySelector("#place-map-box");
 const exploreMap = document.querySelector("#explore-map");
 const mapPeek = document.querySelector("#map-peek");
+const placeList = document.querySelector("#place-list");
 const placeDialog = document.querySelector("#place-dialog");
 const placeBody = document.querySelector("#place-body");
 const placeHead = document.querySelector("#place-head");
 const routeBox = document.querySelector("#place-route");
 const routeReminder = document.querySelector("#route-reminder");
-const detailMap = document.querySelector("#place-map");
 const placesList = document.querySelector("#places-list");
 const weatherSection = document.querySelector("#weather");
-const weatherEmpty = document.querySelector("#weather-empty");
 const weatherStatus = document.querySelector("#weather-status");
 const weatherNow = document.querySelector("#weather-now");
 const placeLine = document.querySelector("#place-line");
@@ -176,7 +154,7 @@ try {
   storage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
 }
 
-// config.js is gitignored and may be missing (PRD.md 9.2).
+// config.js is gitignored and may be missing (PRD.md 9.2). Without a key there's no map.
 const config = window.LITTLE_DAYS_CONFIG || {};
 const ACTIVITY_IDS = ACTIVITIES.map((a) => a.id);
 const settings = loadSettings(storage); // PRD.md 7.18
@@ -185,67 +163,20 @@ const LANG = settings.lang || "zh";
 const LOCALE = LANG === "zh" ? "zh-CN" : "en-US";
 const tr = (text, vars) => translate(LANG, text, vars);
 let plan = loadPlan(storage, isoToday(), ACTIVITY_IDS);
-// Saved Google place IDs and the adult's own data only (PRD.md 7.17).
+// Saved place IDs and the adult's own data only (PRD.md 7.17).
 let savedPlaces = loadPlaces(storage);
-// "loading", "ready", "missing" (no key) or "failed" (refused or didn't load)
-let mapsState = config.googleMapsKey ? "loading" : "missing";
-// The chosen location: { kind, label, latitude, longitude, countryCode, placeId or name }.
-// kind is "place" (picked address), "example", "city" (fallback) or "device".
-let place = null;
+// Every walk starts at the school (places.js).
+const place = { label: SCHOOL.name, latitude: SCHOOL.latitude, longitude: SCHOOL.longitude, countryCode: SCHOOL.countryCode };
+// "loading", "ready", or "off" (no key, refused or didn't load). The map is the only Google part.
+let mapsState = config.googleMapsKey ? "loading" : "off";
 // The weather for that location: { location, now, hours, days, holidayProblem }
 let current = null;
 let selectedDay = 0;
 // Counts weather requests, so an answer for an older location is ignored.
 let weatherRequest = 0;
-// The text of the last address picked from Google's suggestions.
-let pickedLabel = "";
 // The button that opened the details dialog, to return focus to it.
 let dialogOpener = null;
-// True while the one-time step is open to change the starting point.
-let changingBase = false;
-// Fallback cities offered while typing, by label: { "Portland, Maine, United States": place }
-let suggestions = {};
-let suggestTimer = null;
-
 // --- Open-Meteo and Nager.Date ---
-
-// Returns the first matching city, or null if the geocoder found nothing.
-async function findCity(name) {
-  const url = `${GEOCODE_URL}?name=${encodeURIComponent(name)}&count=1`;
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Geocoding failed with status ${response.status}`);
-  }
-  const data = await response.json();
-  // "Not found" is a 200 with no results field, not an error status.
-  if (!data.results) {
-    return null;
-  }
-  return data.results[0];
-}
-
-// Fills the city list with up to five matching places.
-async function suggestCities(text) {
-  try {
-    const response = await fetch(`${GEOCODE_URL}?name=${encodeURIComponent(text)}&count=5`);
-    if (!response.ok) {
-      throw new Error(`City suggestions failed with status ${response.status}`);
-    }
-    const data = await response.json();
-    // The adult kept typing, so this answer is out of date.
-    if (cityInput.value.trim() !== text) return;
-    suggestions = {};
-    for (const city of data.results || []) suggestions[cityName(city)] = city;
-    cityOptions.innerHTML = Object.keys(suggestions).map((name) => `<option value="${escapeHtml(name)}">`).join("");
-  } catch (error) {
-    // Suggestions are optional: Show weather still works and shows its own error.
-    console.error(error);
-  }
-}
-
-function cityName(city) {
-  return [city.name, city.admin1, city.country].filter(Boolean).join(", ");
-}
 
 // Returns Open-Meteo's { current, hourly, daily } (PRD.md 7.2). The location is rounded
 // to 2 decimals (about 1 km), which is plenty for a forecast (PRD.md 7.18).
@@ -265,7 +196,7 @@ async function getForecast(location) {
 }
 
 // Returns { holidays: [{ date, name, ... }], problem }, where problem is null,
-// "no-country" (device location), "unsupported" (Nager.Date has no data for the
+// "no-country", "unsupported" (Nager.Date has no data for the
 // country) or "failed". A problem here never stops the forecast from showing.
 async function getHolidays(countryCode, years) {
   if (!countryCode) return { holidays: [], problem: "no-country" };
@@ -289,29 +220,7 @@ async function getHolidays(countryCode, years) {
   }
 }
 
-// --- Location ---
-
-// Every way of choosing a location ends here: keep it, then load its places and weather.
-// Only a picked address or a searched city is saved, never a device position or the
-// example (PRD.md 7.18). It's saved at once, so a weather problem can't lose it.
-function chooseLocation(location) {
-  place = location;
-  if (location.kind === "place" || location.kind === "city") {
-    settings.location = location;
-    saveSettings(storage, settings);
-  }
-  changingBase = false;
-  renderScreen();
-  clearInvalid();
-  locationStatus.textContent = "";
-  const example = location.kind === "example" ? `<span> · ${tr("Example address")}</span>` : "";
-  locationLine.innerHTML = `<span class="location-label">📍 ${escapeHtml(location.label)}</span>${example}`;
-  locationLine.title = location.label;
-  locationLine.hidden = false;
-  resetExplore();
-  exploreHere();
-  return loadWeather(location);
-}
+// --- Weather ---
 
 async function loadWeather(location) {
   const request = ++weatherRequest;
@@ -338,176 +247,6 @@ async function loadWeather(location) {
     if (request !== weatherRequest) return;
     console.error(error);
     showWeatherError(() => loadWeather(location));
-  }
-}
-
-// The weather-only fallback: Open-Meteo geocoding, then the weather.
-async function searchCity(city) {
-  cityButton.disabled = true;
-  cityButton.textContent = tr("Searching…");
-  weatherRequest++;
-  showWeatherLoading(city);
-  try {
-    // A picked suggestion is used as is; anything typed is looked up.
-    const found = suggestions[city] || await findCity(city);
-    if (!found) {
-      showNotFound(city);
-      return;
-    }
-    await chooseLocation({
-      kind: "city",
-      name: city,
-      label: cityName(found),
-      latitude: found.latitude,
-      longitude: found.longitude,
-      countryCode: found.country_code,
-    });
-  } catch (error) {
-    console.error(error);
-    showWeatherError(() => searchCity(city));
-  } finally {
-    cityButton.disabled = false;
-    cityButton.textContent = tr("Show weather");
-  }
-}
-
-// Asks for the position only now, once (PRD.md 7.1). It's never watched or saved.
-function locate() {
-  if (!navigator.geolocation) {
-    showLocationProblem(2);
-    return;
-  }
-  locateButton.disabled = true;
-  showStatus(locationStatus, "", tr("Finding you…"));
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      locateButton.disabled = false;
-      chooseLocation({
-        kind: "device",
-        label: tr("Your current location"),
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        countryCode: null,
-      });
-    },
-    (error) => {
-      locateButton.disabled = false;
-      console.error(error);
-      showLocationProblem(error.code);
-    },
-    { timeout: 10000, maximumAge: 300000 },
-  );
-}
-
-// A saved location comes back on a return visit. Its places load when Explore is showing
-// (exploreHere), so opening straight on another view costs no search.
-async function restoreLocation(saved) {
-  if (saved.kind === "city") {
-    cityInput.value = saved.name;
-    await searchCity(saved.name);
-    return;
-  }
-  await googleStarted;
-  try {
-    if (mapsState !== "ready") throw new Error("Google Maps isn't available to load the saved address");
-    await chooseLocation(await placeLocation(saved.placeId));
-  } catch (error) {
-    console.error(error);
-    changingBase = true;
-    renderScreen();
-    showStatus(locationStatus, "", tr("We couldn't load your saved address. Enter it again."));
-  }
-}
-
-// --- Google Maps ---
-
-async function startGoogle() {
-  googleLocation.hidden = false;
-  try {
-    await loadGoogleMaps(config.googleMapsKey, () => useFallback(new Error("Google refused the Maps key (gm_authFailure)")), LOCALE);
-    await mountAddress();
-    // Google may have refused the key while the address field was being set up.
-    if (mapsState === "failed") return;
-    mapsState = "ready";
-    showChoices();
-    renderExploreStatus();
-    renderMyPlaces();
-    renderPlan();
-    exploreHere();
-  } catch (error) {
-    useFallback(error);
-  }
-}
-
-function mountAddress(text) {
-  return setupAutocomplete(addressSlot, "address-label", (location) => {
-    pickedLabel = location.label;
-    chooseLocation(location);
-  }, addressProblem, text);
-}
-
-// Asked once per visit, on the first failed address request.
-let refusalCheck = null;
-
-// A failed address request only means Maps is unavailable if Google refused it. Otherwise the
-// field stays. At Google's own 450px limit its dialog is modal and would hide this message:
-// rebuilding the field keeps the text and closes the dialog. On a wider screen the field
-// stays too, so typing isn't interrupted. Google's field has no retry call: the next real
-// typing asks again, so the message says to type rather than offering a button.
-async function addressProblem(error) {
-  console.error(error);
-  const field = document.querySelector("#address");
-  refusalCheck = refusalCheck || mapsRefused(field.value);
-  if (await refusalCheck) {
-    useFallback(new Error("Google refused the address request"));
-    return;
-  }
-  if (window.matchMedia("(max-width: 450px)").matches) await mountAddress(field.value);
-  showStatus(locationStatus, "", tr("We couldn't get address suggestions. Check your connection, then type in the address field again."));
-}
-
-// Without Google, the city field gives weather only: no places, no walking routes. This is
-// only for Maps itself being unavailable: refused, or its script or library failed to load.
-function useFallback(error) {
-  if (error) console.error(error);
-  mapsState = config.googleMapsKey ? "failed" : "missing";
-  googleLocation.hidden = true;
-  cityLocation.hidden = false;
-  document.querySelector("#city-note").hidden = false;
-  clearInvalid();
-  resetExplore();
-  renderFirstVisit();
-}
-
-let exampleLocation = null;
-
-// Anyone with no address of their own opens here, and opening costs nothing: nothing in this
-// comes from Google, and the weather uses Newton's Open-Meteo position. Google is only asked
-// on the first action (useExample), for the exact spot. It's never saved, so their own
-// address replaces it for good. The tests turn this off to see the one-time step.
-function waitingExample() {
-  return { kind: "example", waiting: true, label: tr("221 Washington St, Newton, MA 02458, USA"), latitude: 42.34, longitude: -71.21, countryCode: "US" };
-}
-
-async function useExample() {
-  exampleButton.disabled = true;
-  const waiting = place && place.waiting;
-  if (waiting) showStatus(exploreStatus, "loading", tr("Loading your starting point…"));
-  try {
-    // Looked up once per visit: pressing the button again doesn't search again.
-    exampleLocation = exampleLocation || await findExampleAddress();
-    const location = exampleLocation;
-    if (!location) throw new Error("Google found nothing for the example address");
-    const field = document.querySelector("#address");
-    if (field) field.value = EXAMPLE_ADDRESS;
-    pickedLabel = EXAMPLE_ADDRESS;
-    await chooseLocation(location);
-  } catch (error) {
-    console.error(error);
-    if (waiting) showStatus(exploreStatus, "", tr("We couldn't load the example address right now."), useExample);
-    else showStatus(locationStatus, "", tr("We couldn't load the example address right now."));
-  } finally {
-    exampleButton.disabled = false;
   }
 }
 
@@ -540,40 +279,6 @@ function buildDays(location, daily, holidays) {
 
 // --- Events ---
 
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (cityLocation.hidden) {
-    // Google's field: only a picked suggestion counts as a location (PRD.md 8.4).
-    const field = document.querySelector("#address");
-    if (field && field.value && field.value !== pickedLabel) {
-      showInvalid(field, tr("Pick an address from the suggestions."));
-    }
-    return;
-  }
-  const city = cityInput.value.trim();
-  if (city.length === 0) {
-    showInvalid(cityInput, tr("Type a city name first."));
-  } else if (city.length < 2) {
-    showInvalid(cityInput, tr("Type at least 2 letters."));
-  } else {
-    searchCity(city);
-  }
-});
-
-cityInput.addEventListener("input", () => {
-  clearInvalid();
-  clearTimeout(suggestTimer);
-  const text = cityInput.value.trim();
-  if (text.length < 2 || suggestions[text]) return;
-  // Wait for a pause in typing so every keystroke doesn't send a request.
-  suggestTimer = setTimeout(() => suggestCities(text), 300);
-});
-
-addressSlot.addEventListener("input", () => {
-  clearInvalid();
-  showStatus(locationStatus, "", "");
-});
-
 document.addEventListener("change", (event) => {
   const { name, value } = event.target;
   if (name === "interest") chooseInterest(value);
@@ -581,7 +286,7 @@ document.addEventListener("change", (event) => {
     settings.mode = value;
     saveSettings(storage, settings);
     showChoices();
-    renderScreen();
+    renderSubtitles();
     renderMyPlaces();
     renderPlaces();
     if (placeDialog.open && openPlaceId && findPlace(openPlaceId)) renderPlaceDetails(findPlace(openPlaceId));
@@ -590,8 +295,7 @@ document.addEventListener("change", (event) => {
   if (name === "minutes") {
     settings.minutes = Number(value);
     saveSettings(storage, settings);
-    if (place) resetExplore();
-    else showChoices();
+    resetExplore();
   }
   if (name === "explore-day") {
     selectedDay = Number(value);
@@ -622,16 +326,13 @@ filtersToggle.addEventListener("click", () => {
   filtersToggle.setAttribute("aria-expanded", "true");
 });
 
-filtersDone.addEventListener("click", () => {
-  if (place && place.waiting && mapsState === "ready") useExample();
-  filtersPanel.close();
-});
+filtersDone.addEventListener("click", () => filtersPanel.close());
 document.querySelector("#filters-close").addEventListener("click", () => filtersPanel.close());
 filtersPanel.addEventListener("click", (event) => {
   if (event.target === filtersPanel) filtersPanel.close();
 });
 
-// A changed walking time or interest searches once, when the sheet closes.
+// A changed walking time or interest is worked out when the sheet closes.
 filtersPanel.addEventListener("close", () => {
   filtersToggle.setAttribute("aria-expanded", "false");
   filtersToggle.focus();
@@ -669,7 +370,7 @@ resetFiltersButton.addEventListener("click", () => {
   settings.ages = SETTING_CHOICES.ages[0];
   if (settings.minutes !== SETTING_CHOICES.minutes[0]) {
     settings.minutes = SETTING_CHOICES.minutes[0];
-    if (place) resetExplore();
+    resetExplore();
   }
   selectedDay = 0;
   if (current) render();
@@ -708,7 +409,7 @@ document.addEventListener("submit", (event) => {
   event.preventDefault();
 });
 
-// Backup (PRD.md 7.18): a JSON file of what Little Days stores, never Google content.
+// Backup (PRD.md 7.18): a JSON file of what Little Days stores.
 const dataStatus = document.querySelector("#data-status");
 const importFile = document.querySelector("#import-file");
 
@@ -753,25 +454,6 @@ document.querySelector("#delete-data").addEventListener("click", () => {
   location.reload();
 });
 
-// Saved places' Google details are fetched only when their section is on screen.
-const sectionObserver = new IntersectionObserver((entries) => {
-  for (const entry of entries) {
-    if (!entry.isIntersecting) continue;
-    visibleSections.add(entry.target.id);
-    sectionObserver.unobserve(entry.target);
-    if (entry.target.id === "my-places") renderMyPlaces();
-    else renderPlan();
-  }
-});
-sectionObserver.observe(document.querySelector("#my-places"));
-sectionObserver.observe(document.querySelector("#my-week"));
-locateButton.addEventListener("click", locate);
-exampleButton.addEventListener("click", useExample);
-keepButton.addEventListener("click", keepBase);
-document.addEventListener("click", (event) => {
-  if (event.target.closest("[data-change-base]")) openSetup();
-});
-
 // Changing the unit or day re-renders; neither sends a request.
 for (const input of unitInputs) {
   input.addEventListener("change", () => {
@@ -800,8 +482,6 @@ document.addEventListener("click", (event) => {
   if (placeOpen) openPlace(placeOpen.dataset.placeOpen, placeOpen);
   const save = event.target.closest("[data-save]");
   if (save) savePlaceId(save.dataset.save);
-  const walk = event.target.closest("[data-walk]");
-  if (walk) checkWalkingTimes(explore.shortlist.filter((p) => p.id === walk.dataset.walk));
   if (event.target.closest("[data-place-close]")) placeDialog.close();
   const status = event.target.closest("[data-status]");
   if (status) setStatus(status.dataset.placeId, status.dataset.status);
@@ -839,15 +519,16 @@ document.addEventListener("error", (event) => {
 
 // --- Explore (PRD.md 7.10–7.16) ---
 
-// What's loaded for the current starting point and walking time, kept in page memory
-// only (PRD.md 7.10): { key, origin, loaded: { category: [place] }, routes: { placeId: route },
-// shortlist, partial, routesFailed }
+// The places within the chosen walking time, worked out from places.js and kept in page
+// memory: { key, origin, loaded: { category: [place] }, routes: { placeId: estimate }, shortlist }
 let explore = null;
-// The results map, kept for the whole visit: { map, markers }.
+// The results map, kept for the whole visit (a new map is a new billed load): { map, markers }.
 const resultsView = { markers: {} };
 let selectedPlace = null;
 // The place shown in the details dialog, and the button that opened it.
 let placeOpener = null;
+// places.js in the shape explore.js uses.
+const LISTED = PLACES.map((p) => ({ ...p, location: { lat: p.lat, lng: p.lng }, types: [p.primaryType] }));
 
 // The chosen interest, ages, mode and walking time, shown in Filters.
 function showChoices() {
@@ -855,92 +536,53 @@ function showChoices() {
   for (const input of document.querySelectorAll("input[name=mode]")) input.checked = input.value === settings.mode;
   document.querySelector("#minutes").value = settings.minutes;
   agesSelect.value = settings.ages;
-  allNote.hidden = settings.interest !== "all";
   for (const note of document.querySelectorAll(".classroom-note")) note.hidden = settings.mode !== "classroom";
-  exampleButton.hidden = mapsState !== "ready" || Boolean(place);
   renderFilterSummary();
 }
 
-function placeLabel() {
-  return place.kind === "device" ? tr("your location") : place.label;
-}
-
 function exploreKey() {
-  return `${place.latitude},${place.longitude},${settings.minutes}`;
+  return String(settings.minutes);
 }
 
-// A new starting point or walking time starts over (PRD.md 7.10).
+// A new walking time starts over (PRD.md 7.10).
 function resetExplore() {
   explore = null;
   selectedPlace = null;
-  showMapAndList(false);
+  showResultsArea(false);
   placeList.innerHTML = "";
   showChoices();
-  renderExploreStatus();
 }
 
-// The map slot shows the map and the list below it together, or the Explore status alone,
-// so markers from an earlier search are never left on screen (PRD.md 8.2).
-function showMapAndList(visible) {
+// The map and the list show together, so markers from earlier results never stay alone.
+function showResultsArea(visible) {
   exploreResults.hidden = !visible;
-  exploreMap.hidden = !visible;
-  mapEmpty.hidden = visible;
-  placeMapBox.classList.toggle("is-empty", !visible);
+  mapBox.hidden = !visible || mapsState === "off";
   if (!visible) mapPeek.hidden = true;
 }
 
-// Starts the places search whenever Explore is what's on screen with a starting point:
-// on opening, on choosing a new one, and on coming back to Explore (PRD.md 7.1). Other
-// views never search, and a visit searches each interest once (explore.loaded).
+// Nothing here asks a service, so it runs whenever Explore is what's on screen.
 function exploreHere() {
-  if (place && place.waiting) {
-    renderExploreStatus();
-    return;
-  }
-  if (place && mapsState === "ready" && !changingBase && viewName() === "explore") findAdventures();
+  if (viewName() === "explore") findAdventures();
 }
 
-async function findAdventures() {
-  if (!place || mapsState !== "ready") return;
+function findAdventures() {
   if (!explore || explore.key !== exploreKey()) {
-    explore = {
-      key: exploreKey(),
-      origin: { lat: place.latitude, lng: place.longitude },
-      loaded: {},
-      routes: {},
-      shortlist: [],
-    };
+    explore = { key: exploreKey(), origin: { lat: place.latitude, lng: place.longitude }, loaded: {}, routes: {}, shortlist: [] };
   }
-  const run = explore;
-  const keys = categoriesToSearch(settings.interest, run.loaded);
-  if (keys.length) {
-    showMapAndList(false);
-    showStatus(exploreStatus, "loading", tr("Finding little adventures near {place}…", { place: placeLabel() }));
-    const results = await Promise.allSettled(keys.map((key) =>
-      searchNearbyPlaces(run.origin, searchRadius(settings.minutes), CATEGORIES[key].types)));
-    if (run !== explore) return; // the location or walking time changed meanwhile
-    results.forEach((result, i) => {
-      if (result.status === "fulfilled") run.loaded[keys[i]] = result.value;
-      else console.error(result.reason);
-    });
-    const failed = results.filter((result) => result.status === "rejected").length;
-    if (failed === results.length) {
-      showStatus(exploreStatus, "error", tr("We couldn't load nearby places right now. Check your connection and try again."), findAdventures);
-      return;
-    }
-    run.partial = failed > 0;
+  for (const key of categoriesToSearch(settings.interest, explore.loaded)) {
+    explore.loaded[key] = nearbyPlaces(LISTED, explore.origin, settings.minutes, CATEGORIES[key].types);
   }
-  await showResults(true);
+  showResults();
 }
 
-// checkRoutes: false when only switching to an interest already loaded, so that
-// switching never sends a request by itself.
-async function showResults(checkRoutes) {
+function showResults() {
   explore.shortlist = shortlist(explore.loaded, settings.interest, explore.origin);
-  selectedPlace = null;
+  for (const p of explore.shortlist) explore.routes[p.id] = estimateWalk(explore.origin, p);
   showChoices();
+  selectedPlace = null;
   if (!explore.shortlist.length) {
-    showMapAndList(false);
+    showResultsArea(false);
+    placeList.innerHTML = "";
     showStatus(exploreStatus, "", settings.interest === "all"
       ? tr("We didn't find places within about a {minutes}-minute walk. Try a longer walk or another interest.", { minutes: settings.minutes })
       : tr("We didn't find {interest} places within about a {minutes}-minute walk. Try a longer walk or another interest.",
@@ -948,27 +590,8 @@ async function showResults(checkRoutes) {
     return;
   }
   showStatus(exploreStatus, "", "");
-  showMapAndList(true);
-  await renderPlaces();
-  if (checkRoutes) await checkWalkingTimes(routeTargets(explore.shortlist, explore.routes));
-}
-
-// One route-matrix request for up to 5 places (PRD.md 7.12).
-async function checkWalkingTimes(targets) {
-  if (!targets.length) return;
-  const run = explore;
-  for (const target of targets) run.routes[target.id] = { status: "pending" };
+  showResultsArea(true);
   renderPlaces();
-  try {
-    Object.assign(run.routes, await walkingTimes(run.origin, targets));
-  } catch (error) {
-    console.error(error);
-    for (const target of targets) run.routes[target.id] = { status: "failed" };
-    run.routesFailed = true;
-  }
-  if (run !== explore) return;
-  await renderPlaces();
-  announce(tr("Walking times are ready."));
 }
 
 function settingFilter() {
@@ -979,16 +602,14 @@ function settingFilter() {
 async function renderPlaces() {
   if (!explore || exploreResults.hidden) return;
   const day = current ? current.days[selectedDay] : null;
-  for (const p of explore.shortlist) placeInfo[p.id] = p;
   const exploredOnly = document.querySelector("#explored-filter").value;
   const filtered = filterByBooking(filterBySetting(explore.shortlist, settingFilter()), document.querySelector("#booking-filter").value)
     .filter((p) => exploredOnly === "all" || (visitCount(savedPlaces, p.id) > 0) === (exploredOnly === "explored"));
-  const { within, unknown, over } = byWalkingTime(filtered, explore.routes, settings.minutes);
-  const weather = day && day.weather;
-  const shown = [...orderForWeather(within, weather, settingFor), ...orderForWeather(unknown, weather, settingFor)];
+  const { within, over } = byWalkingTime(filtered, explore.routes, settings.minutes);
+  const shown = orderForWeather(within, day && day.weather, settingFor);
   shown.forEach((p, i) => { p.number = i + 1; });
 
-  const notes = [tr(shown.length === 1 ? "{count} place · walking times from Google, ideas from Little Days" : "{count} places · walking times from Google, ideas from Little Days",
+  const notes = [tr(shown.length === 1 ? "{count} place · walking times estimated from distance, ideas from Little Days" : "{count} places · walking times estimated from distance, ideas from Little Days",
     { count: shown.length })];
   if (!day) notes.push(tr("Weather unavailable. Check the forecast before you go."));
   for (const holiday of day ? day.publicHolidays : []) {
@@ -996,35 +617,42 @@ async function renderPlaces() {
   }
   if (over) notes.push(tr(over === 1 ? "{count} place is more than a {minutes}-minute walk." : "{count} places are more than a {minutes}-minute walk.",
     { count: over, minutes: settings.minutes }));
-  if (explore.partial) notes.push(tr("Some kinds of places couldn't be loaded right now."));
-  if (explore.routesFailed) notes.push(tr("Walking times couldn't be checked right now, so the walking-time filter is off for those places."));
   exploreNotes.innerHTML = `
     ${notes.map((note) => `<p>${note}</p>`).join("")}
     ${settings.mode === "classroom" ? `<p class="classroom-line">${CLASSROOM_WALKING}</p>` : ""}`;
 
-  if (!shown.length) {
-    placeList.innerHTML = `<div class="status"><p>${tr("No places match these filters.")}</p>
+  placeList.innerHTML = shown.length ? shown.map((p) => placeCardHtml(p, day)).join("")
+    : `<div class="status"><p>${tr("No places match these filters.")}</p>
       <button type="button" class="button-secondary" data-clear-filters>${tr("Clear filters")}</button></div>`;
-  } else {
-    placeList.innerHTML = shown.map((p, i) => {
-      const heading = i === within.length && within.length && unknown.length
-        ? `<h3 class="list-divider">${tr("No Google walking time yet")}</h3>` : "";
-      return heading + placeCardHtml(p, day);
-    }).join("");
-  }
 
-  // Never create or fit a map in a box with no size (another view is showing):
-  // showView() draws it when Explore comes back.
-  if (!exploreMap.offsetHeight) return;
-  // The list is complete without the map, so a map problem never hides it.
+  // Never create or fit a map in a box with no size (another view is showing): showView()
+  // draws it when Explore comes back. The list is complete without it.
+  if (mapsState !== "ready" || !exploreMap.offsetHeight) return;
   try {
-    // One results map per visit, reused by every search (a new map is a new billed map load).
     if (!resultsView.map) resultsView.map = await createMap(exploreMap, explore.origin, config.googleMapId || "DEMO_MAP_ID");
-    // Markers are reused: only places that appear or disappear change (PRD.md 7.16).
     resultsView.markers = await syncMarkers(resultsView.map, explore.origin, shown, selectPlace, resultsView.markers);
   } catch (error) {
     console.error(error);
   }
+}
+
+// Loads Google's map script once. If it can't, the page carries on without the map.
+async function startMap() {
+  try {
+    await loadGoogleMaps(config.googleMapsKey, () => stopMap(new Error("Google refused the Maps key (gm_authFailure)")), LOCALE);
+    if (mapsState === "off") return;
+    mapsState = "ready";
+    if (explore && !exploreResults.hidden) showResultsArea(true);
+    renderPlaces();
+  } catch (error) {
+    stopMap(error);
+  }
+}
+
+function stopMap(error) {
+  console.error(error);
+  mapsState = "off";
+  mapBox.hidden = true;
 }
 
 // The forecast days as buttons above the results, so the day can be chosen while looking
@@ -1039,24 +667,17 @@ function renderExploreDays() {
   }).join("");
 }
 
-const CLASSROOM_WALKING = tr("Google walking estimates may not reflect the time needed when accompanying young children. Check crossings and the route before visiting.");
+const CLASSROOM_WALKING = tr("These walking times are estimated from distance and may not reflect the time needed with young children. Check crossings and the route before visiting.");
 
 function walkHtml(placeItem) {
   const route = explore.routes[placeItem.id];
-  if (!route) {
-    return `${tr("Walking time not checked yet")}
-      <button type="button" class="link-button" data-walk="${placeItem.id}">${tr("Check walking time")}</button>`;
-  }
-  if (route.status === "pending") return `<span class="walk-pending">${tr("Checking walking time…")}</span>`;
-  if (route.status !== "ok") return tr("Walking time unavailable");
-  return `<span aria-hidden="true">🚶</span> ${tr("{minutes} min walk", { minutes: walkingMinutes(route.durationMillis) })} · ${formatDistance(route.distanceMeters, settings.unit)}`;
+  return `<span aria-hidden="true">🚶</span> ${tr("About {minutes} min walk", { minutes: walkingMinutes(route.durationMillis) })} · ${formatDistance(route.distanceMeters, settings.unit)}`;
 }
 
-// Classroom mode's line under the walking time, built only from Google's one-way estimate.
+// Classroom mode's line under the walking time, from the same estimate.
 function roundTripHtml(placeItem) {
-  const route = explore.routes[placeItem.id];
-  if (settings.mode !== "classroom" || !route || route.status !== "ok") return "";
-  return `<p class="place-access">${tr("Round trip at Google's pace: {minutes} min. Allow more with a group.", { minutes: walkingMinutes(route.durationMillis) * 2 })}</p>`;
+  if (settings.mode !== "classroom") return "";
+  return `<p class="place-access">${tr("Round trip by this estimate: {minutes} min. Allow more with a group.", { minutes: walkingMinutes(explore.routes[placeItem.id].durationMillis) * 2 })}</p>`;
 }
 
 function accessHtml(placeItem) {
@@ -1103,7 +724,7 @@ function placeCardHtml(placeItem, day) {
   return `
     <article class="place-card${placeItem.id === selectedPlace ? " is-selected" : ""}" data-place="${placeItem.id}">
       <span class="place-icon art" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24">${CATEGORY_ICONS[placeItem.category]}</svg>
-        ${placeItem.photo ? `<img src="${escapeHtml(placeItem.photo.url)}" alt="" loading="lazy">` : ""}</span>
+        ${placeItem.photo ? `<img src="${escapeHtml(placeItem.photo)}" alt="" loading="lazy">` : ""}</span>
       <div class="place-body">
       <h3><span class="place-number" aria-hidden="true">${placeItem.number}</span>
         <button type="button" class="place-title" data-place-open="${placeItem.id}">
@@ -1114,7 +735,6 @@ function placeCardHtml(placeItem, day) {
       ${hazard ? `<p class="place-alert">${tr("Outdoor places are better left for another day.")}</p>` : ""}
       ${settings.mode === "classroom" ? `<p class="place-access">${tr("Access not verified.")} <strong>${tr("Contact before a classroom visit.")}</strong></p>` : ""}
       <p class="place-idea"><span class="idea-label">${visits ? tr("Little Days idea for next visit:") : tr("Little Days idea:")}</span> ${escapeHtml(idea)}</p>
-      ${placeItem.photo ? `<p class="place-credit">${tr("Photo:")} <a href="${escapeHtml(placeItem.photo.authorUrl)}" target="_blank" rel="noopener">${escapeHtml(placeItem.photo.author)}</a></p>` : ""}
       <div class="place-actions">
         <button type="button" class="button-secondary" data-place-open="${placeItem.id}" aria-label="${tr("View details for {name}", { name })}">${tr("View details")}</button>
         ${savedPlaces[placeItem.id] ? statusTagHtml(placeItem.id)
@@ -1141,7 +761,7 @@ function selectPlace(id) {
   if (mapBeside()) placeList.querySelector(`[data-place="${id}"]`)?.scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
 }
 
-// The wide layout, with the map beside the search and places (style.css).
+// The wide layout, with the map beside the places (style.css).
 function mapBeside() {
   return window.matchMedia("(min-width: 960px)").matches;
 }
@@ -1152,76 +772,32 @@ function reducedMotion() {
 
 // --- Place details (PRD.md 7.16) ---
 
-// Google details for places seen this visit, by ID: from search results, or fetched for
-// saved places. Memory only, never stored (PRD.md 9.4).
-const placeInfo = {};
-// "loading" or "failed", by place ID, for saved places being fetched.
-const placeInfoState = {};
-// Walking routes for the detail map, by "lat,lng|placeId", for this visit only.
-const routeCache = {};
-// The one detail map, reused for every place (PRD.md 7.16): { map, markers, line }.
-const detailView = {};
 let openPlaceId = null;
 
-// A place to show: from the current results (with its list number), or from what's known
-// about a saved place. Returns null when Google's details aren't available.
+// A place to show: from the current results (with its list number), or from places.js for a
+// saved place. Returns null for a place no longer on the list.
 function findPlace(id) {
   const listed = explore && explore.shortlist.find((p) => p.id === id);
   if (listed) return listed;
-  if (!placeInfo[id]) return null;
+  const known = LISTED.find((p) => p.id === id);
+  if (!known) return null;
   const saved = savedPlaces[id];
-  return { ...placeInfo[id], category: categoryOf({ ...placeInfo[id], category: saved && saved.category }) };
+  return { ...known, category: categoryOf({ ...known, category: saved && saved.category }) };
 }
 
-function routeOrigin() {
-  if (explore) return explore.origin;
-  return place ? { lat: place.latitude, lng: place.longitude } : null;
-}
-
-async function openPlace(id, opener) {
+function openPlace(id, opener) {
   const placeItem = findPlace(id);
   if (!placeItem) return;
   placeOpener = opener;
   openPlaceId = id;
-  const origin = routeOrigin();
   renderPlaceDetails(placeItem);
-  routeBox.innerHTML = origin
-    ? `<p class="walk-pending">${tr("Checking the walking route…")}</p>`
-    : `<p>${tr("Choose a starting point at the top of the page to see the walking route.")}</p>`;
+  renderRoute(placeItem);
   if (!placeDialog.open) placeDialog.showModal();
   document.querySelector("#place-title").focus();
-
-  let route = null;
-  if (origin && mapsState === "ready") {
-    const key = `${origin.lat},${origin.lng}|${id}`;
-    // A route already fetched this visit is reused, not requested again.
-    if (!(key in routeCache)) {
-      try {
-        routeCache[key] = await walkingRoute(origin, placeItem.location);
-      } catch (error) {
-        console.error(error);
-        routeCache[key] = null;
-      }
-    }
-    route = routeCache[key];
-    // The route also gives this place's walking time, if the matrix hasn't.
-    if (route && explore && explore.origin === origin && (!explore.routes[id] || explore.routes[id].status !== "ok")) {
-      explore.routes[id] = { status: "ok", durationMillis: route.durationMillis, distanceMeters: route.distanceMeters };
-      renderPlaces();
-    }
-  }
-  if (openPlaceId !== id || !placeDialog.open) return;
-  if (origin) renderRoute(route);
-  if (mapsState !== "ready") return;
-  try {
-    await showRouteMap(detailView, detailMap, origin, { ...placeItem, number: placeItem.number || "" }, route, config.googleMapId || "DEMO_MAP_ID");
-  } catch (error) {
-    console.error(error);
-  }
 }
 
-// Everything in the dialog except the map and the route, which stay while the
-// rest is redrawn (after saving, recording a visit, or planning).
+// Everything in the dialog except the walk, which stays while the rest is redrawn (after
+// saving, recording a visit, or planning).
 function renderPlaceDetails(placeItem, perspective) {
   const id = placeItem.id;
   const day = current ? current.days[selectedDay] : null;
@@ -1231,7 +807,7 @@ function renderPlaceDetails(placeItem, perspective) {
   const suggested = perspectiveFor(guide, visits);
   const shown = perspective == null ? suggested : perspective;
   const name = escapeHtml(placeItem.name || tr("Unnamed place"));
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeItem.name || "")}&query_place_id=${encodeURIComponent(id)}`;
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${placeItem.name} ${placeItem.address || `${placeItem.lat},${placeItem.lng}`}`)}`;
 
   placeHead.innerHTML = `
     <div>
@@ -1242,7 +818,7 @@ function renderPlaceDetails(placeItem, perspective) {
         ${statusTagHtml(id)}</p>
     </div>
     <button type="button" class="button-secondary" data-place-close>${tr("Close")}</button>`;
-  routeReminder.innerHTML = `${tr("A Google walking route isn't a check that the way suits young children. Before you go, look for busy road crossings, water, construction, closed or restricted areas, and the weather, and plan enough adults to supervise.")}
+  routeReminder.innerHTML = `${tr("This walking time is estimated from distance, not a checked route, and isn't a check that the way suits young children. Before you go, look for busy road crossings, water, construction, closed or restricted areas, and the weather, and plan enough adults to supervise.")}
     ${settings.mode === "classroom" ? `<br>${CLASSROOM_WALKING} ${tr("Walk the route yourself before taking a group.")}` : ""}`;
 
   placeBody.innerHTML = `
@@ -1397,15 +973,14 @@ function atHomeHtml(guide, day) {
       ${escapeHtml(rootmapText(activity).title)}</button> <span class="source-note">${tr("from RootMap")}</span></li>`).join("")}</ul>`;
 }
 
-function renderRoute(route) {
-  if (!route) {
-    routeBox.innerHTML = `<p>${tr("Walking route unavailable.")}</p>`;
-    return;
-  }
+// The walk from the school: Little Days' estimate, and a free link to Google's walking route.
+function renderRoute(placeItem) {
+  const walk = estimateWalk({ lat: place.latitude, lng: place.longitude }, placeItem);
+  const directions = `https://www.google.com/maps/dir/?api=1&origin=${place.latitude},${place.longitude}&destination=${placeItem.lat},${placeItem.lng}&travelmode=walking`;
   routeBox.innerHTML = `
-    <p class="place-walk"><span aria-hidden="true">🚶</span> ${tr("{minutes} min walk", { minutes: walkingMinutes(route.durationMillis) })} · ${formatDistance(route.distanceMeters, settings.unit)}
-      <span class="walk-source">${tr("Google walking estimate")}</span></p>
-    ${route.warnings.length ? `<p class="route-warnings">${tr("From Google:")} ${route.warnings.map(escapeHtml).join(" ")}</p>` : ""}`;
+    <p class="place-walk"><span aria-hidden="true">🚶</span> ${tr("About {minutes} min walk", { minutes: walkingMinutes(walk.durationMillis) })} · ${formatDistance(walk.distanceMeters, settings.unit)}
+      <span class="walk-source">${tr("Little Days estimate")}</span></p>
+    <p><a href="${directions}" target="_blank" rel="noopener">${tr("See the walking route on Google Maps")}<span aria-hidden="true"> ↗</span></a></p>`;
 }
 
 // After a change to My Places: the cards, the section, and the open dialog.
@@ -1496,29 +1071,6 @@ function submitPlanForm(form) {
 
 // --- My Places (PRD.md 7.17) ---
 
-// Sections whose saved places need Google's details; they're fetched only once a section
-// is on screen, to avoid paying for places nobody looks at.
-const visibleSections = new Set();
-
-// Fetches Google's details for saved place IDs not known yet, at most 50 per visit.
-async function ensurePlaceInfo(ids) {
-  if (mapsState !== "ready") return;
-  const missing = ids.filter((id) => !placeInfo[id] && !placeInfoState[id]).slice(0, 50 - Object.keys(placeInfoState).length);
-  if (!missing.length) return;
-  for (const id of missing) placeInfoState[id] = "loading";
-  await Promise.all(missing.map(async (id) => {
-    try {
-      placeInfo[id] = await placeDetails(id);
-      delete placeInfoState[id];
-    } catch (error) {
-      console.error(error);
-      placeInfoState[id] = "failed";
-    }
-  }));
-  renderMyPlaces();
-  renderPlan();
-}
-
 function placesTab() {
   return document.querySelector("input[name=places-tab]:checked").value;
 }
@@ -1544,7 +1096,6 @@ function renderMyPlaces() {
     }[tab]}</p><a class="button-secondary link-as-button" href="#explore">${tr("Find places")}</a></div>`;
     return;
   }
-  if (visibleSections.has("my-places")) ensurePlaceInfo(shown);
   placesList.innerHTML = shown.map((id) => savedPlaceHtml(id)).join("");
 }
 
@@ -1552,9 +1103,7 @@ function savedPlaceHtml(id) {
   const entry = savedPlaces[id];
   const info = findPlace(id);
   const visits = entry.visits.length;
-  const title = info ? escapeHtml(info.name || tr("Unnamed place"))
-    : placeInfoState[id] === "failed" || mapsState === "missing" || mapsState === "failed"
-      ? tr("Place details unavailable right now") : tr("Loading place details…");
+  const title = info ? escapeHtml(info.name || tr("Unnamed place")) : tr("This place isn't on the list anymore.");
   const latest = entry.visits[visits - 1];
   return `
     <article class="saved-place">
@@ -1572,13 +1121,13 @@ function savedPlaceHtml(id) {
     </article>`;
 }
 
-// An interest already loaded for this starting point shows again from memory, with no
-// request. A new one searches, or waits for Filters to close if it's open.
+// An interest already worked out shows again from memory. A new one is worked out now, or
+// when Filters closes if it's open.
 function chooseInterest(value) {
   settings.interest = value;
   saveSettings(storage, settings);
   showChoices();
-  if (explore && explore.key === exploreKey() && !categoriesToSearch(value, explore.loaded).length) showResults(false);
+  if (explore && explore.key === exploreKey() && !categoriesToSearch(value, explore.loaded).length) showResults();
   else if (!filtersPanel.open) exploreHere();
 }
 
@@ -1627,13 +1176,12 @@ function renderPlan() {
     return;
   }
   const placeIds = Object.values(plan).flat().filter((x) => typeof x === "object").map((x) => x.placeId);
-  if (placeIds.length && visibleSections.has("my-week")) ensurePlaceInfo(placeIds);
   // My week can be redrawn while a visit is being edited (weather or place details
   // arriving), so what's been typed is carried over.
   const editForm = planBox.querySelector("[data-edit-form]");
   const draft = editForm && editForm.dataset.editForm === editingEntry ? new FormData(editForm) : null;
   planBox.innerHTML = `
-    ${placeIds.length ? `<p class="google-attribution" translate="no">Google Maps</p>` : ""}
+    ${placeIds.length ? `<p class="data-credit" translate="no">© OpenStreetMap contributors</p>` : ""}
     <ul class="plan">${dates.map((date) => {
       const entries = dayEntries(date);
       const items = entries.map((entry) => typeof entry === "string" ? activityItemHtml(entry, date) : placeItemHtml(entry, date)).join("");
@@ -1782,7 +1330,7 @@ function removeVisit(entry) {
 // --- Share and print (PRD.md 7.9, 7.14, 7.20) ---
 // The share card and the guide are built from state already in memory (the
 // plan, savedPlaces, findPlace's cache and the current forecast): printing never makes a
-// Google, weather or holiday request. style.css's @media print shows only #print-area.
+// weather or holiday request. style.css's @media print shows only #print-area.
 // The private journal (an entry's observation/next, PRD.md 7.17) is never printed here.
 
 function printBrandHtml() {
@@ -1845,7 +1393,7 @@ function shareCardHtml(range) {
   return `
     <article class="print-page ${range === "week" ? "print-week" : "print-single"}">
       ${printHeroHtml(tr("Our Little Adventures"), dates.length > 1 ? `<p class="print-subtitle">${printWeekRange(dates)}</p>` : "")}
-      ${hasPlace ? `<p class="google-attribution" translate="no">Google Maps</p>` : ""}
+      ${hasPlace ? `<p class="data-credit" translate="no">© OpenStreetMap contributors</p>` : ""}
       ${dates.length ? dates.map((date) => printDayHtml(date, range !== "week")).join("") : `<p class="print-empty">${tr("Your week is empty. Add activities or places to plan your week.")}</p>`}
     </article>`;
 }
@@ -1921,7 +1469,7 @@ function printActivityItemHtml(id) {
     </li>`;
 }
 
-// A planned visit: the place's name/address (Google content, so the attribution above
+// A planned visit: the place's name and address (from OpenStreetMap, so the credit above
 // covers it) and only the adult's own preparation notes, never the private journal.
 function printPlaceItemHtml(visit, date) {
   const info = findPlace(visit.placeId);
@@ -1956,7 +1504,7 @@ function printGuide(placeItem, shown, day) {
       ${printHeroHtml(escapeHtml(placeItem.name || tr("Unnamed place")), `
         ${placeItem.address ? `<p class="print-address">${escapeHtml(placeItem.address)}</p>` : ""}
         <p class="print-perspective">${tr(["First visit", "Second visit", "Third visit"][shown])}</p>`)}
-      <p class="google-attribution" translate="no">Google Maps</p>
+      <p class="data-credit" translate="no">© OpenStreetMap contributors</p>
       <div class="print-sections">
       <section class="print-section">
         <h2>${day ? tr("Weather on {day}", { day: formatDay(day.date) }) : tr("Weather")}</h2>
@@ -2080,62 +1628,12 @@ function showStatus(area, className, text, retry, retryLabel = tr("Try again")) 
   }
 }
 
-// The one-time step shows until there's a starting point, and again for "Change". Everything
-// else on Explore waits behind it. Its words follow who's exploring.
-function renderScreen() {
-  const setup = changingBase || (!place && !settings.location);
-  setupSection.hidden = !setup;
-  explorePage.hidden = setup;
-  setupSection.classList.toggle("is-change", changingBase);
-  addressLabel.textContent = settings.mode === "classroom" ? tr("Where's your school?") : tr("Where's home?");
-  setupNote.textContent = changingBase ? tr("Saved in this browser until you change it.") : tr("You only need to do this once.");
-  setupCurrent.textContent = place ? tr("Now: {place}", { place: place.label }) : "";
-  setupCurrent.hidden = !changingBase || !place;
-  keepButton.hidden = !changingBase || !place;
+// The subtitles follow who's exploring.
+function renderSubtitles() {
   const classroom = settings.mode === "classroom";
   document.querySelector("#weather-subtitle").textContent = classroom ? tr("What to expect before taking the class out.") : tr("What to expect before you head out.");
   document.querySelector("#places-subtitle").textContent = classroom ? tr("Places for class walks.") : tr("Places to explore together.");
   document.querySelector("#plan-subtitle").textContent = classroom ? tr("School days in the week ahead.") : tr("The week ahead.");
-}
-
-function openSetup() {
-  changingBase = true;
-  clearInvalid();
-  showStatus(locationStatus, "", "");
-  const field = document.querySelector("#address");
-  if (field) field.value = "";
-  cityInput.value = "";
-  renderScreen();
-  location.hash = "explore";
-  addressLabel.focus();
-}
-
-function keepBase() {
-  changingBase = false;
-  renderScreen();
-  if (explore) renderPlaces();
-  else exploreHere();
-  document.querySelector(".explore-side [data-change-base]").focus();
-}
-
-// With Google, the first-visit prompt is the one-time step itself.
-function renderFirstVisit() {
-  if (place || settings.location || cityLocation.hidden) return;
-  showStatus(locationStatus, "", tr("Enter your city or use your location to see the weather."));
-}
-
-function renderExploreStatus() {
-  if (mapsState === "missing") {
-    showStatus(exploreStatus, "", tr("Maps and places aren't set up on this copy of Little Days yet."));
-  } else if (mapsState === "failed") {
-    showStatus(exploreStatus, "", tr("Google Maps isn't available right now, so places and walking times can't be shown."));
-  } else if (!place && settings.location) {
-    showStatus(exploreStatus, "loading", tr("Loading your starting point…"));
-  } else if (place && place.waiting && mapsState === "ready") {
-    showStatus(exploreStatus, "", tr("Tap to see places to explore near this address."), useExample, tr("See nearby places"));
-  } else {
-    showStatus(exploreStatus, "", "");
-  }
 }
 
 // Removes the weather of an earlier location, so it isn't mistaken for the new one.
@@ -2156,7 +1654,6 @@ function clearWeather() {
 function showWeatherLoading(label) {
   clearWeather();
   weatherSection.hidden = false;
-  weatherEmpty.hidden = true;
   showStatus(weatherStatus, "loading", tr("Getting the weather for {place}…", { place: label }));
   nowLine.className = "now-line";
   nowLine.innerHTML = `<p class="now-loading">${tr("Getting the weather…")}</p>`;
@@ -2169,42 +1666,6 @@ function showWeatherError(retry) {
   nowLine.className = "now-line";
   nowLine.innerHTML = `<p class="now-loading">${tr("Weather unavailable right now.")}</p>`;
   nowLine.hidden = false;
-}
-
-function showNotFound(city) {
-  place = null;
-  changingBase = true;
-  renderScreen();
-  locationLine.hidden = true;
-  clearWeather();
-  weatherSection.hidden = true;
-  weatherEmpty.hidden = false;
-  showStatus(locationStatus, "", tr("We couldn't find \"{city}\". Check the spelling, or add the state or country, like \"Portland, Maine\".", { city }));
-  cityInput.focus();
-}
-
-function showLocationProblem(code) {
-  const address = cityLocation.hidden;
-  showStatus(locationStatus, "", code === 1
-    ? tr(address ? "Location access is off, so type an address instead." : "Location access is off, so type a city instead.")
-    : tr(address ? "We couldn't find your location. Type an address instead." : "We couldn't find your location. Type a city instead."));
-  (cityLocation.hidden ? document.querySelector("#address") : cityInput)?.focus();
-}
-
-function showInvalid(field, text) {
-  locationMessage.textContent = `⚠︎ ${text}`;
-  locationMessage.hidden = false;
-  field.setAttribute("aria-invalid", "true");
-  field.setAttribute("aria-describedby", "location-message");
-  field.focus();
-}
-
-function clearInvalid() {
-  locationMessage.hidden = true;
-  for (const field of document.querySelectorAll("[aria-describedby=location-message]")) {
-    field.removeAttribute("aria-invalid");
-    field.removeAttribute("aria-describedby");
-  }
 }
 
 // --- In use ---
@@ -2439,7 +1900,7 @@ function escapeHtml(text) {
 // --- Language (PRD.md 7.19) ---
 
 // index.html is written in English; in Chinese its text and labels are swapped in place.
-// Text with no entry in ZH (the brand, "Google Maps", numbers) stays as it is.
+// Text with no entry in ZH (the brand, numbers) stays as it is.
 function translatePage() {
   document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en";
   const switchButton = document.querySelector("#lang-switch");
@@ -2459,8 +1920,7 @@ function translatePage() {
   }
 }
 
-// Switching reloads the page, so Google's map, places and addresses come back in the new
-// language too (its language is set when its script loads).
+// Switching reloads the page, so everything is drawn again in the new language.
 document.querySelector("#lang-switch").addEventListener("click", () => {
   settings.lang = LANG === "zh" ? "en" : "zh";
   saveSettings(storage, settings);
@@ -2504,16 +1964,13 @@ document.querySelector("#interest").innerHTML = [["all", "All"], ...CATEGORY_KEY
 document.querySelector("#minutes").innerHTML = [...SETTING_CHOICES.minutes].sort((a, b) => a - b)
   .map((minutes) => `<option value="${minutes}">${tr("{minutes} min walk", { minutes })}</option>`).join("");
 showChoices();
-renderScreen();
-showView();
-saveSettings(storage, settings); // finishes a v1 → v2 migration (PRD.md 7.18)
+renderSubtitles();
+locationLine.innerHTML = `<span class="location-label">📍 ${escapeHtml(SCHOOL.name)}</span>`;
+locationLine.title = SCHOOL.label;
+showView();saveSettings(storage, settings); // finishes a v1 → v2 migration (PRD.md 7.18)
 savePlan(storage, plan); // keep the cleaned-up plan (and finish a v1 → v2 migration)
 storePlaces(storage, savedPlaces); // the same for My Places
 renderPlan();
 renderMyPlaces();
-renderExploreStatus();
-if (config.googleMapsKey && !settings.location && config.startAtExample !== false) chooseLocation(waitingExample());
-// Resolves once Google is ready or the fallback is in place.
-const googleStarted = config.googleMapsKey ? startGoogle() : Promise.resolve(useFallback());
-renderFirstVisit();
-if (settings.location) restoreLocation(settings.location);
+loadWeather(place);
+if (config.googleMapsKey) startMap();

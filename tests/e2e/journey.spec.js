@@ -1,6 +1,7 @@
 // Phase 4 journeys: map reuse, My Places, the journal, revisits, My week places, and
-// deleting saved data (PRD.md 7.9, 7.16–7.18). Google is the fake and every other
-// request is mocked: these show the page's behavior, not that the real APIs work.
+// deleting saved data (PRD.md 7.9, 7.16–7.18). Places come from the test copy of places.js,
+// the map is the fake and every other request is mocked: these show the page's behavior,
+// not that the real APIs work.
 const { test, expect } = require("@playwright/test");
 const { mockApis, showView, openFilters, closeFilters, chooseInterest, GOOGLE_CONFIG } = require("./mock-apis.js");
 
@@ -12,39 +13,20 @@ async function start(page, testInfo, storage = {}) {
   testInfo.api = await mockApis(page, { config: GOOGLE_CONFIG, storage });
   page.on("dialog", (dialog) => dialog.accept());
   await page.goto("/");
-  await page.evaluate(() => window.fakePickAddress());
   await expect(page.locator(".now-temp")).toBeAttached();
 }
 async function search(page, label) {
   await chooseInterest(page, label);
   await expect(page.locator(".place-card").first()).toBeVisible();
 }
-const count = (page, name) => page.evaluate((n) => window.fakeGoogleCalls.filter((c) => c.call === n).length, name);
 const dialog = (page) => page.locator("#place-dialog");
 const close = (page) => dialog(page).locator("[data-place-close]").first().click();
 
-test("one detail map is reused; routes and markers aren't redone for small changes", async ({ page }, testInfo) => {
+test("small changes update the list without rebuilding the markers", async ({ page }, testInfo) => {
   await start(page, testInfo);
   await search(page, "Nature");
-  const markersAfterSearch = await page.evaluate(() => window.fakeMarkers.length);
-
   await page.getByRole("button", { name: "Details for Test Park" }).click();
   await expect(dialog(page).locator("#place-route")).toContainText("min walk");
-  await close(page);
-  await page.getByRole("button", { name: "Details for Test Garden" }).click();
-  await expect(dialog(page).locator("#place-title")).toHaveText("Test Garden");
-  await expect(dialog(page).locator("#place-route")).toContainText("min walk");
-  // The results map plus one detail map, however many places are opened.
-  expect(await page.evaluate(() => window.fakeMapCount)).toBe(2);
-  // The previous route line was cleared; only the current one is on the map.
-  expect(await page.evaluate(() => window.fakePolylines.filter((l) => l.map).length)).toBe(1);
-  await close(page);
-
-  // Opening a place again reuses its route instead of asking Google again.
-  const routesBefore = await count(page, "computeRoutes");
-  await page.getByRole("button", { name: "Details for Test Park" }).click();
-  await expect(dialog(page).locator("#place-route")).toContainText("min walk");
-  expect(await count(page, "computeRoutes")).toBe(routesBefore);
   await close(page);
 
   // Changing units or the day updates the list without rebuilding the markers.
@@ -57,7 +39,7 @@ test("one detail map is reused; routes and markers aren't redone for small chang
   await showView(page, "explore");
   await expect(page.locator(".place-card").first()).toContainText("km");
   expect(await page.evaluate(() => window.fakeMarkers.length)).toBe(markersBefore);
-  expect(markersBefore).toBeGreaterThanOrEqual(markersAfterSearch);
+  expect(await page.evaluate(() => window.fakeMapCount)).toBe(1);
 });
 
 test("journal: each visit is kept, the card shows Explored, and the next perspective comes first", async ({ page }, testInfo) => {
@@ -124,7 +106,7 @@ test("My Places: tabs with counts, history, visit again, and remove", async ({ p
   await expect(places.locator("[data-count=explored]")).toHaveText("(1)");
   await expect(places.locator(".saved-place")).toHaveCount(1);
   await expect(places.locator(".saved-place")).toContainText("Test Garden");
-  await expect(places.locator(".google-attribution")).toHaveText("Google Maps");
+  await expect(places.locator(".data-credit")).toHaveText("© OpenStreetMap contributors");
 
   await places.locator("label", { hasText: "Explored" }).click();
   await expect(places.locator(".saved-place")).toContainText("Last explored Wed, Nov 4 · 1 visit");
@@ -146,16 +128,17 @@ test("My Places: tabs with counts, history, visit again, and remove", async ({ p
   expect(Object.keys(saved)).toEqual(["fake-garden-1"]);
 });
 
-test("a saved place not in the results is fetched from Google once its section is on screen", async ({ page }, testInfo) => {
+test("a saved place not in the results still opens, and one no longer listed says so", async ({ page }, testInfo) => {
   await start(page, testInfo, {
-    "littleDays.places.v2": JSON.stringify({ "fake-library-1": { status: "want", category: "art-culture", saved: "2026-11-01", visits: [] } }),
+    "littleDays.places.v2": JSON.stringify({
+      "fake-library-1": { status: "want", category: "art-culture", saved: "2026-11-01", visits: [] },
+      "ChIJoldGooglePlace": { status: "want", category: "nature", saved: "2026-10-01", visits: [] },
+    }),
     "littleDays.settings.v2": JSON.stringify({ interest: "nature" }), // so it isn't in the results
   });
-  expect(await count(page, "fetchFields")).toBe(1); // the picked address only
   await showView(page, "my-places");
-  await expect(page.locator("#my-places .saved-place")).toContainText("Test Library");
-  expect(await count(page, "fetchFields")).toBe(2);
-  // Opening it works without a search, with a route from the chosen address.
+  await expect(page.locator("#my-places .saved-place").first()).toContainText("Test Library");
+  await expect(page.locator("#my-places")).toContainText("This place isn't on the list anymore.");
   await page.getByRole("button", { name: "Open Test Library" }).click();
   await expect(dialog(page).locator("#place-title")).toHaveText("Test Library");
   await expect(dialog(page).locator("#place-route")).toContainText("min walk");
@@ -212,10 +195,9 @@ test("Delete my saved data removes everything Little Days stored", async ({ page
     "littleDays.plan.v2": JSON.stringify({ "2026-11-06": ["duck-walk"] }),
   });
   await expect(page.locator("#delete-data")).toBeVisible();
-  await expect(page.locator(".your-data")).toContainText("never stores your device's position");
   await page.locator("#delete-data").click();
   await page.waitForLoadState("load");
-  await expect(page.locator("#setup")).toBeVisible();
+  await expect(page.locator(".place-card").first()).toBeVisible();
   const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("littleDays.")));
   // After the reload only defaults may be written again: no places, journal, plan or location.
   expect(keys.filter((k) => !/settings|plan|places/.test(k))).toEqual([]);
@@ -227,7 +209,7 @@ test("Delete my saved data removes everything Little Days stored", async ({ page
 test("one results map for the whole visit", async ({ page }, testInfo) => {
   await start(page, testInfo);
   await search(page, "Nature");
-  // A new walking time starts a new search, but the map stays the same one.
+  // A new walking time redraws the places, but the map stays the same one.
   await openFilters(page);
   await page.locator("#minutes").selectOption("20");
   await closeFilters(page);
@@ -242,7 +224,7 @@ test("Save a backup file downloads a backup; Restore from a backup file replaces
   expect(download.suggestedFilename()).toBe("little-days-data-2026-11-04.json");
   const exported = JSON.parse(await (await download.createReadStream()).toArray().then((c) => Buffer.concat(c).toString()));
   expect(exported).toMatchObject({ format: "little-days-data", version: 1, places });
-  expect(JSON.stringify(exported)).not.toMatch(/fake-test-key|Test Park|221 Washington/);
+  expect(JSON.stringify(exported)).not.toMatch(/fake-test-key|Test Park/);
 
   // A broken file is refused and nothing changes.
   await page.locator("#import-file").setInputFiles({ name: "x.json", mimeType: "application/json", buffer: Buffer.from("{oops") });
@@ -250,8 +232,10 @@ test("Save a backup file downloads a backup; Restore from a backup file replaces
 
   // A valid backup replaces what's saved (the dialog is accepted in start()).
   const backup = { ...exported, places: { "fake-library-1": { status: "want", category: "art-culture", saved: "2026-10-01", visits: [] } } };
-  await page.locator("#import-file").setInputFiles({ name: "b.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(backup)) });
-  await page.waitForLoadState("load");
+  await Promise.all([
+    page.waitForEvent("load"),
+    page.locator("#import-file").setInputFiles({ name: "b.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(backup)) }),
+  ]);
   await expect.poll(() => page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("littleDays.places.v2") || "{}")))).toEqual(["fake-library-1"]);
 });
 

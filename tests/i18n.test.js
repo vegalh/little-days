@@ -29,9 +29,9 @@ test("every Chinese entry keeps the English entry's {placeholders}", () => {
   }
 });
 
-test("every tr(\"…\") text in app.js and google.js has Chinese", () => {
+test("every tr(\"…\") text in app.js has Chinese", () => {
   const texts = [];
-  for (const file of ["app.js", "google.js"]) {
+  for (const file of ["app.js"]) {
     for (const match of read(file).matchAll(/\btr\(\s*"((?:[^"\\]|\\.)*)"/g)) texts.push(JSON.parse(`"${match[1]}"`));
     // tr(x ? "a" : "b") and tr(["a", "b"][i]) choose between texts
     for (const match of read(file).matchAll(/\btr\(\s*(?:\w+ === 1 \?|\w+ \?|\[)\s*"((?:[^"\\]|\\.)*)"\s*[:,]\s*"((?:[^"\\]|\\.)*)"/g)) {
