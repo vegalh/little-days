@@ -31,6 +31,7 @@ const exploreNotes = document.querySelector("#explore-notes");
 const mapBox = document.querySelector("#place-map-box");
 const exploreMap = document.querySelector("#explore-map");
 const mapPeek = document.querySelector("#map-peek");
+const googleCredit = document.querySelector("#google-credit");
 const placeList = document.querySelector("#place-list");
 const placeDialog = document.querySelector("#place-dialog");
 const placeBody = document.querySelector("#place-body");
@@ -513,7 +514,7 @@ document.addEventListener("click", (event) => {
 // A photo that fails to load becomes a plain tile instead of a broken image.
 document.addEventListener("error", (event) => {
   if (event.target.tagName !== "IMG") return;
-  event.target.closest(".art").classList.add("art-missing");
+  event.target.closest(".art")?.classList.add("art-missing");
   event.target.remove();
 }, true);
 
@@ -653,6 +654,8 @@ function stopMap(error) {
   console.error(error);
   mapsState = "off";
   mapBox.hidden = true;
+  googleCredit.hidden = true;
+  renderPlaces();
 }
 
 // The forecast days as buttons above the results, so the day can be chosen while looking
@@ -724,7 +727,7 @@ function placeCardHtml(placeItem, day) {
   return `
     <article class="place-card${placeItem.id === selectedPlace ? " is-selected" : ""}" data-place="${placeItem.id}">
       <span class="place-icon art" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24">${CATEGORY_ICONS[placeItem.category]}</svg>
-        ${placeItem.photo ? `<img src="${escapeHtml(placeItem.photo)}" alt="" loading="lazy">` : ""}</span>
+        ${placePhoto(placeItem) ? `<img src="${escapeHtml(placePhoto(placeItem))}" alt="" loading="lazy">` : ""}</span>
       <div class="place-body">
       <h3><span class="place-number" aria-hidden="true">${placeItem.number}</span>
         <button type="button" class="place-title" data-place-open="${placeItem.id}">
@@ -742,6 +745,17 @@ function placeCardHtml(placeItem, day) {
       </div>
       </div>
     </article>`;
+}
+
+// The school's own photo, or else Google's Street View of the spot, loaded only when the card
+// is on screen and never stored (Google's terms). Each one is billed past Google's free
+// 10,000 a month. Where there's no Street View, Google answers with an error, and the error
+// listener below leaves the category icon in its place.
+function placePhoto(placeItem) {
+  if (placeItem.photo) return placeItem.photo;
+  if (mapsState === "off") return "";
+  return `https://maps.googleapis.com/maps/api/streetview?size=240x240&location=${placeItem.lat},${placeItem.lng}` +
+    `&fov=80&source=outdoor&return_error_code=true&key=${encodeURIComponent(config.googleMapsKey)}`;
 }
 
 // A marker or card was chosen: highlight both, and show the preview on the map.
@@ -1973,4 +1987,5 @@ storePlaces(storage, savedPlaces); // the same for My Places
 renderPlan();
 renderMyPlaces();
 loadWeather(place);
+googleCredit.hidden = mapsState === "off";
 if (config.googleMapsKey) startMap();

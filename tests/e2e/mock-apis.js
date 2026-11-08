@@ -16,6 +16,7 @@ const FIXTURE_NOW = new Date("2026-11-04T18:15:00-05:00");
 //   storage     { key: value } put in localStorage before the page loads
 //   realDefaults  true: no English setting is added, to test how the page really opens
 //   google      options for the fake Google script (authFailure, failFetch)
+//   streetView  "none": every Street View photo answers with Google's error
 async function mockApis(page, options = {}) {
   const api = { requests: [], unmocked: [] };
   const forecastAnswers = [].concat(options.forecast || "ok");
@@ -45,6 +46,13 @@ async function mockApis(page, options = {}) {
   await page.route("https://date.nager.at/api/v3/PublicHolidays/**", (route) => {
     api.requests.push(route.request().url());
     return route.fulfill({ contentType: "application/json", body: fixture("holidays-us-2026.json") });
+  });
+
+  // Street View photos on the cards: a tiny image, or none (Google's error) when asked.
+  await page.route("https://maps.googleapis.com/maps/api/streetview?**", (route) => {
+    api.requests.push(route.request().url());
+    return options.streetView === "none" ? route.fulfill({ status: 404, body: "" })
+      : route.fulfill({ contentType: "image/gif", body: Buffer.from("R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==", "base64") });
   });
 
   await page.route("https://maps.googleapis.com/maps/api/js?**", (route) => {

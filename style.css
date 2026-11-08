@@ -1017,6 +1017,14 @@ dialog p { margin: 8px 0 0; }
 .explore-notes p { margin: 0 0 4px; }
 .classroom-line { color: var(--ink); font-weight: 600; }
 
+/* Google's credit for the cards' Street View photos: its own words, never wrapped or translated. */
+.google-attribution {
+  margin: 0 0 8px;
+  font: 400 14px Roboto, var(--font-body);
+  color: #5E5E5E;
+  white-space: nowrap;
+}
+
 /* OpenStreetMap's credit, wherever its places are shown (ODbL). */
 .data-credit {
   margin: 0 0 8px;

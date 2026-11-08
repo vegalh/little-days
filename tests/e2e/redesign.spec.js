@@ -160,12 +160,31 @@ test("filters: every row fits on a phone screen, and Booking narrows the places 
   expect((await googleCalls(page)).length).toBe(before);
 });
 
-test("a place with no photo shows its category icon", async ({ page }, testInfo) => {
+test("each card shows a Street View photo, with Google's name, loaded only on screen", async ({ page }, testInfo) => {
   await open(page, testInfo);
   await explore(page);
-  await expect(page.locator(".place-card")).toHaveCount(6);
+  await expect(page.locator(".place-card img")).toHaveCount(6);
+  await expect(page.locator(".place-card img").first()).toHaveAttribute("loading", "lazy");
+  await expect(page.locator(".place-card img").first()).toHaveAttribute("src", /maps\/api\/streetview\?size=240x240&location=42\.\d+,-71\.\d+.*return_error_code=true/);
+  await expect(page.locator("#google-credit")).toHaveText("Google Maps");
+  await expect(page.locator("#google-credit")).toHaveAttribute("translate", "no");
+  const stored = await page.evaluate(() => JSON.stringify({ ...localStorage }));
+  expect(stored).not.toContain("streetview");
+});
+
+test("where there's no Street View, the card keeps its category icon", async ({ page }, testInfo) => {
+  await open(page, testInfo, { streetView: "none" });
+  await explore(page);
   await expect(page.locator(".place-card .place-icon svg")).toHaveCount(6);
+  await expect.poll(() => page.locator(".place-card img").count()).toBeLessThan(6);
+});
+
+test("without a key there are no photos and no Google name, only icons", async ({ page }, testInfo) => {
+  testInfo.api = await mockApis(page, { config: null });
+  await page.goto("/");
+  await explore(page);
   await expect(page.locator(".place-card img")).toHaveCount(0);
+  await expect(page.locator("#google-credit")).toBeHidden();
 });
 
 test("My Places tabs stay on one line at 375px and 360px", async ({ page }, testInfo) => {
