@@ -51,7 +51,7 @@ const CATEGORIES = [
   { key: "movement", label: "Movement", photo: "rolling-in-the-leaves" },
 ];
 const categoryLabel = (key) => t(CATEGORIES.find((c) => c.key === key).label);
-const photoSrc = (id) => `../../images/activities/${id}-480.webp`;
+const photoSrc = (id) => `../../../assets/images/activities/${id}-480.webp`;
 
 const EXAMPLE = "221 Washington Street, Newton, MA 02458";
 const SUGGESTIONS = [

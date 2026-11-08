@@ -1,7 +1,7 @@
 // Run with: node --test
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { CELEBRATIONS, celebrationsOn } = require("../celebrations.js");
+const { CELEBRATIONS, celebrationsOn } = require("../../data/celebrations.js");
 
 test("Halloween shows only in the listed countries", () => {
   for (const country of ["US", "CA", "IE", "GB"]) {

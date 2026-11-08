@@ -1,9 +1,9 @@
 // Run with: node --test
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { ACTIVITIES } = require("../activities.js");
-const { weatherFor, seasonFor, pickIdeas } = require("../recommend.js");
-const { toFahrenheit, toMph, formatTemp, formatWind, formatRain, WEAR_LIMITS, whatToWear, explainDay, activityDetails } = require("../advice.js");
+const { ACTIVITIES } = require("../../data/activities.js");
+const { weatherFor, seasonFor, pickIdeas } = require("../../js/recommend.js");
+const { toFahrenheit, toMph, formatTemp, formatWind, formatRain, WEAR_LIMITS, whatToWear, explainDay, activityDetails } = require("../../js/advice.js");
 
 const CLEAR = { code: 0, feelsMax: 18, feelsMin: 14, gusts: 20, rainChance: 0, uv: 2 };
 function day(values = {}) {

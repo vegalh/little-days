@@ -263,7 +263,7 @@ An "either" activity in an indoor slot is labelled "Indoor".
 
 **Calendar:** each day card shows the first idea as its featured activity, with its photo and title. **Selected day:** shows all three ideas.
 
-**Photos.** Each activity uses its original RootMap photo, copied into `images/activities/` as WebP at 480 and 960 pixels wide (`{id}-480.webp`, `{id}-960.webp`, quality 78) with `srcset`, `sizes`, `width`/`height` and `loading="lazy"`. The RootMap originals aren't changed. If a photo is missing or fails to load, a plain tinted tile with the title's first letter is shown, never a broken image.
+**Photos.** Each activity uses its original RootMap photo, copied into `assets/images/activities/` as WebP at 480 and 960 pixels wide (`{id}-480.webp`, `{id}-960.webp`, quality 78) with `srcset`, `sizes`, `width`/`height` and `loading="lazy"`. The RootMap originals aren't changed. If a photo is missing or fails to load, a plain tinted tile with the title's first letter is shown, never a broken image.
 
 ### 7.6 What to wear
 
@@ -813,7 +813,7 @@ Requests Little Days makes (checked live on 2026-11-04, PRD 7.2):
 
 ### 9.5 Deployment
 
-**Workflow:** `.github/workflows/pages.yml`. It runs **on every push to `main`**, and can also be started by hand (Actions → "Deploy to GitHub Pages" → Run workflow). It checks out the code, runs `node --test`, copies only the site files (`index.html`, `style.css`, the `.js` files, `images/` and `fonts/`) into `_site`, writes `_site/config.js` from two repository secrets, and publishes `_site` with GitHub's Pages actions. There's no build step. `node_modules`, `tests`, `tools`, `design`, the docs and the package files aren't published.
+**Workflow:** `.github/workflows/pages.yml`. It runs **on every push to `main`**, and can also be started by hand (Actions → "Deploy to GitHub Pages" → Run workflow). It checks out the code, runs `node --test`, copies only the site (`index.html`, `css/`, `js/`, `data/` and `assets/`) into `_site`, writes `_site/config.js` from two repository secrets, and publishes `_site` with GitHub's Pages actions. There's no build step. `node_modules`, `tests`, `tools`, `design`, the docs and the package files aren't published.
 
 **Repository secrets** (Settings → Secrets and variables → Actions → New repository secret):
 
@@ -830,7 +830,7 @@ The workflow stops with a message if either is missing. The key ends up in the p
 3. Settings → Pages → Build and deployment → Source: **GitHub Actions**.
 4. Commit and push `main` (including the workflow) when you're ready.
 5. Actions → "Deploy to GitHub Pages": watch the run finish.
-6. Open `https://vegalh.github.io/little-days/` and run tests/LIVE-CHECK.md checks 1–3, 16–18 and 21 with the production key. Check 12 (a different address is refused) confirms the restriction.
+6. Open `https://vegalh.github.io/little-days/` and run docs/LIVE-CHECK.md checks 1–3, 16–18 and 21 with the production key. Check 12 (a different address is refused) confirms the restriction.
 
 **Updating:** push to `main`. The workflow runs by itself.
 
@@ -868,7 +868,7 @@ Journeys: location permission denied; manual address selection; places success; 
 
 ### 10.3 Live check (manual, real APIs)
 
-`tests/LIVE-CHECK.md` is a checklist run by hand with the dev key on `localhost:8000`, and with the prod key on the published site. Each run is recorded with the date, browser and result. For each API it says how to confirm a real response (DevTools Network panel and the Phase 2 `console.log`s):
+`docs/LIVE-CHECK.md` is a checklist run by hand with the dev key on `localhost:8000`, and with the prod key on the published site. Each run is recorded with the date, browser and result. For each API it says how to confirm a real response (DevTools Network panel and the Phase 2 `console.log`s):
 
 - Maps JS: the map shows real streets, and the Network panel shows requests to `maps.googleapis.com` with status 200.
 - Autocomplete: typing "221 Wash" suggests the Newton address; picking it shows the formatted address.
@@ -891,7 +891,7 @@ One phase at a time. Each phase ends with: what changed, the tests run and their
 | **2. Foundation** | `.gitignore`, `config.example.js`, loading the Maps JS API with the 8.3 setup errors; the weather-only city fallback (Open-Meteo geocoding); Use my location; Autocomplete and the example address (built, mock-tested only until a key is configured); Open-Meteo current + hourly + daily with the compact line and the Weather section; location state; settings v2 and migration; the new page order and navigation; Playwright set up with the first journeys. No place search yet. | To run live. The code and mocked tests can be done without one. |
 | **3. Discovery** | The remaining controls (ages, mode, walking time, interest, Explore nearby); `explore.js` (categories, radius, shortlist, access, setting, filters); nearby search; map and markers; route matrix (5 at first, more on request); place cards with weather, age and access notes; Save (Want to explore); List/Map switch; place details with the route, weather and the guide; `guides.js` (drafted for your review) with three perspectives; at-home ideas in details. | Same |
 | **4. Experience** | My Places section; explored and revisit (linking visits to perspectives); the Explored filter; My week v2 with places and migration; delete my data; footer privacy note. | Same |
-| **5. Readiness** | Full Playwright run on desktop and phone; `tests/LIVE-CHECK.md` run live; billing and quota review; the Pages workflow (not run until you approve deploying). | Yes |
+| **5. Readiness** | Full Playwright run on desktop and phone; `docs/LIVE-CHECK.md` run live; billing and quota review; the Pages workflow (not run until you approve deploying). | Yes |
 
 ## 12. Acceptance criteria
 
@@ -916,7 +916,7 @@ One phase at a time. Each phase ends with: what changed, the tests run and their
 - [ ] °F/°C changes temperatures, wind, rain amounts and distances with no new request.
 - [ ] All earlier at-home criteria still hold: hazard days have no outdoor at-home ideas, What to wear, Why these activities?, activity details, Halloween only where listed.
 - [ ] `node --test` and `npx playwright test` pass (mocked).
-- [ ] `tests/LIVE-CHECK.md` has a passing live run recorded for every API.
+- [ ] `docs/LIVE-CHECK.md` has a passing live run recorded for every API.
 - [ ] No page scrolls sideways from 360px up, and every control is at least 44 × 44px.
 - [ ] At 390 × 844 the one-time step fits without scrolling. Every later visit opens on the address line, the map and the first place, with no setting to change first.
 

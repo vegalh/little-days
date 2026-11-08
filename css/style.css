@@ -1,9 +1,9 @@
-/* RootMap's font, bundled in fonts/ (SIL Open Font License, fonts/OFL.txt) rather than
+/* RootMap's font, bundled in assets/fonts/ (SIL Open Font License, assets/fonts/OFL.txt) rather than
    loaded from Google Fonts, which is blocked or slow in mainland China. */
-@font-face { font-family: "Caveat"; font-weight: 700; font-display: swap; src: url("fonts/caveat-latin-700-normal.woff2") format("woff2"); }
-@font-face { font-family: "Nunito"; font-weight: 400; font-display: swap; src: url("fonts/nunito-latin-400-normal.woff2") format("woff2"); }
-@font-face { font-family: "Nunito"; font-weight: 600; font-display: swap; src: url("fonts/nunito-latin-600-normal.woff2") format("woff2"); }
-@font-face { font-family: "Nunito"; font-weight: 700; font-display: swap; src: url("fonts/nunito-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Caveat"; font-weight: 700; font-display: swap; src: url("../assets/fonts/caveat-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 400; font-display: swap; src: url("../assets/fonts/nunito-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 600; font-display: swap; src: url("../assets/fonts/nunito-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 700; font-display: swap; src: url("../assets/fonts/nunito-latin-700-normal.woff2") format("woff2"); }
 
 /* A warm paper page with white cards, and a deep olive for selected states and primary
    actions, dark enough to pass AA as text and under white text (DESIGN.md 2). */

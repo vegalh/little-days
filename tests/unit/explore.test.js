@@ -1,12 +1,12 @@
 // Run with: node --test
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { ACTIVITIES } = require("../activities.js");
+const { ACTIVITIES } = require("../../data/activities.js");
 const {
   CATEGORIES, CATEGORY_KEYS, categoriesToSearch, shortlist, nearbyPlaces, estimateWalk, byWalkingTime,
   walkingMinutes, accessFor, settingFor, filterBySetting, ageNotes, bookingFor, filterByBooking,
-} = require("../explore.js");
-const { GUIDES, CATEGORY_GUIDES, GUIDE_FOR_TYPE, guideFor, perspectiveFor, forGroup } = require("../guides.js");
+} = require("../../js/explore.js");
+const { GUIDES, CATEGORY_GUIDES, GUIDE_FOR_TYPE, guideFor, perspectiveFor, forGroup } = require("../../data/guides.js");
 
 test("forGroup: no guide line still speaks to one child", () => {
   assert.equal(forGroup("If your child is curious, look closer."), "If the children are curious, look closer.");
@@ -19,7 +19,7 @@ test("forGroup: no guide line still speaks to one child", () => {
     assert.doesNotMatch(forGroup(line), /the children (is|does|has|was|wants|knows|likes|loves|enjoys|notices)\b/i, line);
   }
 });
-const { rainSoon, orderForWeather, weatherFor, hourForecast } = require("../recommend.js");
+const { rainSoon, orderForWeather, weatherFor, hourForecast } = require("../../js/recommend.js");
 
 test("hourForecast: finds the visit's hour, and returns null outside the forecast", () => {
   const hourly = { time: ["2026-11-07T09:00", "2026-11-07T10:00"], temperature_2m: [8, null], precipitation_probability: [20, 30] };
@@ -27,7 +27,7 @@ test("hourForecast: finds the visit's hour, and returns null outside the forecas
   assert.equal(hourForecast(hourly, "2026-11-07", "10:00"), null);
   assert.equal(hourForecast(hourly, "2026-11-20", "09:00"), null);
 });
-const { formatDistance } = require("../advice.js");
+const { formatDistance } = require("../../js/advice.js");
 
 const ORIGIN = { lat: 42.35, lng: -71.21 };
 // A place about `meters` north of the origin.
@@ -35,7 +35,7 @@ const at = (id, meters, primaryType = "park") => ({ id, name: id, primaryType, t
 
 test("categories: six, each with Google types, matching the saved-settings choices", () => {
   assert.deepEqual(CATEGORY_KEYS, ["nature", "everyday-life", "community-helpers", "art-culture", "animals-wildlife", "movement"]);
-  const { SETTING_CHOICES } = require("../plan.js");
+  const { SETTING_CHOICES } = require("../../js/plan.js");
   for (const key of CATEGORY_KEYS) {
     assert.ok(CATEGORIES[key].types.length > 0);
     assert.ok(SETTING_CHOICES.interest.includes(key));

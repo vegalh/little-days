@@ -31,6 +31,19 @@ There are no accounts, no backend, no cookies and no analytics. Saved places, pl
 
 The places are prepared ahead in `places.js`, so the site never searches Google. The only billed Google item is one map load per visit, and Google gives 10,000 a month free. Directions and hours open Google Maps by plain link, which is free.
 
+## Where things are
+
+| Folder | What's in it |
+|---|---|
+| `index.html` | The page |
+| `css/` | All styles |
+| `js/` | The code: `app.js` draws the page, `google.js` the map; the rest is logic with no page code |
+| `data/` | Content: places, activities, exploration guides, celebrations |
+| `assets/` | Fonts and images |
+| `docs/` | Product requirements, design rules, the live check, design references |
+| `tools/` | Scripts that regenerate `data/places.js` and `data/activities.js` |
+| `tests/` | `unit/` for the logic, `e2e/` for the browser |
+
 ## How it's built
 
 Plain HTML, CSS and JavaScript, with no framework, build step or runtime dependencies. It runs as a static site on GitHub Pages.
@@ -59,7 +72,7 @@ Then open http://localhost:8472/. `config.js` is gitignored, so never commit a r
 python3 tools/import-osm.py
 ```
 
-This regenerates `places.js` from OpenStreetMap and keeps any photo set by hand. To add the school's own photo, put a WebP file in `images/places/` and set that place's `photo` in `places.js`.
+This regenerates `data/places.js` from OpenStreetMap and keeps any photo set by hand. To add the school's own photo, put a WebP file in `assets/images/places/` and set that place's `photo` and `credit` in `data/places.js`.
 
 ## Tests
 
@@ -70,7 +83,7 @@ node --test          # logic tests
 npx playwright test  # browser tests, desktop and phone
 ```
 
-Both suites mock every outside request, so they prove the page handles responses, not that the real APIs work. [tests/LIVE-CHECK.md](tests/LIVE-CHECK.md) is the manual check against the real APIs.
+Both suites mock every outside request, so they prove the page handles responses, not that the real APIs work. [docs/LIVE-CHECK.md](docs/LIVE-CHECK.md) is the manual check against the real APIs.
 
 ## Deployment
 
@@ -78,11 +91,11 @@ Every push to `main` runs [.github/workflows/pages.yml](.github/workflows/pages.
 
 ## Project documents
 
-- [PRD.md](PRD.md): what to build, and the source of truth for behavior
-- [DESIGN.md](DESIGN.md): how it should look
+- [docs/PRD.md](docs/PRD.md): what to build, and the source of truth for behavior
+- [docs/DESIGN.md](docs/DESIGN.md): how it should look
 - [AGENTS.md](AGENTS.md): rules for coding agents working in this repository
-- [PROPOSAL.md](PROPOSAL.md): the original idea, for background
+- [docs/PROPOSAL.md](docs/PROPOSAL.md): the original idea, for background
 
 ## Credits
 
-Activities and photos come from RootMap. Caveat and Nunito are bundled under the SIL Open Font License ([fonts/OFL.txt](fonts/OFL.txt)). Places are from OpenStreetMap (© OpenStreetMap contributors, ODbL), the map from Google Maps, weather from [Open-Meteo](https://open-meteo.com/) and holidays from [Nager.Date](https://date.nager.at/).
+Activities and photos come from RootMap. Caveat and Nunito are bundled under the SIL Open Font License ([assets/fonts/OFL.txt](assets/fonts/OFL.txt)). Places are from OpenStreetMap (© OpenStreetMap contributors, ODbL), the map from Google Maps, weather from [Open-Meteo](https://open-meteo.com/) and holidays from [Nager.Date](https://date.nager.at/).

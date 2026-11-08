@@ -36,8 +36,8 @@ jobs:
       - name: Copy the site files
         run: |
           mkdir _site
-          cp index.html style.css i18n.js app.js google.js places.js explore.js recommend.js advice.js plan.js guides.js celebrations.js activities.js _site/
-          cp -R images fonts _site/
+          cp index.html _site/
+          cp -R css js data assets _site/
 
       - name: Write config.js from secrets
         env:

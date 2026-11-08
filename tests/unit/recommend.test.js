@@ -3,8 +3,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { ACTIVITIES } = require("../activities.js");
-const { weatherFor, seasonFor, pickIdeas, planWeek, nextHours } = require("../recommend.js");
+const { ACTIVITIES } = require("../../data/activities.js");
+const { weatherFor, seasonFor, pickIdeas, planWeek, nextHours } = require("../../js/recommend.js");
 
 const CLEAR = { code: 0, feelsMax: 18, gusts: 20, rainChance: 0 };
 
@@ -30,7 +30,7 @@ test("dataset: 37 activities with unique IDs and original fields", () => {
 test("dataset: every photo listed exists in both sizes", () => {
   for (const a of ACTIVITIES.filter((x) => x.littleDays.photo)) {
     for (const width of [480, 960]) {
-      const file = path.join(__dirname, "..", "images", "activities", `${a.id}-${width}.webp`);
+      const file = path.join(__dirname, "..", "..", "assets", "images", "activities", `${a.id}-${width}.webp`);
       assert.ok(fs.existsSync(file), `missing ${file}`);
     }
   }
@@ -169,7 +169,7 @@ test("every day has three ideas for every weather and season", () => {
 
 // A real Open-Meteo response for Newton, MA, saved on 2026-11-04 (current.time 18:15,
 // hourly starting at 00:00 local time).
-const FORECAST = JSON.parse(fs.readFileSync(path.join(__dirname, "e2e/fixtures/forecast.json"), "utf8"));
+const FORECAST = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "e2e", "fixtures", "forecast.json"), "utf8"));
 
 test("next hours: start at the current hour, not at midnight", () => {
   const hours = nextHours(FORECAST.hourly, FORECAST.current.time);

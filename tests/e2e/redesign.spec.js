@@ -166,7 +166,7 @@ test("a place with a photo shows it with its credit; the others keep their categ
   await expect(page.locator(".place-card .place-icon svg")).toHaveCount(6);
   const photo = page.locator(".place-card img");
   await expect(photo).toHaveCount(1);
-  await expect(photo).toHaveAttribute("src", "images/activities/duck-walk-480.webp");
+  await expect(photo).toHaveAttribute("src", "assets/images/activities/duck-walk-480.webp");
   await expect(photo).toHaveAttribute("loading", "lazy");
   const credit = page.locator(".place-card", { hasText: "Test Bakery" }).locator(".place-credit");
   await expect(credit).toHaveText("Photo: A Test Author, CC BY-SA 4.0");

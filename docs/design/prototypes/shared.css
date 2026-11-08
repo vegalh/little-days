@@ -2,10 +2,10 @@
    by the working app. One set of standards, so the concepts differ in composition only.
    Type 13 / 14 / 16 / 18 / 22 / 28. Space 4 / 8 / 12 / 16 / 24 / 32.
    Radius 12 controls, 16 search and cards, 24 sheets. Controls 44, search 52. Icons 20 / 24. */
-@font-face { font-family: "Nunito"; font-weight: 400; font-display: swap; src: url("../../fonts/nunito-latin-400-normal.woff2") format("woff2"); }
-@font-face { font-family: "Nunito"; font-weight: 600; font-display: swap; src: url("../../fonts/nunito-latin-600-normal.woff2") format("woff2"); }
-@font-face { font-family: "Nunito"; font-weight: 700; font-display: swap; src: url("../../fonts/nunito-latin-700-normal.woff2") format("woff2"); }
-@font-face { font-family: "Caveat"; font-weight: 700; font-display: swap; src: url("../../fonts/caveat-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 400; font-display: swap; src: url("../../../assets/fonts/nunito-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 600; font-display: swap; src: url("../../../assets/fonts/nunito-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Nunito"; font-weight: 700; font-display: swap; src: url("../../../assets/fonts/nunito-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Caveat"; font-weight: 700; font-display: swap; src: url("../../../assets/fonts/caveat-latin-700-normal.woff2") format("woff2"); }
 
 :root {
   --bg: #FFFFFF;

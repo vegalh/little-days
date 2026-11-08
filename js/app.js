@@ -765,7 +765,7 @@ function selectPlace(id) {
   if (mapBeside()) placeList.querySelector(`[data-place="${id}"]`)?.scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
 }
 
-// The wide layout, with the map beside the places (style.css).
+// The wide layout, with the map beside the places (css/style.css).
 function mapBeside() {
   return window.matchMedia("(min-width: 960px)").matches;
 }
@@ -1356,7 +1356,7 @@ function removeVisit(entry) {
 // --- Share and print (PRD.md 7.9, 7.14, 7.20) ---
 // The share card and the guide are built from state already in memory (the
 // plan, savedPlaces, findPlace's cache and the current forecast): printing never makes a
-// weather or holiday request. style.css's @media print shows only #print-area.
+// weather or holiday request. css/style.css's @media print shows only #print-area.
 // The private journal (an entry's observation/next, PRD.md 7.17) is never printed here.
 
 function printBrandHtml() {
@@ -1860,7 +1860,7 @@ function photoHtml(activity, sizes) {
   const photo = activity.littleDays.photo;
   const initial = escapeHtml(rootmapText(activity).title[0]);
   if (!photo) return `<span class="art art-missing" data-initial="${initial}"></span>`;
-  const base = `images/activities/${activity.id}`;
+  const base = `assets/images/activities/${activity.id}`;
   return `
     <span class="art" data-initial="${initial}">
       <img src="${base}-480.webp" srcset="${base}-480.webp 480w, ${base}-960.webp 960w"

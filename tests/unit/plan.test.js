@@ -1,14 +1,14 @@
 // Run with: node --test
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { ACTIVITIES } = require("../activities.js");
+const { ACTIVITIES } = require("../../data/activities.js");
 const {
   PLAN_KEY, SETTINGS_KEY, OLD_SETTINGS_KEY, isPlanned, addToPlan, removeFromPlan, cleanPlan,
   loadPlan, savePlan, loadSettings, saveSettings,
   OLD_PLAN_KEY, addPlaceToPlan, plannedPlaces, isPlacePlanned, removePlannedPlace, updatePlannedPlace,
   PLACES_KEY, OLD_PLACES_KEY, cleanPlaces, savePlace, setPlaceStatus, recordVisit, removePlace, visitCount,
   loadPlaces, storePlaces, deleteSavedData, exportData, readImport, replaceSavedData,
-} = require("../plan.js");
+} = require("../../js/plan.js");
 
 const IDS = ACTIVITIES.map((a) => a.id);
 const TODAY = "2026-10-31";

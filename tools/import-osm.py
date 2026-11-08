@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerates places.js: the places near the school, from OpenStreetMap.
+"""Regenerates data/places.js: the places near the school, from OpenStreetMap.
 
 Run it once in a while: python3 tools/import-osm.py
 It needs curl and an internet connection. A photo set by hand in places.js is kept.
@@ -14,7 +14,7 @@ from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "places.js"
+OUT = ROOT / "data" / "places.js"
 SCHOOL = {"name": "Peninsula Montessori Academy", "label": "221 Washington St, Newton, MA 02458",
           "latitude": 42.35725, "longitude": -71.18498, "countryCode": "US"}
 # A 30-minute walk by the page's estimate (80 m a minute, streets 1.3 times the straight line).
@@ -111,7 +111,7 @@ def main():
 //
 // Names and positions are from OpenStreetMap (© OpenStreetMap contributors, ODbL). Google's
 // names, addresses and photos can't be stored here: its terms don't allow it.
-// photo: a picture in images/places/ with its credit and creditUrl (the school's own, or an
+// photo: a picture in assets/images/places/ with its credit and creditUrl (the school's own, or an
 // openly licensed one from Wikimedia Commons), or null for the category icon. A photo set here
 // is kept when the script runs again.
 // No page code here, so tests can run it in Node.
@@ -126,7 +126,7 @@ if (typeof module !== "undefined") {{
   module.exports = {{ SCHOOL, PLACES }};
 }}
 """, encoding="utf8")
-    print(f"{len(lines)} places within {RADIUS} m written to places.js")
+    print(f"{len(lines)} places within {RADIUS} m written to data/places.js")
 
 
 if __name__ == "__main__":

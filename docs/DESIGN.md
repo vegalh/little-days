@@ -20,7 +20,7 @@ A neighborhood field guide: like a well-made nature journal with a real map tuck
 
 A clean, warm, modern palette: a warm paper page with white cards, subtle warm-neutral accents and a deep olive green for selected states and primary actions. Minimal, mobile-first, and restrained — no decorative gradients, illustrations, or ornamental lines. The fonts, shapes and icons still broadly follow RootMap (sections 3–4).
 
-Defined as CSS custom properties on `:root` in `style.css`. **`style.css` is the source of truth**: this table lists exactly what it defines. Component styles use the tokens, never raw hex values. Don't rename a token that's in use; add a new one only when a component needs it, and add it here.
+Defined as CSS custom properties on `:root` in `css/style.css`. **`css/style.css` is the source of truth**: this table lists exactly what it defines. Component styles use the tokens, never raw hex values. Don't rename a token that's in use; add a new one only when a component needs it, and add it here.
 
 | Token | Value | Use |
 |---|---|---|
@@ -55,7 +55,7 @@ Dark mode is not part of version 1. The Autocomplete element is set to `color-sc
 
 ## 3. Type
 
-RootMap's two fonts, **bundled with the site** in `fonts/` (woff2, SIL Open Font License, `fonts/OFL.txt`). Nothing is loaded from Google Fonts or any CDN, which also keeps the site fast in mainland China.
+RootMap's two fonts, **bundled with the site** in `assets/fonts/` (woff2, SIL Open Font License, `assets/fonts/OFL.txt`). Nothing is loaded from Google Fonts or any CDN, which also keeps the site fast in mainland China.
 
 - **Headings** (`--font-head`) and **Body** (`--font-body`): both `"Nunito", system-ui, sans-serif`, weights 400, 600, 700. One clean, rounded sans-serif family for everything — the logo, page title, section headings, day names, place and activity titles, and body text. English heading sizes are tuned down to roughly match the Chinese sizes below, so the hierarchy reads the same in both languages.
 - **Chinese** (`html:lang(zh-CN)`) uses the system's Chinese font, as RootMap does: `"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif`, never a downloaded one (a full Chinese font is too large, and Google Fonts is slow in mainland China). Headings are weight 600 with slight letter spacing, at Chinese sizes: page title 22px (phone 20px), section headings 24px (phone 22px), card titles as the table below, panel and detail headings 18px, day names 16px. Line height 1.65. `text-autospace: normal` puts a small gap between Chinese and Latin text or numbers (addresses, postal codes, "2–6 岁"), and `line-break: strict` keeps closing punctuation off the start of a line; browsers without them skip them.
@@ -290,7 +290,7 @@ One `--surface` card with rows (day + date on the left, entries on the right). E
 
 ## 7. Imagery
 
-- **Activity photos** are the original RootMap photos, copied into `images/activities/` as WebP, 480 and 960 pixels wide.
+- **Activity photos** are the original RootMap photos, copied into `assets/images/activities/` as WebP, 480 and 960 pixels wide.
 - Shown in a fixed 4:3 frame (`aspect-ratio: 4 / 3; object-fit: cover`) with 12px corners.
 - Every `<img>` has `srcset` (480w, 960w), `sizes`, `width`/`height` (no layout shift), `loading="lazy"` and `decoding="async"`. `alt=""`, because the title next to it says what it shows.
 - **Missing photo:** a plain `--tint` tile with the title's first letter at 50% opacity. Never a broken-image icon.
@@ -313,7 +313,7 @@ Almost none. 150ms fades on hover color and dialog open. Smooth `scroll-snap` on
 ## 10. Don't
 
 - No gradients, glassmorphism, or big hero images.
-- Nothing loaded from a CDN or Google Fonts (Google's Maps API script is the one exception, PRD.md 9.1). The only font is the bundled Nunito family in `fonts/`. Google's text attribution names Roboto first but allows the sans-serif fallback, so no Roboto is loaded.
+- Nothing loaded from a CDN or Google Fonts (Google's Maps API script is the one exception, PRD.md 9.1). The only font is the bundled Nunito family in `assets/fonts/`. Google's text attribution names Roboto first but allows the sans-serif fallback, so no Roboto is loaded.
 - No CSS framework or component library.
 - No decorative animation.
 - No all-caps text.
