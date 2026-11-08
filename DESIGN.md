@@ -322,6 +322,10 @@ Almost none. 150ms fades on hover color and dialog open. Smooth `scroll-snap` on
 - No ratings, stars, reviews, opening hours or prices on cards.
 - Never hide, cover or restyle Google's logo and attributions.
 
+## 10b. Current version (2026-11-08)
+
+The one-time step, the address field and "Change" are gone: Explore opens on the school's line ("📍 Peninsula Montessori Academy"), its compact weather, the map, Filters and the place cards. The map box is hidden without a key, and the places then take the full width. Cards show a school photo in the 88px tile when places.js has one, or the category icon. "© OpenStreetMap contributors" (14px, `--ink-soft`, class `data-credit`) sits above the cards, in My Places, My week and on printed pages, in place of the earlier "Google Maps" text; Google's own logo and terms stay on the map.
+
 ## 11. Print
 
 The share card (PRD.md 7.9) and Print Adventure Guide (PRD.md 7.14, 7.20) look like a kindergarten handout, on screen and on paper: native `window.print()`, `@media print` and `@page`, with no PDF library.
