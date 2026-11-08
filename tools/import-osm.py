@@ -9,6 +9,7 @@ import json
 import math
 import re
 import subprocess
+import time
 from datetime import date
 from pathlib import Path
 
@@ -37,18 +38,50 @@ TYPES = {
     ("shop", "coffee"): "coffee_shop", ("shop", "second_hand"): "thrift_store",
     ("tourism", "museum"): "museum", ("tourism", "gallery"): "art_gallery", ("tourism", "zoo"): "zoo",
     ("tourism", "aquarium"): "aquarium",
+    ("amenity", "restaurant"): "restaurant", ("amenity", "fast_food"): "restaurant", ("amenity", "bank"): "bank",
+    ("amenity", "pharmacy"): "pharmacy", ("amenity", "doctors"): "doctor", ("amenity", "dentist"): "doctor",
+    ("amenity", "clinic"): "doctor", ("amenity", "veterinary"): "veterinary_care",
+    ("amenity", "place_of_worship"): "place_of_worship", ("amenity", "cinema"): "movie_theater",
+    ("railway", "station"): "train_station",
+    ("shop", "pastry"): "bakery", ("shop", "convenience"): "convenience_store", ("shop", "hairdresser"): "barber_shop",
+    ("shop", "beauty"): "barber_shop", ("shop", "laundry"): "laundry", ("shop", "dry_cleaning"): "laundry",
+    ("shop", "chemist"): "pharmacy", ("shop", "seafood"): "grocery_store", ("shop", "butcher"): "grocery_store",
 }
+# Children can visit almost anywhere an adult goes. Left out: alcohol, tobacco, cannabis and
+# adult shops, gambling, weapons, traffic-heavy car places, and places that aren't for visiting.
+SKIP_SHOPS = {"alcohol", "wine", "beverages", "tobacco", "e-cigarette", "cannabis", "erotic", "weapons", "pawnbroker",
+              "car", "car_repair", "car_parts", "tyres", "motorcycle", "fuel", "funeral_directors", "storage_rental",
+              "lottery", "betting", "gambling", "vacant"}
 # Names that aren't places to take children: districts, research and college libraries.
 SKIP = re.compile(r"historic district|research|college|higher education|braille|safety network|information center|ups store", re.I)
 
 
-def fetch():
+def overpass(selectors):
     around = f"around:{RADIUS},{SCHOOL['latitude']},{SCHOOL['longitude']}"
-    parts = "".join(f'nwr({around})["{key}"="{value}"][name];' for key, value in TYPES)
-    query = f"[out:json][timeout:60];({parts});out center tags;"
-    result = subprocess.run(["curl", "-s", "-m", "90", "-A", "little-days-import", "--data-urlencode", f"data={query}",
-                             "https://overpass-api.de/api/interpreter"], capture_output=True, text=True, check=True)
-    return json.loads(result.stdout)["elements"]
+    query = "[out:json][timeout:90];(" + "".join(f"nwr({around}){s}[name];" for s in selectors) + ");out center tags;"
+    # The public server is often busy, so a failed request is tried again after a pause.
+    for attempt in range(4):
+        result = subprocess.run(["curl", "-s", "-m", "120", "-A", "little-days-import", "--data-urlencode", f"data={query}",
+                                 "https://overpass-api.de/api/interpreter"], capture_output=True, text=True)
+        if result.stdout.startswith("{"):
+            return json.loads(result.stdout)["elements"]
+        time.sleep(20 * (attempt + 1))
+    raise SystemExit("OpenStreetMap's server didn't answer. Try again later.")
+
+
+# Several small requests, since one big one is often refused.
+def fetch():
+    named = [(k, v) for k, v in TYPES if k != "shop"]
+    return (overpass([f'["{k}"="{v}"]' for k, v in named])
+            + overpass(["[shop]"]))
+
+
+def place_type(tags):
+    for key in ("leisure", "tourism", "railway", "amenity", "shop"):
+        if (key, tags.get(key)) in TYPES:
+            return TYPES[(key, tags[key])]
+    shop = tags.get("shop")
+    return "store" if shop and shop not in SKIP_SHOPS else None
 
 
 def distance(lat, lng):
@@ -61,8 +94,8 @@ def main():
     places = {}
     for element in fetch():
         tags = element.get("tags", {})
-        kind = next((TYPES[(k, tags[k])] for k in ("leisure", "amenity", "shop", "tourism") if (k, tags.get(k)) in TYPES), None)
-        if not kind or SKIP.search(tags["name"]):
+        kind = place_type(tags)
+        if not kind or tags.get("shop") in SKIP_SHOPS or SKIP.search(tags["name"]):
             continue
         point = element.get("center", element)
         place_id = f'osm-{element["type"]}-{element["id"]}'

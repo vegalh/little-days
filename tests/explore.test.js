@@ -55,13 +55,6 @@ test("nearby: the walking estimate decides what's within reach, and All works ou
   assert.deepEqual(categoriesToSearch("all", { nature: [], movement: [] }), ["everyday-life", "community-helpers", "art-culture", "animals-wildlife"]);
 });
 
-test("shortlist: a type Google returned but wasn't asked for is left out", () => {
-  const winery = { ...at("wine", 100), primaryType: "winery" };
-  const shop = { ...at("pets", 200), primaryType: "pet_store" };
-  assert.deepEqual(shortlist({ "animals-wildlife": [winery, shop] }, "animals-wildlife", ORIGIN).map((p) => p.id), ["pets"]);
-  assert.deepEqual(shortlist({ "animals-wildlife": [winery, shop] }, "all", ORIGIN).map((p) => p.id), ["pets"]);
-});
-
 test("booking is an estimate from the kind of place, and the filter uses it", () => {
   const cafe = { ...at("cafe", 100), primaryType: "coffee_shop" };
   const yoga = { ...at("yoga", 200), primaryType: "yoga_studio" };
@@ -72,7 +65,7 @@ test("booking is an estimate from the kind of place, and the filter uses it", ()
   assert.equal(accessFor(yoga).note, "Ask whether there are children's or family classes.");
 });
 
-test("shortlist: one category is closest first; All keeps two per category, up to 12", () => {
+test("shortlist: closest first, every place within the walk, with no limit", () => {
   const loaded = { nature: [at("far", 900), at("near", 100), { id: "nowhere", location: null }] };
   assert.deepEqual(shortlist(loaded, "nature", ORIGIN).map((p) => p.id), ["near", "far"]);
 
@@ -81,9 +74,9 @@ test("shortlist: one category is closest first; All keeps two per category, up t
     all[key] = [0, 1, 2, 3].map((n) => at(`${key}-${n}`, 100 + n * 100 + k * 1000, CATEGORIES[key].types[0]));
   });
   const list = shortlist(all, "all", ORIGIN);
-  assert.equal(list.length, 12);
-  for (const key of CATEGORY_KEYS) assert.equal(list.filter((p) => p.category === key).length, 2);
-  // A place found by two searches counts once, in the first category.
+  assert.equal(list.length, CATEGORY_KEYS.length * 4);
+  assert.deepEqual(list.map((p) => p.distance), [...list.map((p) => p.distance)].sort((a, b) => a - b));
+  // A place in two categories counts once, in the first.
   const twice = shortlist({ nature: [at("same", 100)], movement: [at("same", 100)] }, "all", ORIGIN);
   assert.deepEqual(twice.map((p) => [p.id, p.category]), [["same", "nature"]]);
 });

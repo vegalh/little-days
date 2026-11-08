@@ -7,6 +7,7 @@ const DAILY_LIFE_TYPES = [
   "bakery", "grocery_store", "supermarket", "market", "farmers_market", "florist", "hardware_store", "book_store",
   "coffee_shop", "cafe", "tea_house", "ice_cream_shop", "donut_shop", "deli", "toy_store", "thrift_store",
   "garden_center", "bicycle_store", "shoe_store", "pharmacy", "barber_shop", "laundry", "yoga_studio",
+  "store", "convenience_store", "restaurant", "bank",
 ];
 
 // Little Days categories → Google place types (all from Google's Table A, checked
@@ -21,15 +22,15 @@ const CATEGORIES = {
   },
   "community-helpers": {
     label: "Community Helpers", emoji: "🚒",
-    types: ["fire_station", "police", "post_office", "city_hall", "community_center"],
+    types: ["fire_station", "police", "post_office", "city_hall", "community_center", "doctor", "train_station", "place_of_worship"],
   },
   "art-culture": {
     label: "Art & Culture", emoji: "🎨",
-    types: ["library", "museum", "art_gallery", "performing_arts_theater", "cultural_center"],
+    types: ["library", "museum", "art_gallery", "performing_arts_theater", "cultural_center", "movie_theater"],
   },
   "animals-wildlife": {
     label: "Animals & Wildlife", emoji: "🐦",
-    types: ["zoo", "aquarium", "pet_store", "dog_park", "wildlife_park", "wildlife_refuge"],
+    types: ["zoo", "aquarium", "pet_store", "dog_park", "wildlife_park", "wildlife_refuge", "veterinary_care"],
   },
   "movement": { label: "Movement", emoji: "🤸", types: ["playground", "athletic_field", "sports_complex"] },
 };
@@ -37,8 +38,6 @@ const CATEGORY_KEYS = Object.keys(CATEGORIES);
 
 const WALK_METERS_PER_MINUTE = 80; // an adult's walking pace
 const ROUTE_STRETCH = 1.3; // streets are longer than the straight line
-const MAX_RESULTS = 10; // per category
-const ALL_SHORTLIST = 12;
 
 // The categories a search needs: one, or for "all" every category not loaded yet.
 function categoriesToSearch(interest, loaded) {
@@ -55,23 +54,15 @@ function straightLine(a, b) {
   return 2 * 6371000 * Math.asin(Math.sqrt(h));
 }
 
-// loaded: { categoryKey: [place, ...] }. One category: all its places, closest first.
-// All: up to 2 of the closest from each category, then the closest of the rest, up to 12.
-// A place found by two searches belongs to the first category in CATEGORIES.
+// loaded: { categoryKey: [place, ...] }. Every place within the walk, closest first.
+// A place in two categories belongs to the first in CATEGORIES.
 function shortlist(loaded, interest, origin) {
   const keys = interest === "all" ? CATEGORY_KEYS : [interest];
   const seen = new Set();
-  // Google's types are grouped, so a search can return a type not asked for.
-  const asked = (place, key) => !place.primaryType || CATEGORIES[key].types.includes(place.primaryType);
-  const byCategory = keys.map((key) => (loaded[key] || [])
-    .filter((place) => place.location && asked(place, key) && !seen.has(place.id) && seen.add(place.id))
-    .map((place) => ({ ...place, category: key, distance: straightLine(origin, place.location) }))
-    .sort((a, b) => a.distance - b.distance));
-  if (interest !== "all") return byCategory[0].slice(0, MAX_RESULTS);
-
-  const firsts = byCategory.flatMap((places) => places.slice(0, 2));
-  const rest = byCategory.flatMap((places) => places.slice(2)).sort((a, b) => a.distance - b.distance);
-  return [...firsts, ...rest].slice(0, ALL_SHORTLIST).sort((a, b) => a.distance - b.distance);
+  return keys.flatMap((key) => (loaded[key] || [])
+    .filter((place) => place.location && !seen.has(place.id) && seen.add(place.id))
+    .map((place) => ({ ...place, category: key, distance: straightLine(origin, place.location) })))
+    .sort((a, b) => a.distance - b.distance);
 }
 
 // The places of these types within the walking time, by the same estimate the cards show.
@@ -164,7 +155,7 @@ function accessFor(place) {
 // place. Google's own reservation field would move every search to its top price.
 const BOOK_FIRST_TYPES = [
   "fire_station", "police", "city_hall", "community_center", "cultural_center", "museum", "performing_arts_theater",
-  "zoo", "aquarium", "sports_complex", "yoga_studio",
+  "zoo", "aquarium", "sports_complex", "yoga_studio", "doctor", "veterinary_care",
 ];
 
 function bookingFor(place) {
@@ -210,7 +201,7 @@ function filterBySetting(places, setting) {
 
 if (typeof module !== "undefined") {
   module.exports = {
-    CATEGORIES, CATEGORY_KEYS, MAX_RESULTS, categoriesToSearch, straightLine, nearbyPlaces, estimateWalk,
+    CATEGORIES, CATEGORY_KEYS, categoriesToSearch, straightLine, nearbyPlaces, estimateWalk,
     shortlist, byWalkingTime, walkingMinutes, placeType, accessFor, settingFor, filterBySetting, bookingFor, filterByBooking, ageNotes, categoryOf, ACCESS_TEXT,
   };
 }
