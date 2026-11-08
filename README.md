@@ -8,7 +8,7 @@ Little Days helps the teachers and families of Peninsula Montessori Academy (New
 
 ## What it does
 
-- **Explore:** a Google map and a list of 80+ places within a 30-minute walk of the school, prepared ahead, with estimated walking times and links to Google Maps for directions and hours. Filter by walking time, ages, kind of place, day, indoors or outdoors, and whether a place usually needs booking.
+- **Explore:** a Google map and a list of about 230 places within a 30-minute walk of the school (shops, restaurants, parks, libraries, banks, fire stations and more, leaving out alcohol, tobacco and traffic-heavy car places), prepared ahead, with estimated walking times and links to Google Maps for directions and hours. Filter by walking time, ages, kind of place, day, indoors or outdoors, and whether a place usually needs booking.
 - **Place guides:** a hand-written guide for each kind of place, with things to notice and ideas for before, during and after a visit.
 - **Weather:** a seven-day forecast with conservative advice and what to wear, which also shapes the suggestions for each place.
 - **At-home activities:** 37 activities from [RootMap](https://github.com/vegalh/rootmapmvp), chosen for the weather and season.
