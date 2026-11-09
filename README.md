@@ -6,6 +6,8 @@ Little Days helps the teachers and families of Peninsula Montessori Academy (New
 
 **Live site:** https://vegalh.github.io/little-days/
 
+**Who it's for:** me and Reki, the director of the kindergarten, so we can quickly find places near the school to explore with the children and share a weekly plan with families.
+
 ## What it does
 
 - **Explore:** a Google map and a list of about 230 places within a 30-minute walk of the school (shops, restaurants, parks, libraries, banks, fire stations and more, leaving out alcohol, tobacco and traffic-heavy car places), prepared ahead, with estimated walking times and links to Google Maps for directions and hours. Filter by walking time, ages, kind of place, day, indoors or outdoors, and whether a place usually needs booking.
